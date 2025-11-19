@@ -1,6 +1,9 @@
 {
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "autoprefixer": "^10.4.22",
+    "concurrently": "^9.2.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17"
   },
   "name": "vaobep",
   "version": "1.0.0",

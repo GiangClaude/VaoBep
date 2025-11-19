@@ -1,9 +1,10 @@
+const fs = require('fs');
+const path = require('path');
 const { generate } = require('rxjs');
 const UserModel = require('../models/user.model');
 const authUtils = require('../utils/auth.utils');
 const emailUtils = require('../utils/email.utils');
 const bcrypt = require('bcryptjs');
-
 
 // Đăng ký người dùng mới
 const register = async (req, res) => {
@@ -42,7 +43,16 @@ const register = async (req, res) => {
             return res.status(500).json({ error: 'Failed to send verification email.' });
         }
 
-        // const token = generateToken(newUserId);
+        //Tạo folder name
+        const userFolderPath = path.join(__dirname, '../../public/user', newUserId.toString());
+
+        // 3. Kiểm tra và tạo thư mục nếu chưa có
+        if (!fs.existsSync(userFolderPath)) {
+            fs.mkdirSync(userFolderPath, { recursive: true });
+            // recursive: true giúp tạo cả thư mục cha nếu lỡ nó chưa tồn tại
+        }
+        
+        console.log(`Đã tạo thư mục cho user: ${userFolderPath}`);
 
         res.status(201).json({
             message: 'User registered successfully. Please check your email for verification OTP.',

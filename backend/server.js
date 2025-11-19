@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/db'); // Import module database
-
+const path = require('path');
 const app = express();
 const port = process.env.PORT || 5000; // Cổng cho backend
 
@@ -12,6 +12,9 @@ const port = process.env.PORT || 5000; // Cổng cho backend
 app.use(cors());
 // Sử dụng express.json() để parse body của request dưới dạng JSON
 app.use(express.json());
+//Cho phép xem file public/user
+app.use('/uploads', express.static(path.join(__dirname, 'public/user')));
+
 
 const authRoutes = require('./routes/auth.routes');
 const recipeRoutes = require('./routes/recipe.routes');
