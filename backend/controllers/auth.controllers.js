@@ -139,7 +139,9 @@ const verifyOTP = async (req, res) => {
 
     try {
         //Tìm user
-        const user = authUtils.validateOTP(email, otp);
+        const user = await authUtils.validateOTP(email, otp);
+
+        console.log("Gia tri user tim thay:", user);
 
         // 4. Nếu OTP đúng và còn hạn -> Kích hoạt user
         await UserModel.activateUser(user.user_id);
@@ -192,7 +194,7 @@ const resendOTP = async (req, res) => {
         const otpExpires = new Date(Date.now() + 10*60*1000);
 
 
-        await User.updateOTP(user.user_id, otp, otpExpires);
+        await UserModel.updateOTP(user.user_id, otp, otpExpires);
         await emailUtils.sendPasswordResetEmail(email, otp);
 
         res.status(200).json({ message: 'Đã gửi lại OTP'});

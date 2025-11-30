@@ -12,82 +12,99 @@ const FEATURE_CRITERIA = {
 };
 
 class Recipe{
-    static async create(userId, title, description, instructions, ingredientsData){
-        console.log(ingredientsData);
+    static async create(recipeId, userId, title, description, instructions, ingredientsData, coverImage, resultImages = []) {
         
         const connection = await pool.getConnection();
 
         try {
             await connection.beginTransaction();
 
-            const newRecipeId = uuidv4();
-
+            // --- 1. INSERT bảng Recipes ---
+            // Thêm cột cover_image vào câu lệnh SQL
             const sql = `
                 INSERT INTO Recipes 
-                    (recipe_id, user_id, title, description, instructions, status)
+                    (recipe_id, user_id, title, description, instructions, cover_image, status)
                 VALUES 
-                    (?, ?, ?, ?, ?, ?)
+                    (?, ?, ?, ?, ?, ?, ?)
             `;
             
             const params = [
-                newRecipeId,
-                userId, // <-- user_id lấy từ token
+                recipeId,
+                userId,
                 title,
                 description,
                 instructions,
-                'public' // Hoặc 'draft' tùy logic của bạn
+                coverImage || null, // Lưu đường dẫn ảnh bìa
+                'public'
             ];
 
             await connection.execute(sql, params);
 
+            // --- 2. INSERT bảng Ingredients (Giữ nguyên logic cũ của bạn) ---
             const ingredientPlaceholders = [];
             const ingredientParams = [];
 
-            await Promise.all(ingredientsData.map(async (ing) => {
-                
+            // (Phần xử lý Promise.all loop qua ingredientsData giữ nguyên như code cũ của bạn...)
+            // ... Bạn copy lại đoạn logic xử lý ingredients ở đây ...
+             await Promise.all(ingredientsData.map(async (ing) => {
                 let ingredientId;
-
                 let [foundIng] = await connection.execute(
                     `SELECT ingredient_id FROM Ingredients WHERE name = ? AND status = 'approved'`, 
                     [ing.name]  
                 );
-
+                // ... (Giữ nguyên logic tìm/tạo ingredient cũ của bạn) ...
                 if (foundIng.length > 0){
                     ingredientId = foundIng[0].ingredient_id;
                 } else {
-                    const [newIng] = await connection.execute(
+                     const [newIng] = await connection.execute(
                         `INSERT IGNORE INTO Ingredients (name, status) VALUES (?, 'pending')`, 
                         [ing.name]
                     );
-
-                    if (newIng.insertId) {
-                        ingredientId = newIng.insertId;
-                    } else {
-                        [foundIng] = await connection.execute(
-                            `SELECT ingredient_id FROM Ingredients WHERE name = ?`, 
-                            [ing.name]
-                        );
+                    if (newIng.insertId) ingredientId = newIng.insertId;
+                    else {
+                        [foundIng] = await connection.execute(`SELECT ingredient_id FROM Ingredients WHERE name = ?`, [ing.name]);
                         ingredientId = foundIng[0].ingredient_id;
                     }
                 }
 
-                // Bước 4.2: Thêm vào mảng để INSERT hàng loạt
-                ingredientPlaceholders.push('(?, ?, ?, ?)'); // (recipe_id, ingredient_id, quantity, unit_id)
-                ingredientParams.push(newRecipeId, ingredientId, ing.quantity, ing.unit_id);            
-
+                ingredientPlaceholders.push('(?, ?, ?, ?)');
+                ingredientParams.push(recipeId, ingredientId, ing.quantity, ing.unit_id);            
             }));
+            // -----------------------------------------------------------
 
             if (ingredientPlaceholders.length > 0) {
                 const ingredientSql = `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit_id) VALUES ${ingredientPlaceholders.join(', ')}`;
                 await connection.execute(ingredientSql, ingredientParams);
             }
 
+            // --- 3. INSERT bảng Recipe_Images (MỚI THÊM) ---
+            if (resultImages && resultImages.length > 0) {
+                const imgPlaceholders = [];
+                const imgParams = [];
+
+                resultImages.forEach(img => {
+                    const newImgId = uuidv4(); // Tạo ID riêng cho từng ảnh
+                    imgPlaceholders.push('(?, ?, ?, ?)');
+                    // Thứ tự params: img_id, recipe_id, img_url, description
+                    imgParams.push(newImgId, recipeId, img.url, img.description);
+                });
+
+                const imgSql = `
+                    INSERT INTO Recipe_Images (img_id, recipe_id, img_url, description) 
+                    VALUES ${imgPlaceholders.join(', ')}
+                `;
+                
+                await connection.execute(imgSql, imgParams);
+            }
+
             await connection.commit();
 
             return {
-                recipe_id: newRecipeId,
+                recipe_id: recipeId,
                 user_id: userId,
-                title: title
+                title: title,
+                cover_image: coverImage,
+                images_count: resultImages.length
             }
 
         } catch (err) {
@@ -412,10 +429,38 @@ class Recipe{
 
     static async getRecentlyRecipes(category, tag, limit = 10) {
         try {
-            let sql = 'Select * from recipes where status = "public"';
-            let sqlParams = [];
-            sql += 'order by created_at Desc limit ?';
-            sqlParams.push(limit.toString());
+            const sql = `
+            SELECT 
+                R.*, 
+                U.full_name as author_name, 
+                U.avatar as author_avatar,
+                GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,
+                
+                GROUP_CONCAT(
+                    DISTINCT CONCAT(Commenter.full_name, ':::', C.content) 
+                    SEPARATOR '|||'
+                ) as comment_data
+
+            FROM Recipes R
+            JOIN Users U ON R.user_id = U.user_id
+            
+            -- Join Ingredients (Giữ nguyên)
+            LEFT JOIN recipe_ingredients RI ON R.recipe_id = RI.recipe_id
+            LEFT JOIN Ingredients I ON RI.ingredient_id = I.ingredient_id
+            
+            -- Join Comments (MỚI)
+            -- Lưu ý điều kiện post_type = 'recipe'
+            LEFT JOIN Comments C ON R.recipe_id = C.post_id AND C.post_type = 'recipe'
+            -- Join User lần 2 (đặt tên là Commenter) để lấy tên người bình luận
+            LEFT JOIN Users Commenter ON C.user_id = Commenter.user_id
+
+            WHERE R.status = 'public'
+            GROUP BY R.recipe_id
+            ORDER BY R.created_at DESC 
+            LIMIT ?
+            `;
+
+            const sqlParams = [limit.toString()];
             
             const [result] = await pool.execute(sql, sqlParams);
 
@@ -453,6 +498,35 @@ class Recipe{
         } catch(err) {
             console.log(err.message);
             throw err;
+        }
+    }
+
+    static async getOwnerRecipe(userId){
+        try {
+            const sql = `
+                SELECT * FROM recipes
+                WHERE user_id = ?
+            `
+            const [result] = await pool.execute(sql, [userId]);
+            console.log(`Đang lấy công thức cá nhân: ${result}`);
+            return result;
+        } catch (error) {
+            console.error('Lỗi Model (getOwnerRecipe):', error);
+            throw new Error(`Lấy recipe thất bại: ${error.message}`);
+        }
+    }
+
+    static async getUserRecipe(userId){
+         try {
+            const sql = `
+                SELECT * FROM recipes
+                WHERE user_id = ? AND status = "public"
+            `
+            const [result] = await pool.execute(sql, [userId]);
+            return result;
+        } catch (error) {
+            console.error('Lỗi Model (getUserRecipe):', error);
+            throw new Error(`Lấy recipe thất bại: ${error.message}`);
         }
     }
 

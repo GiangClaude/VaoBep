@@ -5,6 +5,7 @@ const {protect} = require('../controllers/auth.controllers');
 
 router.get('/me', protect, userController.getMyProfile);
 
+
 router.put('/change-password', protect, userController.updatePassword)
 
 module.exports = router;

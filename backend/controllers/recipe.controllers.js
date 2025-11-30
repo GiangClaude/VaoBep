@@ -1,37 +1,66 @@
+const IngredientModel = require('../models/ingredient.model');
 const RecipeModel = require('../models/recipe.model');
 const paginationHelper = require('../utils/paginationHelper');
 const { checkRecipeOwner } = require('../utils/recipe.utils');
 // const paginationHelper;//Thêm vào utils
 
-const createRecipe = async(req, res) => {
+const createRecipe = async (req, res) => {
     try {
+        // 1. Lấy ID đã được tạo sẵn ở Middleware
+        const recipeId = req.savedRecipeId; 
         const userId = req.user.user_id;
 
-        const {title, description, instructions, ingredients} = req.body;
-
-        // 3. (Kiểm tra dữ liệu đầu vào...)
-        if (!title || !instructions) {
-            return res.status(400).json({ message: "Title và instructions là bắt buộc." });
+        // 2. Lấy dữ liệu văn bản
+        // Lưu ý: ingredients gửi qua FormData thường là chuỗi JSON, cần parse lại
+        let { title, description, instructions, ingredients } = req.body;
+        
+        if (typeof ingredients === 'string') {
+            try {
+                ingredients = JSON.parse(ingredients);
+            } catch (e) {
+                return res.status(400).json({ message: "Định dạng ingredients không hợp lệ" });
+            }
         }
 
-        // Đoạn này cần gọi hàm để tính total Calo!
+        // 3. Xử lý Ảnh Bìa (Cover Image) - Chỉ lấy file đầu tiên
+        let coverImageUrl = null;
+        if (req.files && req.files['cover_image'] && req.files['cover_image'].length > 0) {
+            const file = req.files['cover_image'][0];
+            // Tạo đường dẫn tương đối để Frontend dùng: /recipes/{id}/{filename}
+            coverImageUrl = `/recipes/${recipeId}/${file.filename}`;
+        }
 
-        // 4. Gọi Model để tạo mới
+        // 4. Xử lý Ảnh Thành Quả (Result Images) - Lấy danh sách
+        let resultImagesList = [];
+        if (req.files && req.files['result_images']) {
+            resultImagesList = req.files['result_images'].map(file => ({
+                url: `/recipes/${recipeId}/${file.filename}`,
+                description: "Thành phẩm" // Tạm thời để mặc định, hoặc bạn có thể mở rộng logic để lấy caption từ body
+            }));
+        }
+
+        // 5. Gọi Model để lưu tất cả
+        // Lưu ý: Mình truyền thêm resultImagesList vào để Model xử lý transaction 1 lần cho an toàn
         const newRecipe = await RecipeModel.create(
+            recipeId, 
             userId, 
             title, 
             description, 
             instructions, 
-            ingredients
+            ingredients, // Dữ liệu nguyên liệu
+            coverImageUrl, 
+            resultImagesList // Dữ liệu ảnh phụ
         );
 
         res.status(201).json({
             message: "Tạo công thức thành công!",
             data: newRecipe
         });
+
     } catch (err) {
+        console.error(err);
         res.status(500).json({
-            message: "Lỗi " + err.message
+            message: "Lỗi server: " + err.message
         });
     }
 }
@@ -127,7 +156,6 @@ const getRecipeById = async(req, res) => {
     }
 }
 
-
 const getRecipes = async(req, res) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
@@ -204,6 +232,42 @@ const getFeatureRecipes = async(req, res) => {
     }
 }
 
+const getOwnerRecipe = async(req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const recipes = await RecipeModel.getOwnerRecipe(userId);
+
+        return res.status(200).json({
+            success: true,
+            data: recipes
+        });
+    } catch (error) {
+        console.log('UserController: ', error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Có lỗi xảy ra phía server: " + error.message
+        });
+    }
+}
+
+const getUserRecipe = async(req, res) => {
+    try {
+        const {userId} = req.params;
+        const recipes = await RecipeModel.getUserRecipe(userId);
+
+        return res.status(200).json({
+            success: true,
+            data: recipes
+        });
+    } catch (error) {
+        console.log('UserController: ', error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Có lỗi xảy ra phía server: " + error.message
+        });
+    }
+}
+
 module.exports = {
     getRecipes,
     getRecentlyRecipes,
@@ -211,5 +275,7 @@ module.exports = {
     createRecipe, 
     updateRecipe,
     getRecipeById,
-    deleteRecipe
+    deleteRecipe,
+    getOwnerRecipe, 
+    getUserRecipe
 }

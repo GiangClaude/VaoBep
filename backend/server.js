@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 //Cho phép xem file public/user
 app.use('/uploads', express.static(path.join(__dirname, 'public/user')));
-
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 const authRoutes = require('./routes/auth.routes');
 const recipeRoutes = require('./routes/recipe.routes');
