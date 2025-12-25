@@ -20,6 +20,33 @@ const buildRecipeQuery = (filters) => {
         params.push(...filters.ingredients);
     }
 
+    if (filters.keyword) {
+        whereClauses.push('R.title LIKE ?');
+        params.push(`%${filters.keyword}%`);
+    }
+    // 2. Lọc theo Nguyên liệu
+    if (filters.ingredients && filters.ingredients.length > 0){
+        const placeholders = filters.ingredients.map(() => '?').join(', ');
+        // Logic lọc này có thể cần sửa lại nếu muốn tìm món chứa "tất cả" nguyên liệu (hiện tại là "bất kỳ")
+        // Nhưng tạm thời giữ nguyên logic cũ của bạn
+        joinClauses.push('JOIN Recipe_Ingredients AS RI ON R.recipe_id = RI.recipe_id');
+        joinClauses.push('JOIN Ingredients AS Ing ON RI.ingredient_id = Ing.ingredient_id');
+        whereClauses.push(`Ing.name IN (${placeholders})`);
+        params.push(...filters.ingredients);
+    }
+
+    // 3. Lọc theo Tags (Category) - ĐÃ MỞ COMMENT
+    if (filters.tags && filters.tags.length > 0) {
+        const placeholders = filters.tags.map(() => '?').join(', ');
+        
+        // Chỉ cần Join bảng trung gian tag_post là đủ
+        joinClauses.push('JOIN tag_post AS TP ON R.recipe_id = TP.post_id AND TP.post_type = "recipe"');
+        
+        // So sánh trực tiếp tag_id
+        whereClauses.push(`TP.tag_id IN (${placeholders})`);
+        params.push(...filters.tags);
+    }
+
     // if (filters.tags && filters.tags.length > 0) {
     //     const placeholders = filters.tags.map(() => '?').join(', ');
         
@@ -37,6 +64,8 @@ const buildRecipeQuery = (filters) => {
         whereClauses.push('R.total_calo <= ?');
         params.push(parseInt(filters.maxCalo, 10));
     }
+
+    console.log("Debug buildRecipeQuery:", {joinClauses, whereClauses, params});
 
     return {joinClauses, whereClauses, params};
 }

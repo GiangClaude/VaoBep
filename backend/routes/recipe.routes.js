@@ -45,6 +45,9 @@ router.get('/:recipeId', recipeController.getRecipeById);
 
 router.put('/update/:recipeId', protect, recipeController.updateRecipe);
 
+router.patch('/status/:recipeId', protect, recipeController.changeRecipeStatus);
+
 router.delete('/delete/:recipeId',protect, recipeController.deleteRecipe);
+
 
 module.exports = router;

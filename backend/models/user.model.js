@@ -26,12 +26,43 @@ class User {
     }
 
     static async findById(id) {
-        const [rows] = await pool.execute(
-            'SELECT user_id, email, full_name, avatar, role, bio, created_at, update_at FROM users WHERE user_id = ?',
-            [id]
-        );
-        console.log(rows);
-        return rows[0]; // Trả về user đầu tiên hoặc undefined nếu không tìm thấy
+        const sql = `
+            SELECT 
+                u.user_id, 
+                u.email, 
+                u.full_name, 
+                u.avatar, 
+                u.role, 
+                u.bio, 
+                u.points,
+                u.account_status,
+                u.created_at,
+                0 as recipes_count, -- Placeholder tạm thời
+                0 as followers_count, -- Placeholder tạm thời
+                0 as saved_count      -- Placeholder tạm thời
+            FROM users u 
+            WHERE u.user_id = ?
+            `;
+        const [rows] = await pool.execute(sql, [id]);
+        
+        if (!rows[0]) return null;
+
+        const user = rows[0];
+
+        return {
+            id: user.user_id,
+            fullName: user.full_name,
+            email: user.email,
+            avatar: user.avatar || 'default.png', // Xử lý fallback ở backend hoặc frontend đều được
+            bio: user.bio,
+            role: user.role, // 'user', 'vip', 'pro'
+            stats: {
+                recipes: user.recipes_count || 0,
+                saved: user.saved_count || 0,
+                followers: user.followers_count || 0
+            },
+            joinDate: user.created_at
+        };
     }
 
     static async findAuth (userId){

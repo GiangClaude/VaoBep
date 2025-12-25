@@ -1,3 +1,4 @@
+const { keyword } = require('color-convert');
 const IngredientModel = require('../models/ingredient.model');
 const RecipeModel = require('../models/recipe.model');
 const paginationHelper = require('../utils/paginationHelper');
@@ -12,8 +13,21 @@ const createRecipe = async (req, res) => {
 
         // 2. Lấy dữ liệu văn bản
         // Lưu ý: ingredients gửi qua FormData thường là chuỗi JSON, cần parse lại
-        let { title, description, instructions, ingredients } = req.body;
+        let { title, 
+            description, 
+            servings, 
+            cook_time, // Frontend nên gửi key là cook_time hoặc cookTime (map ở dưới)
+            cookTime,  // Backup nếu frontend gửi camelCase
+            total_calo,
+            totalCalo, // Backup
+            ingredients, 
+            instructions
+        } = req.body;
         
+        const finalCookTime = cook_time || cookTime || 60;
+        const finalTotalCalo = total_calo || totalCalo || 0;
+        const finalServings = servings || 1;
+
         if (typeof ingredients === 'string') {
             try {
                 ingredients = JSON.parse(ingredients);
@@ -23,34 +37,38 @@ const createRecipe = async (req, res) => {
         }
 
         // 3. Xử lý Ảnh Bìa (Cover Image) - Chỉ lấy file đầu tiên
-        let coverImageUrl = null;
+        let coverImageName = null;
         if (req.files && req.files['cover_image'] && req.files['cover_image'].length > 0) {
             const file = req.files['cover_image'][0];
             // Tạo đường dẫn tương đối để Frontend dùng: /recipes/{id}/{filename}
-            coverImageUrl = `/recipes/${recipeId}/${file.filename}`;
+            coverImageName = file.filename;
         }
 
         // 4. Xử lý Ảnh Thành Quả (Result Images) - Lấy danh sách
         let resultImagesList = [];
         if (req.files && req.files['result_images']) {
             resultImagesList = req.files['result_images'].map(file => ({
-                url: `/recipes/${recipeId}/${file.filename}`,
-                description: "Thành phẩm" // Tạm thời để mặc định, hoặc bạn có thể mở rộng logic để lấy caption từ body
+                url: file.filename, 
+                description: "Thành phẩm"
             }));
         }
 
+        
         // 5. Gọi Model để lưu tất cả
-        // Lưu ý: Mình truyền thêm resultImagesList vào để Model xử lý transaction 1 lần cho an toàn
-        const newRecipe = await RecipeModel.create(
-            recipeId, 
-            userId, 
-            title, 
-            description, 
-            instructions, 
-            ingredients, // Dữ liệu nguyên liệu
-            coverImageUrl, 
-            resultImagesList // Dữ liệu ảnh phụ
-        );
+        const newRecipe = await RecipeModel.create({
+            recipeId,
+            userId,
+            title,
+            description,
+            instructions,
+            coverImage: coverImageName,
+            servings: finalServings,
+            cookTime: finalCookTime,
+            totalCalo: finalTotalCalo,
+            ingredientsData:ingredients,
+            status: req.body.status || 'draft',
+            resultImages: resultImagesList
+        });
 
         res.status(201).json({
             message: "Tạo công thức thành công!",
@@ -65,40 +83,85 @@ const createRecipe = async (req, res) => {
     }
 }
 
+// recipe.controllers.js
+
 const updateRecipe = async(req, res) => {
     try {
-        const {recipeId} = req.params;
+        const { recipeId } = req.params;
         const userId = req.user.user_id;
-        const {recipeData, ingredientsList } = req.body;
 
+        // 1. Kiểm tra quyền sở hữu
         const canEdit = await checkRecipeOwner(recipeId, userId);
-
         if (!canEdit) {
-            return res.status(403).json({
-                message: 'Forbidden: Không có quyền chỉnh sửa công thức người khác!'
-            })
+            return res.status(403).json({ message: 'Forbidden: Không có quyền chỉnh sửa!' })
         }
 
-        if (!recipeData || !ingredientsList){
-            return res.status(400).json({
-                success: false,
-                message: 'Dữ liệu đầu vào không hợp lệ'
-            })
+        // 2. Lấy dữ liệu từ FormData (req.body phẳng)
+        let { 
+            title, 
+            description, 
+            servings, 
+            cookTime, cook_time, // Xử lý cả 2 case
+            totalCalo, total_calo,
+            ingredients, 
+            instructions,
+            status
+        } = req.body;
+
+        // Chuẩn hóa dữ liệu số
+        const finalCookTime = cookTime || cook_time || 60;
+        const finalTotalCalo = totalCalo || total_calo || 0;
+        const finalServings = servings || 1;
+
+        // 3. Parse Ingredients từ JSON String (Vì gửi qua FormData)
+        let ingredientsList = [];
+        if (typeof ingredients === 'string') {
+            try {
+                ingredientsList = JSON.parse(ingredients);
+            } catch (e) {
+                console.error("Lỗi parse ingredients:", e);
+                return res.status(400).json({ message: "Dữ liệu nguyên liệu lỗi format" });
+            }
+        } else {
+            ingredientsList = ingredients; // Trường hợp gửi JSON raw (ít gặp nếu dùng FormData)
         }
 
-        const result = await RecipeModel.update(recipeId, recipeData, ingredientsList);
+        // 4. Gom dữ liệu để update bảng Recipes
+        const recipeData = {
+            title,
+            description,
+            instructions,
+            servings: finalServings,
+            cook_time: finalCookTime,
+            total_calo: finalTotalCalo,
+            status: status || 'draft'
+        };
+
+        // 5. Xử lý Ảnh Bìa (Nếu có upload ảnh mới)
+        // Nếu không gửi ảnh mới -> req.files['cover_image'] sẽ undefined -> Giữ nguyên ảnh cũ (Logic Model sẽ lo hoặc phải handle ở đây)
+        if (req.files && req.files['cover_image'] && req.files['cover_image'].length > 0) {
+            recipeData.cover_image = req.files['cover_image'][0].filename;
+        }
+
+        // 6. Gọi Model
+        // Lưu ý: Mapping field amount -> quantity để khớp với Model bên dưới
+        const mappedIngredients = ingredientsList.map(item => ({
+            name: item.name,
+            unit: item.unit, // Gửi tên đơn vị xuống Model
+            quantity: item.amount || item.quantity // Frontend gửi amount, DB cần quantity
+        }));
+
+        const result = await RecipeModel.update(recipeId, recipeData, mappedIngredients);
 
         return res.status(200).json({
             success: true,
             message: result.message,
-            Notification: result.notification
+            notification: result.notification
         });
+
     } catch(err){
         console.log("Lỗi update Control: ", err.message);
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        })
+        return res.status(500).json({ success: false, message: err.message });
     }
 }
 
@@ -166,9 +229,11 @@ const getRecipes = async(req, res) => {
             ingredients: req.query.ingredients ? req.query.ingredients.split(',') : null,
             tags: req.query.tags ? req.query.tags.split(',') : null,
             minRating: req.query.minRating,
-            minCalo: req.query.minCalo
+            minCalo: req.query.minCalo,
+            keyword : req.query.keyword,
             // ... (các filters khác)
         };
+        console.log("Filters nhận được ở Controller:", filters);
 
         const {recipes, totalItems} = await RecipeModel.getRecipes(page, limit, filters);
 
@@ -268,6 +333,49 @@ const getUserRecipe = async(req, res) => {
     }
 }
 
+const changeRecipeStatus = async (req, res) => {
+    try {
+        const { recipeId } = req.params;
+        const { status } = req.body;
+        const userId = req.user.user_id;
+
+        // 1. Validate trạng thái hợp lệ
+        // Hiện tại chỉ cho phép: public, hidden, draft. 
+        // Sau này muốn thêm 'locked' thì thêm vào mảng này là xong.
+        // TUYỆT ĐỐI KHÔNG cho user gửi lên 'banned'.
+        const validStatuses = ['public', 'hidden', 'draft']; 
+        
+        if (!status || !validStatuses.includes(status)) {
+            return res.status(400).json({ 
+                message: 'Trạng thái không hợp lệ! Chỉ chấp nhận: ' + validStatuses.join(', ') 
+            });
+        }
+
+        // 2. Kiểm tra quyền sở hữu (Chỉ chủ bài viết mới được đổi)
+        const canEdit = await checkRecipeOwner(recipeId, userId);
+        if (!canEdit) {
+            return res.status(403).json({ message: 'Bạn không có quyền thay đổi trạng thái bài viết này.' });
+        }
+
+        // 3. Gọi Model update
+        const success = await RecipeModel.updateStatus(recipeId, status);
+
+        if (success) {
+            return res.status(200).json({ 
+                success: true, 
+                message: `Đã chuyển trạng thái sang "${status}" thành công!`,
+                newStatus: status
+            });
+        } else {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy công thức để cập nhật.' });
+        }
+
+    } catch (err) {
+        console.error("Lỗi changeStatus:", err.message);
+        return res.status(500).json({ success: false, message: "Lỗi server: " + err.message });
+    }
+}
+
 module.exports = {
     getRecipes,
     getRecentlyRecipes,
@@ -277,5 +385,6 @@ module.exports = {
     getRecipeById,
     deleteRecipe,
     getOwnerRecipe, 
-    getUserRecipe
+    getUserRecipe,
+    changeRecipeStatus
 }

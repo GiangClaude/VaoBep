@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
     // ... logic tạo thư mục ...
 
     // 3. Báo cho Multer biết đường dẫn xong xuôi
-    cb(null, path_to_folder);
+    cb(null, recipePath);
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);

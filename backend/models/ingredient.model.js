@@ -4,6 +4,10 @@ const pool = db.pool;
 
 class Ingredient {
     // ... các hàm create, update cũ của bạn ...
+    static async getAll() {
+        const [rows] = await pool.execute('SELECT * FROM ingredients');
+        return rows;
+    }
 
     // --- HÀM MỚI CHUYỂN SANG ---
     static async getByRecipeIds(recipeIds) {

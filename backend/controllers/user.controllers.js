@@ -81,10 +81,7 @@ const getMyProfile = async(req, res) => {
     }
 }
 
-
-
 module.exports = {
     updatePassword,
     getMyProfile,
-    getOwnerRecipe
 }
