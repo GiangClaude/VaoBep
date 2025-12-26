@@ -40,6 +40,7 @@ router.get('/recently', recipeController.getRecentlyRecipes);
 router.get('/feature', recipeController.getFeatureRecipes);
 router.get('/owner', protect, recipeController.getOwnerRecipe);
 router.get('/user/:userId', recipeController.getUserRecipe);
+router.get('/:recipeId/preview-comments', recipeController.getPreviewComments);
 router.get('/:recipeId', recipeController.getRecipeById);
 
 

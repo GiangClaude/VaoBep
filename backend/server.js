@@ -21,7 +21,10 @@ const recipeRoutes = require('./routes/recipe.routes');
 const userRoutes = require('./routes/user.routes');
 const ingredientRoutes = require('./routes/ingredients.routes');
 const unitRoutes = require('./routes/unit.routes');
+
+const tagRoutes = require('./routes/tag.routes');
 const interactionRoutes = require('./routes/interaction.routes');
+
 // Kiểm tra kết nối database khi khởi động server
 db.testDbConnection();
 
@@ -31,6 +34,9 @@ app.use('/api/recipes', recipeRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/ingredients', ingredientRoutes);
 app.use('/api/units', unitRoutes);
+
+
+app.use('/api/tags', tagRoutes);
 app.use('/api/interaction', interactionRoutes);
 
 app.use((req, res, next) => {

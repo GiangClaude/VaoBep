@@ -47,6 +47,28 @@ const buildRecipeQuery = (filters) => {
         params.push(...filters.tags);
     }
 
+    if (filters.cookingTime) {
+        // Frontend gửi lên: "0-30", "30-60", "60+"
+        if (filters.cookingTime === '0-30') {
+            whereClauses.push('R.cook_time < 30');
+        } else if (filters.cookingTime === '30-60') {
+            whereClauses.push('(R.cook_time >= 30 AND R.cook_time <= 60)');
+        } else if (filters.cookingTime === '60+') {
+            whereClauses.push('R.cook_time > 60');
+        }
+    }
+
+    // --- [THÊM MỚI] LOGIC ĐỘ KHÓ ---
+    // Lưu ý: Hiện tại DB bảng Recipes chưa có cột 'difficulty'. 
+    // Nếu bạn đã thêm cột này vào DB thì bỏ comment dòng dưới.
+    /*
+    if (filters.difficulty) {
+        whereClauses.push('R.difficulty = ?');
+        params.push(filters.difficulty);
+    }
+    */
+
+
     // if (filters.tags && filters.tags.length > 0) {
     //     const placeholders = filters.tags.map(() => '?').join(', ');
         
@@ -55,7 +77,7 @@ const buildRecipeQuery = (filters) => {
     //     params.push(...filters.tags);
     // }
 
-    if (filters.minRating) {
+    if (filters.minRating && !isNaN(parseFloat(filters.minRating))) {
         whereClauses.push('R.rating_avg_score >= ?');
         params.push(parseFloat(filters.minRating));
     }

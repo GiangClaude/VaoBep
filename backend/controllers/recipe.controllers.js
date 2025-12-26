@@ -21,12 +21,22 @@ const createRecipe = async (req, res) => {
             total_calo,
             totalCalo, // Backup
             ingredients, 
-            instructions
+            instructions,
+            tags
         } = req.body;
         
         const finalCookTime = cook_time || cookTime || 60;
         const finalTotalCalo = total_calo || totalCalo || 0;
         const finalServings = servings || 1;
+        let finalTags = [];
+
+        if (tags) {
+        try {
+            finalTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+        } catch (e) {
+            // Handle error or ignore
+        }
+    }
 
         if (typeof ingredients === 'string') {
             try {
@@ -67,7 +77,8 @@ const createRecipe = async (req, res) => {
             totalCalo: finalTotalCalo,
             ingredientsData:ingredients,
             status: req.body.status || 'draft',
-            resultImages: resultImagesList
+            resultImages: resultImagesList,
+            tags: finalTags
         });
 
         res.status(201).json({
@@ -105,14 +116,21 @@ const updateRecipe = async(req, res) => {
             totalCalo, total_calo,
             ingredients, 
             instructions,
-            status
+            status,
+            tags
         } = req.body;
 
         // Chuẩn hóa dữ liệu số
         const finalCookTime = cookTime || cook_time || 60;
         const finalTotalCalo = totalCalo || total_calo || 0;
         const finalServings = servings || 1;
+        let finalTags = null;
 
+        if (tags !== undefined) {
+         try {
+            finalTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+            } catch (e) {}
+         }
         // 3. Parse Ingredients từ JSON String (Vì gửi qua FormData)
         let ingredientsList = [];
         if (typeof ingredients === 'string') {
@@ -134,7 +152,8 @@ const updateRecipe = async(req, res) => {
             servings: finalServings,
             cook_time: finalCookTime,
             total_calo: finalTotalCalo,
-            status: status || 'draft'
+            status: status || 'draft',
+            finalTags
         };
 
         // 5. Xử lý Ảnh Bìa (Nếu có upload ảnh mới)
@@ -231,6 +250,9 @@ const getRecipes = async(req, res) => {
             minRating: req.query.minRating,
             minCalo: req.query.minCalo,
             keyword : req.query.keyword,
+
+            cookingTime: req.query.cookingTime, // Nhận chuỗi "0-30", "30-60"...
+            difficulty: req.query.difficulty
             // ... (các filters khác)
         };
         console.log("Filters nhận được ở Controller:", filters);
@@ -333,6 +355,27 @@ const getUserRecipe = async(req, res) => {
     }
 }
 
+// 1. Thêm hàm này vào file
+const getPreviewComments = async (req, res) => {
+    try {
+        const { recipeId } = req.params;
+        
+        // Gọi Model
+        const comments = await RecipeModel.getPreviewComments(recipeId);
+
+        return res.status(200).json({
+            success: true,
+            data: comments
+        });
+    } catch (error) {
+        console.error("Lỗi getPreviewComments Controller:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Lỗi server: " + error.message
+        });
+    }
+}
+
 const changeRecipeStatus = async (req, res) => {
     try {
         const { recipeId } = req.params;
@@ -386,5 +429,6 @@ module.exports = {
     deleteRecipe,
     getOwnerRecipe, 
     getUserRecipe,
+    getPreviewComments,
     changeRecipeStatus
 }

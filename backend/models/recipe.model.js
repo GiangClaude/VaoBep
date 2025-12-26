@@ -24,7 +24,8 @@ class Recipe{
         totalCalo,
         ingredientsData,
         status,
-        resultImages = []
+        resultImages = [],
+        tags = []
     }) {
         const connection = await pool.getConnection();
 
@@ -111,6 +112,14 @@ class Recipe{
                 }
             }
 
+            if (tags && tags.length > 0) {
+                const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
+                for (const tagId of tags) {
+                    // tagId ở đây là ID của tag mà user chọn
+                    await connection.execute(tagSql, [tagId, recipeId]);
+                }
+            }
+
             // --- 3. INSERT bảng Recipe_Images ---
             // Sửa lại cột imgLink cho đúng với file SQL của bạn
             if (resultImages && resultImages.length > 0) {
@@ -149,7 +158,7 @@ class Recipe{
 
 
 
-    static async update(recipeId, recipeData, ingredientList) {
+    static async update(recipeId, recipeData, ingredientList, tagList) {
         const connection = await pool.getConnection();
         let newIngredientsPending = false;
         let totalCalo = recipeData.total_calo || 0; // Lấy calo từ input người dùng update
@@ -246,6 +255,22 @@ class Recipe{
                         VALUES ${ingredientPlaceholders.join(', ')}
                     `;
                     await connection.execute(ingredientSql, ingredientParams);
+                }
+            }
+
+            if (tagList) { // Chỉ xử lý nếu frontend có gửi field tags lên
+                // B1: Xóa hết các liên kết tag cũ của bài viết này
+                await connection.execute(
+                    `DELETE FROM tag_post WHERE post_id = ? AND post_type = 'recipe'`, 
+                    [recipeId]
+                );
+
+                // B2: Insert lại các tag mới
+                if (tagList.length > 0) {
+                    const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
+                    for (const tagId of tagList) {
+                         await connection.execute(tagSql, [tagId, recipeId]);
+                    }
                 }
             }
 
@@ -381,6 +406,15 @@ class Recipe{
             // Không nên return null ở đây, vì công thức có thể không có nguyên liệu
             recipe.ingredients = ingredientRows;
 
+            const tagSql = `
+                SELECT T.tag_id, T.name 
+                FROM Tags T
+                JOIN tag_post TP ON T.tag_id = TP.tag_id
+                WHERE TP.post_id = ? AND TP.post_type = 'recipe'
+            `;
+            const [tagRows] = await connection.execute(tagSql, [recipeId]);
+            recipe.tags = tagRows || [];
+
             return recipe;
 
         } catch (error) {
@@ -391,52 +425,63 @@ class Recipe{
         }
     }
 
-    static async getRecipes(page, limit, filters = {}){
-        const skip = (page-1) *limit;
+static async getRecipes(page, limit, filters = {}) {
+    const limitNum = parseInt(limit, 10) || 12;
+    const pageNum = parseInt(page, 10) || 1;
+    const skip = (pageNum - 1) * limitNum;
 
-        const queryParts = buildRecipeQuery(filters);
+    const queryParts = buildRecipeQuery(filters);
+    const filterParams = queryParts.params || [];
 
-        const selectFragment = 'SELECT R.cover_image, R.title, like_count,comment_count, rating_avg_score, U.full_name FROM Recipes AS R LEFT JOIN users AS U ON R.user_id = U.user_id ';
-        // selectFragment += '';
+    // 1. SELECT: BỎ "comment_data" đi. Giữ lại ingredient_names để hiện preview
+    const selectFragment = `
+        SELECT 
+            R.*, 
+            U.full_name AS author_name,
+            U.avatar AS author_avatar,
+            GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names
+        FROM Recipes AS R
+        LEFT JOIN Users AS U ON R.user_id = U.user_id 
+    `;
+
+    // 2. JOIN: BỎ "LEFT JOIN Comments" và "LEFT JOIN Users Commenter"
+    const dataFetchJoins = `
+        LEFT JOIN Recipe_Ingredients RI_Data ON R.recipe_id = RI_Data.recipe_id
+        LEFT JOIN Ingredients I ON RI_Data.ingredient_id = I.ingredient_id
+    `;
+
+    const allJoins = queryParts.joinClauses.join(' ') + ' ' + dataFetchJoins;
+    const whereString = ' WHERE ' + queryParts.whereClauses.join(' AND ');
+    
+    // 3. GROUP BY: Bỏ U.full_name, U.avatar nếu server không bắt lỗi strict, 
+    // nhưng cứ để cho an toàn. Bỏ các trường comment.
+    const groupByString = ' GROUP BY R.recipe_id, U.full_name, U.avatar ';
+    const orderLimitOffset = ' ORDER BY R.created_at DESC LIMIT ? OFFSET ?';
+
+    try {
+        // --- COUNT ---
         const countFragment = 'SELECT COUNT(DISTINCT R.recipe_id) AS total FROM Recipes AS R ';
-
-        // 1. JOIN 
-        const joinString =queryParts.joinClauses.join(' ');
-
-        // 2. WHERE (Luôn có ít nhất status = "public")
-        const whereString = ' WHERE ' + queryParts.whereClauses.join(' AND ');
-
-        // 3. Tham số
-        const filterParams = queryParts.params;
-
-        // --- Truy vấn SELECT ---
-        const orderLimitOffset = ' ORDER BY R.created_at DESC LIMIT ? OFFSET ?';
-
-        // Số lượng
-        // --- Truy vấn COUNT ---
-        const [countResult] = await pool.execute(
-            countFragment + joinString + whereString,
+        const [countResult] = await pool.query(
+            countFragment + queryParts.joinClauses.join(' ') + whereString,
             filterParams
         );
-        const totalItems = Number(countResult[0].total);
+        const totalItems = Number(countResult[0]?.total || 0);
 
-        // Kết hợp tham số lọc và tham số phân trang
-        const finalParams = [
-            ...filterParams, 
-            limit.toString(), 
-            skip.toString()
-        ];
+        // --- DATA ---
+        const finalQuery = selectFragment + allJoins + whereString + groupByString + orderLimitOffset;
+        const finalParams = [...filterParams, limitNum, skip];
 
-        const [result] = await pool.execute(
-            selectFragment + joinString + whereString + orderLimitOffset,
-            finalParams
-        );
+        const [result] = await pool.query(finalQuery, finalParams);
+        
         return {
             recipes: result,
             totalItems: totalItems
-        }
+        };
+    } catch (error) {
+        console.error("Lỗi SQL getRecipes:", error);
+        throw error;
     }
-
+}
     static async getRecentlyRecipes(category, tag, limit = 10) {
         try {
             const sql = `
@@ -538,6 +583,32 @@ class Recipe{
         } catch (error) {
             console.error('Lỗi Model (getUserRecipe):', error);
             throw new Error(`Lấy recipe thất bại: ${error.message}`);
+        }
+    }
+
+    static async getPreviewComments(recipeId) {
+        try {
+            // Chỉ lấy content và tên user, avatar user
+            // Giới hạn LIMIT 2 và sắp xếp mới nhất
+            const sql = `
+                SELECT 
+                    C.content, 
+                    C.created_at,
+                    U.full_name AS user_name,
+                    U.avatar AS user_avatar
+                FROM Comments C
+                JOIN Users U ON C.user_id = U.user_id
+                WHERE C.post_id = ? 
+                  AND C.post_type = 'recipe'
+                ORDER BY C.created_at DESC
+                LIMIT 2
+            `;
+
+            const [comments] = await pool.execute(sql, [recipeId]);
+            return comments;
+        } catch (error) {
+            console.error('Lỗi Model (getPreviewComments):', error);
+            throw error;
         }
     }
 
