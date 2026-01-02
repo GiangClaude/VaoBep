@@ -154,9 +154,58 @@ class User {
         }
     }
 
+    // Thêm đoạn này vào trong class User (trước dấu đóng '}')
+    static async searchUsers({ keyword, page = 1, limit = 10, sort = 'newest' }) {
+        const offset = (page - 1) * limit;
+        const kw = `%${keyword}%`;
 
+        try {
+            // Query đếm tổng để phân trang
+            const countSql = `
+                SELECT COUNT(*) as total 
+                FROM Users 
+                WHERE (full_name LIKE ? OR email LIKE ?) AND account_status = 'active'
+            `;
+            const [countRows] = await pool.execute(countSql, [kw, kw]);
+            const totalItems = countRows[0].total;
 
-    
+            // Xử lý Sort
+            let orderBy = 'u.created_at DESC'; // Default newest
+            if (sort === 'oldest') orderBy = 'u.created_at ASC';
+            if (sort === 'most_followed') orderBy = 'followers_count DESC';
+
+            // Query chính: Join bảng Follows để đếm số người theo dõi
+            const sql = `
+                SELECT 
+                    u.user_id, 
+                    u.full_name, 
+                    u.email, 
+                    u.avatar, 
+                    u.bio,
+                    u.created_at,
+                    COUNT(f.follower_id) as followers_count
+                FROM Users u
+                LEFT JOIN Follows f ON u.user_id = f.following_id
+                WHERE (u.full_name LIKE ? OR u.email LIKE ?) 
+                  AND u.account_status = 'active'
+                GROUP BY u.user_id
+                ORDER BY ${orderBy}
+                LIMIT ? OFFSET ?
+            `;
+
+            const [users] = await pool.query(sql, [kw, kw, parseInt(limit), parseInt(offset)]);
+
+            return {
+                users,
+                totalItems,
+                totalPages: Math.ceil(totalItems / limit),
+                currentPage: parseInt(page)
+            };
+        } catch (error) {
+            console.error('User Model Search Error:', error);
+            throw error;
+        }
+    }
 
 }
 

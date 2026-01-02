@@ -81,7 +81,49 @@ const getMyProfile = async(req, res) => {
     }
 }
 
+// Thêm hàm này vào file, nhớ export ra ở cuối
+const searchUsers = async (req, res) => {
+    try {
+        const { keyword, page, limit, sort } = req.query;
+        
+        // Nếu không có keyword thì trả về rỗng hoặc list mặc định tuỳ logic (ở đây tui trả rỗng)
+        if (!keyword) {
+            return res.status(200).json({
+                success: true,
+                data: [],
+                pagination: { totalItems: 0, totalPages: 0, currentPage: 1 }
+            });
+        }
+
+        const result = await UserModel.searchUsers({ 
+            keyword, 
+            page, 
+            limit, 
+            sort 
+        });
+        console.log("usercontroller: ", result);
+
+        return res.status(200).json({
+            success: true,
+            data: result.users,
+            pagination: {
+                totalItems: result.totalItems,
+                totalPages: result.totalPages,
+                currentPage: result.currentPage
+            }
+        });
+    } catch (error) {
+        console.error('User Controller Search Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Lỗi server khi tìm kiếm user."
+        });
+    }
+}
+
+
 module.exports = {
     updatePassword,
     getMyProfile,
+    searchUsers,
 }

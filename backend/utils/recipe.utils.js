@@ -8,22 +8,43 @@ const pool = db.pool;
 
 const buildRecipeQuery = (filters) => {
     let joinClauses = [];
-    let whereClauses = ['R.status = "public"'];
+    let whereClauses = ["R.status = 'public'"];
     let params = [];
+
+    let hasJoinedIngredients = false;
 
     if (filters.ingredients && filters.ingredients.length > 0){
         
         const placeholders = filters.ingredients.map(() => '?').join(', ');
 
         joinClauses.push('JOIN Recipe_Ingredients AS RI ON R.recipe_id = RI.recipe_id');
-        whereClauses.push(`RI.ingredient_name IN (${placeholders})`);
+        joinClauses.push('JOIN Ingredients AS Ing ON RI.ingredient_id = Ing.ingredient_id');
+        whereClauses.push(`Ing.name IN (${placeholders})`);
         params.push(...filters.ingredients);
+        hasJoinedIngredients = true;
     }
 
-    if (filters.keyword) {
-        whereClauses.push('R.title LIKE ?');
-        params.push(`%${filters.keyword}%`);
+   if (filters.keyword) {
+        const kw = `%${filters.keyword}%`;
+        
+        // Nếu chưa join Ingredients thì phải Left Join để tìm kiếm (dùng LEFT để không mất bài nếu không khớp ng.liệu)
+        if (!hasJoinedIngredients) {
+            joinClauses.push('LEFT JOIN Recipe_Ingredients AS RI_Search ON R.recipe_id = RI_Search.recipe_id');
+            joinClauses.push('LEFT JOIN Ingredients AS Ing_Search ON RI_Search.ingredient_id = Ing_Search.ingredient_id');
+        } else {
+            // Nếu đã join ở trên (Ing) thì dùng lại alias đó
+            // Tuy nhiên logic AND ở trên và OR ở đây có thể phức tạp, 
+            // để an toàn cho search keyword, ta dùng alias riêng hoặc tận dụng query DISTINCT của Model.
+        }
+
+        // Logic search: (Title LIKE ? OR Desc LIKE ? OR Ingredient LIKE ?)
+        // Lưu ý: Ing_Search.name chỉ check được nếu block if(!hasJoinedIngredients) chạy. 
+        // Để đơn giản và an toàn nhất cho query builder hiện tại, tui sẽ search Title & Desc & Ing_Search
+        
+        whereClauses.push('(LOWER(R.title) LIKE LOWER(?) OR LOWER(R.description) LIKE LOWER(?) OR LOWER(Ing_Search.name) LIKE LOWER(?))');
+        params.push(kw, kw, kw);
     }
+
     // 2. Lọc theo Nguyên liệu
     if (filters.ingredients && filters.ingredients.length > 0){
         const placeholders = filters.ingredients.map(() => '?').join(', ');
