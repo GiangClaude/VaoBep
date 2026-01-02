@@ -37,9 +37,14 @@ class User {
                 u.points,
                 u.account_status,
                 u.created_at,
-                0 as recipes_count, -- Placeholder tạm thời
-                0 as followers_count, -- Placeholder tạm thời
-                0 as saved_count      -- Placeholder tạm thời
+               -- Đếm số công thức (có thể thêm điều kiện status = 'public' nếu muốn)
+                (SELECT COUNT(*) FROM Recipes r WHERE r.user_id = u.user_id) as recipes_count,
+                
+                -- Đếm số người theo dõi
+                (SELECT COUNT(*) FROM Follows f WHERE f.following_id = u.user_id) as followers_count,
+                
+                -- Đếm số bài đã lưu
+                (SELECT COUNT(*) FROM Saved_Posts s WHERE s.user_id = u.user_id) as saved_count -- Placeholder tạm thời
             FROM users u 
             WHERE u.user_id = ?
             `;
@@ -203,6 +208,54 @@ class User {
             };
         } catch (error) {
             console.error('User Model Search Error:', error);
+            throw error;
+        }
+    }
+
+    // --- THÊM MỚI BẮT ĐẦU ---
+/**
+     * Cập nhật thông tin profile user (Dynamic Update)
+     * @param {string} userId 
+     * @param {object} data { fullName, bio, avatar } - Các trường có thể undefined
+     */
+    static async updateProfile(userId, data) {
+        try {
+            const updates = [];
+            const values = [];
+
+            // Kiểm tra từng trường, nếu có dữ liệu thì push vào mảng updates
+            if (data.fullName !== undefined) {
+                updates.push("full_name = ?");
+                values.push(data.fullName);
+            }
+
+            if (data.bio !== undefined) {
+                updates.push("bio = ?");
+                values.push(data.bio);
+            }
+
+            if (data.avatar !== undefined) {
+                updates.push("avatar = ?");
+                values.push(data.avatar);
+            }
+
+            // Luôn cập nhật thời gian update
+            updates.push("update_at = NOW()");
+
+            // Nếu không có gì để update (ngoài update_at) thì return sớm
+            // (Tuy nhiên controller đã check rồi, đây là check phòng hờ)
+            if (updates.length === 1) return 0;
+
+            // Xây dựng câu query
+            const sql = `UPDATE Users SET ${updates.join(", ")} WHERE user_id = ?`;
+            
+            // Push userId vào cuối mảng values (cho dấu ? ở WHERE)
+            values.push(userId);
+
+            const [result] = await pool.execute(sql, values);
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('User Model Update Error:', error);
             throw error;
         }
     }
