@@ -255,7 +255,6 @@ const getRecipes = async(req, res) => {
             difficulty: req.query.difficulty
             // ... (các filters khác)
         };
-        console.log("Filters nhận được ở Controller:", filters);
 
         const {recipes, totalItems} = await RecipeModel.getRecipes(page, limit, filters);
 

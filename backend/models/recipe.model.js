@@ -398,8 +398,6 @@ class Recipe{
                 WHERE RI.recipe_id = ?
             `;
             
-            // Sửa 3: Thực thi 'ingredientSql' (không phải 'sql')
-            // Dùng mảng [recipeId] làm tham số
             let [ingredientRows] = await connection.execute(ingredientSql, [recipeId]);
 
             // Sửa 4: Gán kết quả nguyên liệu (ngay cả khi rỗng)
@@ -471,6 +469,8 @@ static async getRecipes(page, limit, filters = {}) {
         const finalQuery = selectFragment + allJoins + whereString + groupByString + orderLimitOffset;
         const finalParams = [...filterParams, limitNum, skip];
 
+        console.log(finalParams);
+        
         const [result] = await pool.query(finalQuery, finalParams);
         
         return {
