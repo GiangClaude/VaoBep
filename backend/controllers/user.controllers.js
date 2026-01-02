@@ -121,9 +121,68 @@ const searchUsers = async (req, res) => {
     }
 }
 
+const updateUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.user_id; 
+        const { fullName, bio } = req.body;
+        
+        // Tạo object chứa dữ liệu cần update
+        const updateData = {};
+
+        // 1. Xử lý Fullname: Chỉ validate nếu client CÓ gửi field này lên
+        if (fullName !== undefined) {
+            if (fullName.trim() === "") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Họ và tên không được để trống."
+                });
+            }
+            updateData.fullName = fullName;
+        }
+
+        // 2. Xử lý Bio: Nếu client có gửi thì update
+        if (bio !== undefined) {
+            updateData.bio = bio;
+        }
+        
+        // 3. Xử lý Avatar: Nếu có file upload thì thêm vào data
+        if (req.file) {
+            updateData.avatar = req.file.filename;
+        }
+
+        // Nếu không có trường nào để update thì báo lỗi hoặc return luôn
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Không có dữ liệu nào được gửi để cập nhật."
+            });
+        }
+
+        // Gọi Model update
+        await UserModel.updateProfile(userId, updateData);
+
+        // Lấy lại thông tin user mới nhất
+        const updatedUser = await UserModel.findById(userId);
+
+        return res.status(200).json({
+            success: true,
+            message: "Cập nhật hồ sơ thành công.",
+            data: updatedUser
+        });
+
+    } catch (error) {
+        console.error('Update Profile Controller Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Lỗi server khi cập nhật hồ sơ."
+        });
+    }
+}
+
 
 module.exports = {
     updatePassword,
     getMyProfile,
     searchUsers,
+    updateUserProfile
 }
