@@ -437,7 +437,7 @@ static async getRecipes(page, limit, filters = {}, currentUserId = null) {
             R.*, 
             U.full_name AS author_name,
             U.avatar AS author_avatar,
-            GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names
+            GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,
             EXISTS(
                     SELECT 1 FROM Likes L 
                     WHERE L.post_id = R.recipe_id AND L.post_type = 'recipe' AND L.user_id = ?

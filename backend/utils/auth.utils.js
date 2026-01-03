@@ -53,9 +53,10 @@ const getUserIdFromToken = (req) => {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             const token = req.headers.authorization.split(' ')[1];
-            // Thay PROCESS.ENV.JWT_SECRET bằng biến môi trường thực tế của bạn
             const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET);
-            return decoded.user_id;
+            
+            return decoded.id; // Code Mới
+            
         } catch (e) {
             return null;
         }

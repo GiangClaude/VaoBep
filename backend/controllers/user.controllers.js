@@ -1,5 +1,7 @@
 const UserModel = require('../models/user.model');
 const authUtils = require('../utils/auth.utils');
+const PointModel = require('../models/point.model');
+const db = require('../config/db');
 
 // Update mật khẩu mới (chủ động)
 const updatePassword = async(req, res) => {
@@ -86,6 +88,7 @@ const searchUsers = async (req, res) => {
     try {
         const { keyword, page, limit, sort } = req.query;
         
+        const viewerId = authUtils.getUserIdFromToken(req);
         // Nếu không có keyword thì trả về rỗng hoặc list mặc định tuỳ logic (ở đây tui trả rỗng)
         if (!keyword) {
             return res.status(200).json({
@@ -99,9 +102,9 @@ const searchUsers = async (req, res) => {
             keyword, 
             page, 
             limit, 
-            sort 
+            sort,
+            currentUserId: viewerId
         });
-        console.log("usercontroller: ", result);
 
         return res.status(200).json({
             success: true,
@@ -179,10 +182,194 @@ const updateUserProfile = async (req, res) => {
     }
 }
 
+const dailyCheckIn = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+
+        // 1. Kiểm tra đã điểm danh hôm nay chưa
+        const hasCheckedIn = await PointModel.hasCheckedInToday(userId);
+        if (hasCheckedIn) {
+            return res.status(400).json({
+                success: false,
+                message: "Hôm nay bạn đã điểm danh rồi. Hãy quay lại vào ngày mai!"
+            });
+        }
+
+        // 2. Cộng điểm (+10)
+        const bonusPoints = 10;
+        await UserModel.updatePoints(userId, bonusPoints);
+
+        // 3. Ghi log transaction
+        await PointModel.create({
+            userId,
+            type: 'checkin',
+            amount: bonusPoints,
+            message: 'Điểm danh hàng ngày'
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: `Điểm danh thành công! Bạn nhận được ${bonusPoints} điểm.`
+        });
+
+    } catch (error) {
+        console.error('Check-in Error:', error);
+        return res.status(500).json({ success: false, message: "Lỗi server khi điểm danh." });
+    }
+};
+
+// [THÊM MỚI] - Lấy lịch sử điểm
+const getPointHistory = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { page, month } = req.query; // month format: '2024-05'
+
+        const result = await PointModel.getHistory(
+            userId, 
+            parseInt(page) || 1, 
+            10, 
+            month === 'all' ? null : month // Nếu client gửi 'all' thì lấy tất cả
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+
+    } catch (error) {
+        console.error('Get Point History Error:', error);
+        return res.status(500).json({ success: false, message: "Lỗi server khi lấy lịch sử điểm." });
+    }
+};
+
+// [THÊM MỚI] - Tặng điểm cho user khác
+const giftPoints = async (req, res) => {
+    const connection = await db.pool.getConnection(); // 1. Lấy connection riêng
+    try {
+        const senderId = req.user.user_id;
+        const { recipientId, amount, message } = req.body;
+        const pointsToSend = parseInt(amount);
+
+        // --- VALIDATE CƠ BẢN ---
+        if (!recipientId || !pointsToSend) {
+            return res.status(400).json({ success: false, message: "Thiếu thông tin người nhận hoặc số điểm." });
+        }
+        if (pointsToSend < 10) {
+            return res.status(400).json({ success: false, message: "Số điểm tặng tối thiểu là 10." });
+        }
+        if (senderId === recipientId) {
+            return res.status(400).json({ success: false, message: "Không thể tự tặng điểm cho mình." });
+        }
+
+        // --- BẮT ĐẦU TRANSACTION ---
+        await connection.beginTransaction();
+
+        // 2. KHÓA và Lấy thông tin người gửi (Sender)
+        // Dòng này sẽ khiến các request khác vào Sender phải chờ
+        const sender = await UserModel.findByIdForUpdate(senderId, connection);
+        
+        // Check số dư sau khi đã khóa
+        if (!sender || sender.points < pointsToSend) {
+            await connection.rollback(); // Hủy giao dịch ngay
+            return res.status(400).json({ success: false, message: "Số điểm của bạn không đủ để tặng." });
+        }
+
+        // 3. KHÓA và Lấy thông tin người nhận (Recipient) 
+        // Để đảm bảo người nhận tồn tại và active, đồng thời tránh race condition khi cộng tiền
+        const recipient = await UserModel.findByIdForUpdate(recipientId, connection);
+        
+        if (!recipient) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: "Người nhận không tồn tại." });
+        }
+        
+        // Check trạng thái người nhận (Active/Block)
+        if (recipient.account_status !== 'active') {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: "Người nhận đang bị khóa hoặc chưa kích hoạt." });
+        }
+
+        // 4. Thực hiện TRỪ tiền người gửi
+        await UserModel.updatePoints(senderId, -pointsToSend, connection);
+        await PointModel.create({
+            userId: senderId,
+            type: 'gift_sent',
+            amount: -pointsToSend,
+            relatedUserId: recipientId,
+            message: message || `Tặng điểm cho ${recipient.full_name}`
+        }, connection);
+
+        // 5. Thực hiện CỘNG tiền người nhận
+        await UserModel.updatePoints(recipientId, pointsToSend, connection);
+        await PointModel.create({
+            userId: recipientId,
+            type: 'gift_received',
+            amount: pointsToSend,
+            relatedUserId: senderId,
+            message: message || `Nhận điểm từ ${sender.full_name}`
+        }, connection);
+
+        // 6. Mọi thứ OK -> COMMIT (Lưu vào DB)
+        await connection.commit();
+
+        return res.status(200).json({
+            success: true,
+            message: "Tặng điểm thành công!"
+        });
+
+    } catch (error) {
+        // Có lỗi -> ROLLBACK (Hoàn tác mọi thay đổi)
+        await connection.rollback();
+        console.error('Gift Points Transaction Error:', error);
+        return res.status(500).json({ success: false, message: "Giao dịch thất bại. Vui lòng thử lại." });
+    } finally {
+        // Luôn phải giải phóng connection trả về pool
+        connection.release();
+    }
+};
+
+const getUserProfile = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // [MỚI] Lấy ID người xem từ token (nếu có)
+        // Không dùng req.user vì route này có thể public (không qua middleware protect)
+        const viewerId = authUtils.getUserIdFromToken(req);
+
+        console.log(`👉 Get Public Profile: Target=${id}, Viewer=${viewerId}`);
+
+        // Gọi model lấy thông tin public, truyền thêm viewerId
+        const user = await UserModel.findPublicProfileById(id, viewerId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "Người dùng không tồn tại hoặc tài khoản đã bị khóa."
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: user // Data đã bao gồm isFollowing và stats chính xác
+        });
+
+    } catch (error) {
+        console.error('Get Public Profile Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Lỗi server khi lấy thông tin người dùng."
+        });
+    }
+}
+
 
 module.exports = {
     updatePassword,
     getMyProfile,
     searchUsers,
-    updateUserProfile
+    updateUserProfile,
+    dailyCheckIn,
+    getPointHistory,
+    giftPoints,
+    getUserProfile
 }

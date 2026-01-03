@@ -70,6 +70,61 @@ class User {
         };
     }
 
+    static async findPublicProfileById(id, currentUserId = null) {
+        try {
+            const sql = `
+                SELECT 
+                    u.user_id, 
+                    u.full_name, 
+                    u.avatar, 
+                    u.role, 
+                    u.bio, 
+                    u.account_status,
+                    u.created_at,
+                    -- Đếm số công thức PUBLIC
+                    (SELECT COUNT(*) FROM Recipes r WHERE r.user_id = u.user_id AND r.status = 'public') as recipes_count,
+                    
+                    -- Đếm người theo dõi
+                    (SELECT COUNT(*) FROM Follows f WHERE f.following_id = u.user_id) as followers_count,
+                    
+                    -- Đếm số người đang theo dõi
+                    (SELECT COUNT(*) FROM Follows f WHERE f.follower_id = u.user_id) as following_count,
+
+                    -- [MỚI] Kiểm tra xem người xem (currentUserId) có đang follow user này không
+                    -- Trả về 1 nếu có, 0 nếu không. Nếu currentUserId null thì trả về 0.
+                    (SELECT COUNT(*) FROM Follows f2 WHERE f2.follower_id = ? AND f2.following_id = u.user_id) > 0 as is_following
+
+                FROM Users u 
+                WHERE u.user_id = ? AND u.account_status = 'active'
+            `;
+            
+            // Params: [currentUserId (cho subquery), id (cho where clause)]
+            const [rows] = await pool.execute(sql, [currentUserId, id]);
+            
+            if (!rows[0]) return null;
+            const user = rows[0];
+
+            return {
+                id: user.user_id,
+                fullName: user.full_name,
+                avatar: user.avatar || 'default.png',
+                bio: user.bio,
+                role: user.role,
+                // [MỚI] Trả về trạng thái follow
+                isFollowing: !!user.is_following, 
+                stats: {
+                    recipes: user.recipes_count || 0,
+                    followers: user.followers_count || 0,
+                    following: user.following_count || 0
+                },
+                joinDate: user.created_at
+            };
+        } catch (error) {
+            console.error('User Model FindPublic Error:', error);
+            throw error;
+        }
+    }
+
     static async findAuth (userId){
         const sql = "SELECT user_id, email, role, account_status FROM users WHERE user_id = ?";
         const [rows] = await pool.execute(sql, [userId]);
@@ -88,6 +143,28 @@ class User {
             throw error;
         }
     }
+
+    static async findByIdForUpdate(userId, connection) {
+        // FOR UPDATE sẽ khóa dòng này lại, các transaction khác phải chờ
+        const sql = `SELECT user_id, full_name, email, points, account_status FROM Users WHERE user_id = ? FOR UPDATE`;
+        const [rows] = await connection.execute(sql, [userId]);
+        return rows[0];
+    }
+
+    static async updatePoints(userId, amount, connection) {
+        // Sử dụng connection truyền vào (nếu có) hoặc dùng pool mặc định
+        const dbExec = connection || pool;
+        const sql = `UPDATE Users SET points = points + ? WHERE user_id = ?`;
+        const [result] = await dbExec.execute(sql, [amount, userId]);
+        return result.affectedRows > 0;
+    }
+
+    static async isUserActive(userId) {
+        const sql = `SELECT user_id FROM Users WHERE user_id = ? AND account_status = 'active'`;
+        const [rows] = await pool.execute(sql, [userId]);
+        return rows.length > 0;
+    }
+
 
     static async activateUser(userId) {
         try {
@@ -160,12 +237,13 @@ class User {
     }
 
     // Thêm đoạn này vào trong class User (trước dấu đóng '}')
-    static async searchUsers({ keyword, page = 1, limit = 10, sort = 'newest' }) {
+// [CẬP NHẬT] Hàm tìm kiếm user có check trạng thái follow
+    static async searchUsers({ keyword, page = 1, limit = 10, sort = 'newest', currentUserId = null }) {
         const offset = (page - 1) * limit;
         const kw = `%${keyword}%`;
 
         try {
-            // Query đếm tổng để phân trang
+            // Query đếm tổng
             const countSql = `
                 SELECT COUNT(*) as total 
                 FROM Users 
@@ -175,20 +253,22 @@ class User {
             const totalItems = countRows[0].total;
 
             // Xử lý Sort
-            let orderBy = 'u.created_at DESC'; // Default newest
+            let orderBy = 'u.created_at DESC'; 
             if (sort === 'oldest') orderBy = 'u.created_at ASC';
             if (sort === 'most_followed') orderBy = 'followers_count DESC';
 
-            // Query chính: Join bảng Follows để đếm số người theo dõi
+            // [MỚI] Thêm subquery check is_following
             const sql = `
                 SELECT 
                     u.user_id, 
                     u.full_name, 
                     u.email, 
                     u.avatar, 
-                    u.bio,
+                    u.bio, 
                     u.created_at,
-                    COUNT(f.follower_id) as followers_count
+                    COUNT(f.follower_id) as followers_count,
+                    -- Check trạng thái follow đối với currentUserId
+                    (SELECT COUNT(*) FROM Follows f2 WHERE f2.follower_id = ? AND f2.following_id = u.user_id) > 0 as is_following
                 FROM Users u
                 LEFT JOIN Follows f ON u.user_id = f.following_id
                 WHERE (u.full_name LIKE ? OR u.email LIKE ?) 
@@ -198,10 +278,17 @@ class User {
                 LIMIT ? OFFSET ?
             `;
 
-            const [users] = await pool.query(sql, [kw, kw, parseInt(limit), parseInt(offset)]);
+            // Params: [currentUserId, keyword, keyword, limit, offset]
+            const [users] = await pool.query(sql, [currentUserId, kw, kw, parseInt(limit), parseInt(offset)]);
+
+            // Map lại key cho chuẩn boolean
+            const formattedUsers = users.map(user => ({
+                ...user,
+                isFollowing: !!user.is_following // Chuyển 1/0 sang true/false
+            }));
 
             return {
-                users,
+                users: formattedUsers,
                 totalItems,
                 totalPages: Math.ceil(totalItems / limit),
                 currentPage: parseInt(page)
