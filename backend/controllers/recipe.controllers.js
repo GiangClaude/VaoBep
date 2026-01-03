@@ -256,7 +256,21 @@ const getRecipes = async(req, res) => {
             // ... (các filters khác)
         };
 
-        const {recipes, totalItems} = await RecipeModel.getRecipes(page, limit, filters);
+        // [THÊM] Logic lấy current User ID (Optional Auth)
+        let currentUserId = null;
+        
+        // Kiểm tra header Authorization xem có token không
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            try {
+                const token = req.headers.authorization.split(' ')[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET); // Đảm bảo đúng biến môi trường
+                currentUserId = decoded.user_id; // Hoặc decoded.id tùy cấu hình JWT của bạn
+            } catch (error) {
+                console.log("Token invalid or expired, treating as guest");
+            }
+        }
+
+        const {recipes, totalItems} = await RecipeModel.getRecipes(page, limit, filters, currentUserId);
 
         const pagination = paginationHelper.createPagination(page, limit, totalItems);
 
@@ -418,6 +432,40 @@ const changeRecipeStatus = async (req, res) => {
     }
 }
 
+const getSavedRecipes = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 12;
+        
+        // Nhận sortKey (time, like, rating) và sortOrder (asc, desc) từ query
+        const { sortKey, sortOrder } = req.query;
+
+        let currentUserId = null;
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            try {
+                const token = req.headers.authorization.split(' ')[1];
+                // Thay 'YOUR_SECRET_KEY' bằng process.env.JWT_SECRET thực tế của bạn
+                const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET); 
+                currentUserId = decoded.user_id;
+            } catch (e) { /* Token lỗi hoặc hết hạn thì coi như khách */ }
+        }
+
+
+        const result = await RecipeModel.getSavedRecipes(userId, sortKey, sortOrder, limit, page);
+
+        return res.status(200).json({
+            success: true,
+            message: "Lấy danh sách đã lưu thành công",
+            data: result.recipes,
+            pagination: paginationHelper.createPagination(page, limit, result.total)
+        });
+    } catch (error) {
+        console.error("Lỗi getSavedRecipes:", error.message);
+        return res.status(500).json({ success: false, message: "Lỗi server: " + error.message });
+    }
+};
+
 module.exports = {
     getRecipes,
     getRecentlyRecipes,
@@ -429,5 +477,6 @@ module.exports = {
     getOwnerRecipe, 
     getUserRecipe,
     getPreviewComments,
-    changeRecipeStatus
+    changeRecipeStatus,
+    getSavedRecipes
 }

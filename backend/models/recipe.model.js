@@ -423,7 +423,7 @@ class Recipe{
         }
     }
 
-static async getRecipes(page, limit, filters = {}) {
+static async getRecipes(page, limit, filters = {}, currentUserId = null) {
     const limitNum = parseInt(limit, 10) || 12;
     const pageNum = parseInt(page, 10) || 1;
     const skip = (pageNum - 1) * limitNum;
@@ -438,6 +438,16 @@ static async getRecipes(page, limit, filters = {}) {
             U.full_name AS author_name,
             U.avatar AS author_avatar,
             GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names
+            EXISTS(
+                    SELECT 1 FROM Likes L 
+                    WHERE L.post_id = R.recipe_id AND L.post_type = 'recipe' AND L.user_id = ?
+                ) as is_liked,
+
+                -- Kiểm tra đã Save chưa (Trả về 1 hoặc 0)
+            EXISTS(
+                    SELECT 1 FROM Saved_Posts S 
+                    WHERE S.post_id = R.recipe_id AND S.post_type = 'recipe' AND S.user_id = ?
+            ) as is_saved
         FROM Recipes AS R
         LEFT JOIN Users AS U ON R.user_id = U.user_id 
     `;
@@ -467,14 +477,19 @@ static async getRecipes(page, limit, filters = {}) {
 
         // --- DATA ---
         const finalQuery = selectFragment + allJoins + whereString + groupByString + orderLimitOffset;
-        const finalParams = [...filterParams, limitNum, skip];
+        const finalParams = [currentUserId,currentUserId, ...filterParams, limitNum, skip];
 
-        console.log(finalParams);
         
         const [result] = await pool.query(finalQuery, finalParams);
         
+        const formattedResult = result.map(row => ({
+                ...row,
+                is_liked: !!row.is_liked,
+                is_saved: !!row.is_saved
+            }));
+
         return {
-            recipes: result,
+            recipes: formattedResult,
             totalItems: totalItems
         };
     } catch (error) {
@@ -623,6 +638,67 @@ static async getRecipes(page, limit, filters = {}) {
             return result.affectedRows > 0;
         } catch (error) {
             console.error('Lỗi Model (updateStatus):', error);
+            throw error;
+        }
+    }
+
+    static async getSavedRecipes(userId, sortKey, sortOrder, limit = 10, page = 1) {
+        const offset = (page - 1) * limit;
+        
+        // Mapping sortKey sang tên cột trong DB
+        const sortMapping = {
+            'time': 'R.created_at',
+            'like': 'R.like_count',
+            'rating': 'R.rating_avg_score'
+        };
+
+        // Mặc định sắp xếp theo thời gian tạo giảm dần nếu không chọn gì
+        let orderByClause = 'ORDER BY R.created_at DESC';
+        
+        if (sortKey && sortMapping[sortKey] && sortOrder) {
+            const direction = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+            orderByClause = `ORDER BY ${sortMapping[sortKey]} ${direction}`;
+        }
+
+        try {
+            const sql = `
+                SELECT 
+                    R.*, 
+                    U.full_name AS author_name, 
+                    U.avatar AS author_avatar,
+                    (EXISTS(SELECT 1 FROM Likes WHERE post_id = R.recipe_id AND post_type = 'recipe' AND user_id = ?)) as is_liked,
+                (EXISTS(SELECT 1 FROM Saved_Posts WHERE post_id = R.recipe_id AND post_type = 'recipe' AND user_id = ?)) as is_saved
+                FROM Saved_Posts SP
+                JOIN Recipes R ON SP.post_id = R.recipe_id
+                JOIN Users U ON R.user_id = U.user_id
+                WHERE SP.user_id = ? AND SP.post_type = 'recipe'
+                ${orderByClause}
+                LIMIT ? OFFSET ?
+            `;
+
+            const [recipes] = await pool.execute(sql, [userId, userId, userId, limit.toString(), offset.toString()]);
+
+            const formattedRecipes = recipes.map(row => ({
+                ...row,
+                is_liked: Boolean(row.is_liked), // Hoặc !!row.is_liked
+                is_saved: Boolean(row.is_saved)
+            }));
+
+            // Đếm tổng số lượng để phân trang
+            const [countResult] = await pool.execute(
+                `SELECT COUNT(*) as total 
+                 FROM Saved_Posts SP 
+                 JOIN Recipes R ON SP.post_id = R.recipe_id
+                 WHERE SP.user_id = ? AND SP.post_type = 'recipe'`,
+                [userId]
+            );
+
+            return {
+                recipes: formattedRecipes,
+                total: countResult[0].total
+            };
+        } catch (error) {
+            console.error('Lỗi Model (getSavedRecipes):', error);
             throw error;
         }
     }
