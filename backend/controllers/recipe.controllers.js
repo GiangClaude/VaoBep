@@ -153,7 +153,6 @@ const updateRecipe = async(req, res) => {
             cook_time: finalCookTime,
             total_calo: finalTotalCalo,
             status: status || 'draft',
-            finalTags
         };
 
         // 5. Xử lý Ảnh Bìa (Nếu có upload ảnh mới)
@@ -170,7 +169,7 @@ const updateRecipe = async(req, res) => {
             quantity: item.amount || item.quantity // Frontend gửi amount, DB cần quantity
         }));
 
-        const result = await RecipeModel.update(recipeId, recipeData, mappedIngredients);
+        const result = await RecipeModel.update(recipeId, recipeData, mappedIngredients, finalTags);
 
         return res.status(200).json({
             success: true,

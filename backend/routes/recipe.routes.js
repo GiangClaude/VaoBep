@@ -5,13 +5,15 @@ const {protect} = require('../controllers/auth.controllers');
 
 const { v4: uuidv4 } = require('uuid');
 
-const uploadLocal = require('../config/multer.config');
+const upload = require('../config/multer.config');
+
 
 // Định nghĩa cấu hình upload
-const uploadRecipeImages = uploadLocal.fields([
+const uploadRecipeImages = upload.fields([
   { name: 'cover_image', maxCount: 1 },
   { name: 'result_images', maxCount: 10 }
 ]);
+
 
 // Đây là Middleware "Phát vé"
 const generateRecipeId = (req, res, next) => {
@@ -45,7 +47,7 @@ router.get('/:recipeId/preview-comments', recipeController.getPreviewComments);
 router.get('/:recipeId', recipeController.getRecipeById);
 
 
-router.put('/update/:recipeId', protect, recipeController.updateRecipe);
+router.put('/update/:recipeId', protect, uploadRecipeImages, recipeController.updateRecipe);
 
 router.patch('/status/:recipeId', protect, recipeController.changeRecipeStatus);
 

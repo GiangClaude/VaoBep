@@ -435,6 +435,7 @@ static async getRecipes(page, limit, filters = {}, currentUserId = null) {
     const selectFragment = `
         SELECT 
             R.*, 
+            U.user_id AS author_id,
             U.full_name AS author_name,
             U.avatar AS author_avatar,
             GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,

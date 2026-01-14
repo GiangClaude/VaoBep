@@ -44,7 +44,8 @@ class User {
                 (SELECT COUNT(*) FROM Follows f WHERE f.following_id = u.user_id) as followers_count,
                 
                 -- Đếm số bài đã lưu
-                (SELECT COUNT(*) FROM Saved_Posts s WHERE s.user_id = u.user_id) as saved_count -- Placeholder tạm thời
+                (SELECT COUNT(*) FROM Saved_Posts s WHERE s.user_id = u.user_id) as saved_count, -- Placeholder tạm thời
+                (SELECT COUNT(*) FROM Point_Transactions pt WHERE pt.user_id = u.user_id AND pt.type = 'checkin' AND DATE(pt.created_at) = CURRENT_DATE()) as is_checked_in
             FROM users u 
             WHERE u.user_id = ?
             `;
@@ -61,6 +62,8 @@ class User {
             avatar: user.avatar || 'default.png', // Xử lý fallback ở backend hoặc frontend đều được
             bio: user.bio,
             role: user.role, // 'user', 'vip', 'pro'
+            points: user.points,
+            isCheckedIn: !!user.is_checked_in,
             stats: {
                 recipes: user.recipes_count || 0,
                 saved: user.saved_count || 0,
