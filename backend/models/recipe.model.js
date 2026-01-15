@@ -423,81 +423,81 @@ class Recipe{
         }
     }
 
-static async getRecipes(page, limit, filters = {}, currentUserId = null) {
-    const limitNum = parseInt(limit, 10) || 12;
-    const pageNum = parseInt(page, 10) || 1;
-    const skip = (pageNum - 1) * limitNum;
+    static async getRecipes(page, limit, filters = {}, currentUserId = null) {
+        const limitNum = parseInt(limit, 10) || 12;
+        const pageNum = parseInt(page, 10) || 1;
+        const skip = (pageNum - 1) * limitNum;
 
-    const queryParts = buildRecipeQuery(filters);
-    const filterParams = queryParts.params || [];
+        const queryParts = buildRecipeQuery(filters);
+        const filterParams = queryParts.params || [];
 
-    // 1. SELECT: BỎ "comment_data" đi. Giữ lại ingredient_names để hiện preview
-    const selectFragment = `
-        SELECT 
-            R.*, 
-            U.user_id AS author_id,
-            U.full_name AS author_name,
-            U.avatar AS author_avatar,
-            GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,
-            EXISTS(
-                    SELECT 1 FROM Likes L 
-                    WHERE L.post_id = R.recipe_id AND L.post_type = 'recipe' AND L.user_id = ?
-                ) as is_liked,
+        // 1. SELECT: BỎ "comment_data" đi. Giữ lại ingredient_names để hiện preview
+        const selectFragment = `
+            SELECT 
+                R.*, 
+                U.user_id AS author_id,
+                U.full_name AS author_name,
+                U.avatar AS author_avatar,
+                GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,
+                EXISTS(
+                        SELECT 1 FROM Likes L 
+                        WHERE L.post_id = R.recipe_id AND L.post_type = 'recipe' AND L.user_id = ?
+                    ) as is_liked,
 
-                -- Kiểm tra đã Save chưa (Trả về 1 hoặc 0)
-            EXISTS(
-                    SELECT 1 FROM Saved_Posts S 
-                    WHERE S.post_id = R.recipe_id AND S.post_type = 'recipe' AND S.user_id = ?
-            ) as is_saved
-        FROM Recipes AS R
-        LEFT JOIN Users AS U ON R.user_id = U.user_id 
-    `;
+                    -- Kiểm tra đã Save chưa (Trả về 1 hoặc 0)
+                EXISTS(
+                        SELECT 1 FROM Saved_Posts S 
+                        WHERE S.post_id = R.recipe_id AND S.post_type = 'recipe' AND S.user_id = ?
+                ) as is_saved
+            FROM Recipes AS R
+            LEFT JOIN Users AS U ON R.user_id = U.user_id 
+        `;
 
-    // 2. JOIN: BỎ "LEFT JOIN Comments" và "LEFT JOIN Users Commenter"
-    const dataFetchJoins = `
-        LEFT JOIN Recipe_Ingredients RI_Data ON R.recipe_id = RI_Data.recipe_id
-        LEFT JOIN Ingredients I ON RI_Data.ingredient_id = I.ingredient_id
-    `;
+        // 2. JOIN: BỎ "LEFT JOIN Comments" và "LEFT JOIN Users Commenter"
+        const dataFetchJoins = `
+            LEFT JOIN Recipe_Ingredients RI_Data ON R.recipe_id = RI_Data.recipe_id
+            LEFT JOIN Ingredients I ON RI_Data.ingredient_id = I.ingredient_id
+        `;
 
-    const allJoins = queryParts.joinClauses.join(' ') + ' ' + dataFetchJoins;
-    const whereString = ' WHERE ' + queryParts.whereClauses.join(' AND ');
-    
-    // 3. GROUP BY: Bỏ U.full_name, U.avatar nếu server không bắt lỗi strict, 
-    // nhưng cứ để cho an toàn. Bỏ các trường comment.
-    const groupByString = ' GROUP BY R.recipe_id, U.full_name, U.avatar ';
-    const orderLimitOffset = ' ORDER BY R.created_at DESC LIMIT ? OFFSET ?';
-
-    try {
-        // --- COUNT ---
-        const countFragment = 'SELECT COUNT(DISTINCT R.recipe_id) AS total FROM Recipes AS R ';
-        const [countResult] = await pool.query(
-            countFragment + queryParts.joinClauses.join(' ') + whereString,
-            filterParams
-        );
-        const totalItems = Number(countResult[0]?.total || 0);
-
-        // --- DATA ---
-        const finalQuery = selectFragment + allJoins + whereString + groupByString + orderLimitOffset;
-        const finalParams = [currentUserId,currentUserId, ...filterParams, limitNum, skip];
-
+        const allJoins = queryParts.joinClauses.join(' ') + ' ' + dataFetchJoins;
+        const whereString = ' WHERE ' + queryParts.whereClauses.join(' AND ');
         
-        const [result] = await pool.query(finalQuery, finalParams);
-        
-        const formattedResult = result.map(row => ({
-                ...row,
-                is_liked: !!row.is_liked,
-                is_saved: !!row.is_saved
-            }));
+        // 3. GROUP BY: Bỏ U.full_name, U.avatar nếu server không bắt lỗi strict, 
+        // nhưng cứ để cho an toàn. Bỏ các trường comment.
+        const groupByString = ' GROUP BY R.recipe_id, U.full_name, U.avatar ';
+        const orderLimitOffset = ' ORDER BY R.created_at DESC LIMIT ? OFFSET ?';
 
-        return {
-            recipes: formattedResult,
-            totalItems: totalItems
-        };
-    } catch (error) {
-        console.error("Lỗi SQL getRecipes:", error);
-        throw error;
+        try {
+            // --- COUNT ---
+            const countFragment = 'SELECT COUNT(DISTINCT R.recipe_id) AS total FROM Recipes AS R ';
+            const [countResult] = await pool.query(
+                countFragment + queryParts.joinClauses.join(' ') + whereString,
+                filterParams
+            );
+            const totalItems = Number(countResult[0]?.total || 0);
+
+            // --- DATA ---
+            const finalQuery = selectFragment + allJoins + whereString + groupByString + orderLimitOffset;
+            const finalParams = [currentUserId,currentUserId, ...filterParams, limitNum, skip];
+
+            
+            const [result] = await pool.query(finalQuery, finalParams);
+            
+            const formattedResult = result.map(row => ({
+                    ...row,
+                    is_liked: !!row.is_liked,
+                    is_saved: !!row.is_saved
+                }));
+
+            return {
+                recipes: formattedResult,
+                totalItems: totalItems
+            };
+        } catch (error) {
+            console.error("Lỗi SQL getRecipes:", error);
+            throw error;
+        }
     }
-}
     static async getRecentlyRecipes(category, tag, limit = 10) {
         try {
             const sql = `
