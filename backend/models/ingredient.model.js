@@ -28,14 +28,21 @@ class Ingredient {
         return rows;
     }
 
-    static async getPendingIngredients() {
-        const query = `
+    static async getPendingIngredients(search = '') {
+        let query = `
             SELECT i.ingredient_id, i.name, i.status, c.calo_per_100g 
             FROM Ingredients i
             LEFT JOIN CaloForIngredients c ON i.ingredient_id = c.ingredient_id
             WHERE i.status = 'pending'
         `;
-        const [rows] = await pool.execute(query); // Sửa db.execute -> pool.execute
+        
+        const params = [];
+        if (search) {
+            query += ` AND i.name LIKE ?`;
+            params.push(`%${search}%`);
+        }
+        
+        const [rows] = await pool.execute(query, params);
         return rows;
     }
 

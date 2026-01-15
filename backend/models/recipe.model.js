@@ -643,7 +643,11 @@ class Recipe{
         }
     }
 
-    static async getAllRecipesForAdmin(limit, offset, search) {
+    static async getAllRecipesForAdmin(limit, offset, search, sortKey = 'created_at', sortOrder = 'DESC') {
+        const allowedSorts = ['title', 'created_at', 'total_calo', 'status'];
+        const orderBy = allowedSorts.includes(sortKey) ? `r.${sortKey}` : 'r.created_at';
+        const orderDir = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
         let query = `
             SELECT r.recipe_id, r.title, r.status, r.created_at, r.total_calo, 
                    u.full_name as author_name 
@@ -657,10 +661,20 @@ class Recipe{
             params.push(`%${search}%`);
         }
 
-        query += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
+        query += ` ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
         params.push(limit.toString(), offset.toString());
 
         const [rows] = await pool.execute(query, params);
+        return rows;
+    }
+
+    static async getRecipeStatusDistribution() {
+        const query = `
+            SELECT status, COUNT(*) as count 
+            FROM Recipes 
+            GROUP BY status
+        `;
+        const [rows] = await pool.execute(query);
         return rows;
     }
 
@@ -738,7 +752,43 @@ class Recipe{
         }
     }
 
+    static async getRecipeGrowthStats(days = 30) {
+        const query = `
+            SELECT DATE(created_at) as date, COUNT(*) as count 
+            FROM Recipes 
+            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `;
+        const [rows] = await pool.execute(query, [days]);
+        return rows;
+    }
 
+    static async adminUpdate(recipeId, { status, is_trust }) {
+        const updates = [];
+        const params = [];
+
+        if (status) {
+            updates.push('status = ?');
+            params.push(status);
+        }
+
+        // Kiểm tra is_trust có tồn tại (0 hoặc 1)
+        if (is_trust !== undefined && is_trust !== null) {
+            updates.push('is_trusted = ?');
+            params.push(is_trust);
+        }
+
+        updates.push('update_at = NOW()');
+
+        if (updates.length === 1) return true; // Không có gì update
+
+        const sql = `UPDATE Recipes SET ${updates.join(', ')} WHERE recipe_id = ?`;
+        params.push(recipeId);
+
+        const [result] = await pool.execute(sql, params);
+        return result.affectedRows > 0;
+    }
     
 }
 

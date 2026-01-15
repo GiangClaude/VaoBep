@@ -361,8 +361,13 @@ class User {
     }
 
     //Admin
-    static async getAllUsers(limit, offset, search) {
-        let query = `SELECT user_id, full_name, email, role, account_status, created_at FROM Users`;
+    static async getAllUsers(limit, offset, search, sortKey = 'created_at', sortOrder = 'DESC') {
+        // Whitelist các cột được phép sort để tránh SQL Injection
+        const allowedSorts = ['full_name', 'email', 'created_at', 'role', 'points'];
+        const orderBy = allowedSorts.includes(sortKey) ? sortKey : 'created_at';
+        const orderDir = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+        let query = `SELECT user_id, full_name, email, role, account_status, points, created_at FROM Users`;
         let params = [];
         
         if (search) {
@@ -370,9 +375,9 @@ class User {
             params.push(`%${search}%`, `%${search}%`);
         }
         
-        query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+        // Dynamic Order By
+        query += ` ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
         
-        // Lưu ý: limit và offset cần parse sang int hoặc string số
         params.push(limit.toString(), offset.toString());
         
         const [rows] = await pool.execute(query, params);
@@ -396,6 +401,56 @@ class User {
         return result;
     }
 
+    static async getUserGrowthStats(days = 7) {
+        const query = `
+            SELECT DATE(created_at) as date, COUNT(*) as count 
+            FROM Users 
+            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `;
+        const [rows] = await pool.execute(query, [days]);
+        return rows;
+    }
+
+    static async getUserRoleDistribution() {
+        const query = `
+            SELECT role, COUNT(*) as count 
+            FROM Users 
+            GROUP BY role
+        `;
+        const [rows] = await pool.execute(query);
+        return rows;
+    }
+
+
+    static async adminUpdateUser(userId, { role, status }) {
+        // Chỉ update nếu giá trị hợp lệ được truyền vào
+        let updates = [];
+        let params = [];
+
+        if (role) {
+            updates.push('role = ?');
+            params.push(role);
+        }
+        
+        if (status) {
+            updates.push('account_status = ?');
+            params.push(status);
+        }
+
+        // Luôn update thời gian
+        updates.push('update_at = NOW()');
+
+        // Nếu không có gì để update
+        if (updates.length === 1) return true; 
+
+        const sql = `UPDATE Users SET ${updates.join(', ')} WHERE user_id = ?`;
+        params.push(userId);
+
+        const [result] = await pool.execute(sql, params);
+        return result.affectedRows > 0;
+    }
 
 }
 

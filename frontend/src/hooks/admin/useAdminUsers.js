@@ -8,15 +8,20 @@ const useAdminUsers = () => {
     const [search, setSearch] = useState('');
 
     // Hàm lấy danh sách user
-    const fetchUsers = useCallback(async (page = 1, limit = 10, keyword = '') => {
+    const fetchUsers = useCallback(async (page = 1, limit = 10, keyword = '', sortKey = 'created_at', sortOrder = 'DESC') => {
         try {
             setLoading(true);
-            const response = await adminApi.getUsers({ page, limit, search: keyword });
-            // API trả về: { users: [...], pagination: {...} } (theo Backend đã sửa ở User Controller)
-            // Hoặc { data: [...], pagination: {...} } (theo Backend Admin Controller)
-            // Cần check lại AdminController trả về key nào. 
-            // AdminController.getUsers trả về: { data: users, pagination: ... }
             
+            // Truyền đủ 5 tham số xuống API
+            const response = await adminApi.getUsers({ 
+                page, 
+                limit, 
+                search: keyword,
+                sortKey,   // [MỚI]
+                sortOrder  // [MỚI]
+            });
+            
+            // AdminController trả về: { data: users, pagination: ... }
             const { data, pagination: pagingData } = response.data;
             setUsers(data || []);
             setPagination(pagingData);
@@ -46,6 +51,29 @@ const useAdminUsers = () => {
         }
     };
 
+    const getUser = async (userId) => {
+        try {
+            const response = await adminApi.getUserDetail(userId);
+            return response.data.data; // Trả về object user
+        } catch (err) {
+            console.error("Get User Detail Error:", err);
+            throw err;
+        }
+    };
+
+    const updateUser = async (userId, updateData) => {
+        try {
+            await adminApi.updateUser(userId, updateData);
+            // Cập nhật lại list local để không cần fetch lại
+            setUsers(prev => prev.map(u => 
+                u.user_id === userId ? { ...u, ...updateData } : u
+            ));
+            return true;
+        } catch (err) {
+            throw err;
+        }
+    };
+
     // Hàm tạo user
     const createUser = async (userData) => {
         try {
@@ -65,6 +93,8 @@ const useAdminUsers = () => {
         fetchUsers, 
         toggleStatus, 
         createUser,
+        getUser,      // Export
+        updateUser,
         setSearch // Để component search update state này
     };
 };

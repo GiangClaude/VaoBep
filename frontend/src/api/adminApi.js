@@ -32,8 +32,22 @@ const adminApi = {
         return apiClient.get('/admin/recipes', { params });
     },
 
-    hideRecipe: (recipeId) => {
-        return apiClient.put(`/admin/recipes/${recipeId}/hide`);
+    getRecipeDetail: (id) => apiClient.get(`/admin/recipes/${id}`),
+    
+    createRecipe: (formData) => {
+        // Gửi FormData (có file)
+        return apiClient.post('/admin/recipes', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+
+    updateRecipe: (id, data) => {
+        // data: { status, is_trust }
+        return apiClient.put(`/admin/recipes/${id}`, data);
+    },
+
+    hideRecipe: (recipeId, status) => {
+        return apiClient.put(`/admin/recipes/${recipeId}/hide`, { status });
     },
 
     // 4. Quản lý Nguyên liệu (Pending)
@@ -54,7 +68,17 @@ const adminApi = {
     processReport: (data) => {
         // data: { report_id, action: 'hide_content' | 'ignore', post_id, post_type }
         return apiClient.post('/admin/reports/process', data);
-    }
+    },
+
+    getUserDetail: (userId) => {
+        return apiClient.get(`/admin/users/${userId}`);
+    },
+
+    // [THÊM MỚI]
+    updateUser: (userId, data) => {
+        // data: { role, account_status }
+        return apiClient.put(`/admin/users/${userId}`, data);
+    },
 };
 
 export default adminApi;
