@@ -141,8 +141,8 @@ export default function RecipesListPage() {
     {/* Nội dung danh sách */}
     {recipes.length === 0 && !loading ? (
         <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0}}
+        animate={{ opacity: 1 }}
         className="bg-white rounded-[25px] shadow-lg p-12 text-center border-2 border-dashed border-gray-200"
         >
         <div className="text-6xl mb-4">🔍</div>
@@ -158,7 +158,7 @@ export default function RecipesListPage() {
             {recipes.map((recipe, index) => (
             <motion.div
                 key={recipe.recipeId || index}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0}}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className="relative mt-4"

@@ -67,7 +67,7 @@ export function RecipeCard({
           y: isHovered ? -8 : 0
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="cursor-pointer flex-shrink-0 relative"
+        className="cursor-pointer flex-shrink-0 relative mb-4"
         style={{ 
           minWidth: isHovered ? "640px" : "320px", 
           zIndex: isHovered ? 50 : 1,
@@ -156,7 +156,7 @@ export function RecipeCard({
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4 text-[#ff6b35]" />
-                    <span>{servings} người</span>
+                    <span>{servings}</span>
                   </div>
                 </div>
               </div>

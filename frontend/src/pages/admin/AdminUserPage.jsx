@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Search, UserPlus, Eye, PenLine, Lock, Unlock, Users } from 'lucide-react'; // [MỚI]
 import useAdminUsers from '../../hooks/admin/useAdminUsers';
 import AdminTable from '../../component/admin/AdminTable';
 import StatusBadge from '../../component/admin/StatusBadge';
@@ -110,103 +111,125 @@ const AdminUserPage = () => {
         }
     };
 
-    // [CẤU HÌNH CỘT] Cố định độ rộng tại đây
+// [CẤU HÌNH CỘT]
     const columns = [
-        { label: 'Tên', key: 'full_name', sortable: true, className: 'w-[20%]' }, 
-        { label: 'Email', key: 'email', sortable: true, className: 'w-[25%]' },    
-        { label: 'Vai trò', key: 'role', sortable: true, className: 'w-[10%]' },  
+        { label: 'Người dùng', key: 'full_name', sortable: true, className: 'w-[30%]' }, 
+        { label: 'Vai trò', key: 'role', sortable: true, className: 'w-[15%]' },  
         { label: 'Ngày tham gia', key: 'created_at', sortable: true, className: 'w-[15%]' },
         { label: 'Trạng thái', key: 'account_status', sortable: true, className: 'w-[15%]' },
-        { label: 'Hành động', key: 'actions', sortable: false, className: 'w-[15%]' },
+        { label: 'Hành động', key: 'actions', sortable: false, className: 'w-[25%]' },
     ];
 
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Quản lý Người dùng</h1>
-                <div className="flex gap-2">
-                    <input 
-                        type="text" 
-                        placeholder="Tìm theo tên/email..." 
-                        className="border rounded px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={searchTerm}
-                        onChange={handleSearchChange}
-                    />
+        <div className="space-y-6">
+            {/* HEADER TOOLBAR */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-100 rounded-lg text-[#ff6b35]">
+                        <Users size={24} />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">Quản lý Người dùng</h1>
+                        <p className="text-sm text-gray-500">Danh sách tài khoản hệ thống</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-3 w-full sm:w-auto">
+                    {/* Search Input */}
+                    <div className="relative flex-1 sm:w-64">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm tên, email..." 
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-100 focus:border-orange-200 focus:ring-4 focus:ring-orange-50 outline-none transition-all text-sm font-medium text-gray-700 placeholder-gray-400"
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                        />
+                    </div>
+                    
+                    {/* Add Button */}
                     <button 
                         onClick={openCreateModal}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center"
+                        className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] hover:shadow-lg hover:shadow-orange-200 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:scale-95 shrink-0"
                     >
-                        <span className="mr-1">+</span> Thêm mới
+                        <UserPlus size={18} />
+                        <span className="hidden sm:inline">Thêm mới</span>
                     </button>
                 </div>
             </div>
 
-            {/* [UX CẢI TIẾN] Luôn render bảng, truyền loading vào trong */}
+            {/* TABLE */}
             <AdminTable 
                 columns={columns}
                 pagination={pagination}
                 onPageChange={(page) => loadData(searchTerm, page, sortConfig.key, sortConfig.order)}
                 onSort={handleSort}
                 currentSort={sortConfig}
-                loading={loading} // Truyền state loading vào đây
+                loading={loading}
             >
                 {users.map(user => (
-                    <tr key={user.user_id} className="hover:bg-gray-50 transition-colors">
-                        {/* Thêm class truncate để cắt chữ nếu quá dài, giữ khung bảng cố định */}
-                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm truncate" title={user.full_name}>
-                            <span className="font-medium text-gray-900">{user.full_name}</span>
+                    <tr key={user.user_id} className="group hover:bg-orange-50/30 transition-colors border-b border-gray-100 last:border-none">
+                        {/* User Info Column */}
+                        <td className="px-5 py-4">
+                            <div className="flex flex-col">
+                                <span className="font-bold text-gray-800 text-sm truncate" title={user.full_name}>{user.full_name}</span>
+                                <span className="text-xs text-gray-500 truncate" title={user.email}>{user.email}</span>
+                            </div>
                         </td>
-                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm truncate" title={user.email}>
-                            {user.email}
-                        </td>
-                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                user.role === 'pro' ? 'bg-blue-100 text-blue-800' : 
-                                'bg-gray-100 text-gray-600'
+
+                        {/* Role Column */}
+                        <td className="px-5 py-4">
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                                user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                user.role === 'pro' ? 'bg-blue-50 text-blue-700 border-blue-100' : 
+                                'bg-gray-50 text-gray-600 border-gray-100'
                             }`}>
                                 {user.role.toUpperCase()}
                             </span>
                         </td>
-                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+
+                        {/* Date Column */}
+                        <td className="px-5 py-4 text-sm text-gray-600 font-medium">
                             {new Date(user.created_at).toLocaleDateString('vi-VN')}
                         </td>
-                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+
+                        {/* Status Column */}
+                        <td className="px-5 py-4">
                             <StatusBadge status={user.account_status} />
                         </td>
-                        <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                            <div className="flex items-center space-x-2">
-                                {/* Nút Xem Chi Tiết */}
+
+                        {/* Actions Column */}
+                        <td className="px-5 py-4">
+                            <div className="flex items-center gap-2 opacity-100 sm:opacity-100 sm:group-hover:opacity-100 transition-opacity">
                                 <button 
                                     onClick={() => openViewModal(user)}
-                                    className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                                    className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                                     title="Xem chi tiết"
                                 >
-                                    👁️
+                                    <Eye size={16} />
                                 </button>
 
-                                {/* Nút Sửa (Chỉ hiện nếu không phải Admin hoặc là chính mình) */}
                                 {user.role !== 'admin' && (
                                     <button 
                                         onClick={() => openEditModal(user)}
-                                        className="text-yellow-600 hover:bg-yellow-50 p-1 rounded"
-                                        title="Chỉnh sửa quyền"
+                                        className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                                        title="Chỉnh sửa"
                                     >
-                                        ✏️
+                                        <PenLine size={16} />
                                     </button>
                                 )}
 
-                                {/* Nút Khóa (Giữ nguyên) */}
                                 {user.role !== 'admin' && (
                                     <button 
                                         onClick={() => onBlockClick(user)}
-                                        className={`text-xs font-semibold px-2 py-1 rounded border transition-colors ${
+                                        className={`p-2 rounded-lg transition-colors ${
                                             user.account_status === 'active' 
-                                            ? 'text-red-600 bg-red-50 border-red-200 hover:bg-red-100' 
-                                            : 'text-green-600 bg-green-50 border-green-200 hover:bg-green-100'
+                                            ? 'text-red-600 bg-red-50 hover:bg-red-100' 
+                                            : 'text-green-600 bg-green-50 hover:bg-green-100'
                                         }`}
+                                        title={user.account_status === 'active' ? 'Khóa tài khoản' : 'Mở khóa'}
                                     >
-                                        {user.account_status === 'active' ? 'Khóa' : 'Mở'}
+                                        {user.account_status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
                                     </button>
                                 )}
                             </div>
@@ -215,12 +238,13 @@ const AdminUserPage = () => {
                 ))}
             </AdminTable>
 
+            {/* MODALS */}
             <ConfirmModal 
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onConfirm={confirmBlock}
                 title={selectedUser?.account_status === 'active' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
-                message={`Bạn có chắc muốn ${selectedUser?.account_status === 'active' ? 'KHÓA' : 'MỞ KHÓA'} người dùng ${selectedUser?.full_name}?`}
+                message={`Bạn có chắc muốn ${selectedUser?.account_status === 'active' ? 'KHÓA' : 'MỞ KHÓA'} người dùng ${selectedUser?.full_name}? Hành động này sẽ ảnh hưởng đến quyền truy cập của họ.`}
                 isDanger={selectedUser?.account_status === 'active'}
                 confirmText={selectedUser?.account_status === 'active' ? 'Khóa ngay' : 'Mở khóa'}
             />

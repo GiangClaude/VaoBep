@@ -13,7 +13,7 @@ export function ViewMoreCard() {
       onMouseLeave={() => setIsHovered(false)}
       whileHover={{ y: -8, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className="cursor-pointer flex-shrink-0 w-80"
+      className="cursor-pointer flex-shrink-0 w-80 h-[330px]"
       onClick={() => navigate('/recipes')}
     >
       <div className="bg-gradient-to-br from-[#ff6b35] to-[#f7931e] rounded-[25px] overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-full flex items-center justify-center relative group">

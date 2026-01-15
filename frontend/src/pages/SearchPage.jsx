@@ -200,9 +200,9 @@ export default function SearchPage() {
   const RecipeGrid = ({ data }) => {
     if (data.length === 0) return <EmptyState text="Không tìm thấy món ăn nào" />;
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
         {data.map((recipe) => (
-          <div key={recipe.recipe_id} className="relative z-0">
+          <div key={recipe.recipe_id} className="hover:z-50 transition-all duration-200">
              <RecipeCard 
               // 1. Truyền ID
                   id={recipe.recipe_id}

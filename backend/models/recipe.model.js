@@ -5,7 +5,7 @@ const pool = db.pool;
 const { v4: uuidv4 } = require('uuid');
 
 const FEATURE_CRITERIA = {
-    MIN_LIKES: 1000,
+    MIN_LIKES: 2,
     MAX_REPORTS: 2,
     MIN_AVG_RATING: 4.0,
     TIME_FRAME_DAYS: 7 // 7 ngày gần nhất
