@@ -50,15 +50,22 @@ export const useLogin = () => {
         // Gọi API lấy thông tin user
         const userData = await authApi.getMe(token);
 
+        let finalUser = null;
+          if (userData && userData.success) {
+              finalUser = userData.data;
+          } else {
+              finalUser = userData;
+          }
+
         // Cập nhật Context
-        if (userData && userData.success) {
-          setCurrentUser(userData.data);
-        } else {
-          setCurrentUser(userData);
-        }
+        setCurrentUser(finalUser);
 
         // Chuyển trang
-        navigate('/homepage');
+        if (finalUser && finalUser.role === 'admin') {
+            navigate('/admin/dashboard'); // Chuyển sang Admin nếu là admin
+        } else {
+            navigate('/homepage');        // Chuyển sang Homepage nếu là user thường
+        }
 
       } catch (error) {
         // Xử lý lỗi

@@ -7,6 +7,9 @@ import { AuthProvider, useAuth } from './AuthContext';
 import Header from './component/common/Header';
 import { Footer } from './component/common/Footer';
 
+import AdminLayout from './component/admin/AdminLayout';
+import AdminRoute from './component/admin/AdminRoute';
+
 // Các Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -17,6 +20,12 @@ import RecipeDetailPage from './pages/RecipeDetailPage';
 import RecipesListPage from './pages/RecipesListPage';
 import SearchPage from './pages/SearchPage';
 import UserProfilePage from './pages/UserProfilePage';
+
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminUserPage from './pages/admin/AdminUserPage';
+import AdminRecipePage from './pages/admin/AdminRecipePage';
+import AdminIngredientPage from './pages/admin/AdminIngredientPage';
+import AdminReportPage from './pages/admin/AdminReportPage';
 
 // Layout chính
 const MainLayout = () => {
@@ -31,15 +40,12 @@ const MainLayout = () => {
   );
 };
 
-// [SỬA LỖI] Component bảo vệ Route (Dùng useAuth thay vì props truyền xuống)
 const ProtectedRoute = () => {
   const { currentUser } = useAuth(); // Lấy từ Context
   if (!currentUser) return <Navigate to="/login" replace />;
   return <Outlet />;
 };
 
-// [SỬA LỖI] Logic tương tự cho ProtectedLayout (nếu bạn còn dùng)
-// Lưu ý: Code cũ bạn viết `const user = useAuth()` là sai, phải destructuring `{ currentUser }`
 const ProtectedLayout = () => {
   const { currentUser } = useAuth(); 
   if (!currentUser) {
@@ -48,8 +54,6 @@ const ProtectedLayout = () => {
   return <Outlet />;
 }
 
-// [THÊM MỚI] Component xử lý chuyển hướng trang chủ (Route "/")
-// Lý do: App không thể gọi useAuth() vì App nằm ngoài AuthProvider
 const IndexRedirect = () => {
   const { currentUser } = useAuth();
   return currentUser ? <Navigate to="/homepage" replace /> : <Navigate to="/login" replace />;
@@ -82,8 +86,23 @@ function App() {
               </Route>
             </Route>
 
+            <Route element={<AdminRoute />}>
+                <Route path="/admin" element={<AdminLayout />}>
+                    {/* Redirect /admin -> /admin/dashboard */}
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    
+                    <Route path="dashboard" element={<AdminDashboardPage />} />
+                    <Route path="users" element={<AdminUserPage />} />
+                    <Route path="recipes" element={<AdminRecipePage />} />
+                    <Route path="ingredients" element={<AdminIngredientPage />} />
+                    <Route path="reports" element={<AdminReportPage />} />
+                </Route>
+            </Route>
+
             {/* Root Route - Dùng component con để xử lý */}
             <Route path="/" element={<IndexRedirect />} />
+            
+            <Route path="*" element={<Navigate to="/" replace />} />
             
           </Routes>
       </BrowserRouter>
