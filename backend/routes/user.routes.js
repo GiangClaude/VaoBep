@@ -16,4 +16,6 @@ router.post('/points/gift', protect, userController.giftPoints);
 
 router.get('/:id', userController.getUserProfile);
 
+
+
 module.exports = router;

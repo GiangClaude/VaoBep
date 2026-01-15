@@ -91,7 +91,7 @@ export default function RecipesListPage() {
 
   return (
     <div className="min-h-screen bg-[#fff9f0]">
-      <main className="container mx-auto px-4 py-8">
+      <main className="w-full max-w-[1920px] mx-auto px-4 lg:px-6 py-8">
         {/* Breadcrumb & Title */}
         <div className="mb-8">
          <button
@@ -114,20 +114,20 @@ export default function RecipesListPage() {
         {/* Layout: Filter + Recipes Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Filter Sidebar - Left */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 xl:col-span-2">
             {/* Đã sửa tên prop handleFilterChange -> onFilterChange */}
             <RecipeFilter onFilterChange={onFilterChange} />
           </div>
 
           {/* Recipes Grid - Right */}
-          <div className="lg:col-span-9">
+          <div className="lg:col-span-9 xl:col-span-10">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-[#7d5a3f]">
                 Hiển thị trang <span className="font-bold text-[#ff6b35]">{pagination.page}</span> / {pagination.totalPages}
               </p>
             </div>
 
-<div className="lg:col-span-9 relative min-h-[500px]">
+<div className="lg:col-span-3 relative min-h-[500px]">
 
     {/* Loading Overlay - Hiện đè lên khi đang loading */}
     {loading && (
@@ -154,14 +154,14 @@ export default function RecipesListPage() {
     ) : (
         <>
         {/* Grid Recipe */}
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-3 transition-opacity duration-300 ${loading ? 'opacity-40' : 'opacity-100'}`}>
+        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-1 transition-opacity duration-300 ${loading ? 'opacity-40' : 'opacity-100'}`}>
             {recipes.map((recipe, index) => (
             <motion.div
                 key={recipe.recipeId || index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="relative"
+                className="relative mt-4"
             >
                 <RecipeCard 
                     // 1. ID & Thông tin cơ bản

@@ -12,6 +12,16 @@ class User {
         return result.insertId;
     }
 
+    static async createWithRole({id, full_name, email, passwordHash, role, otp, otpExpires }) {
+        // Lưu ý: account_status để là 'pending' để bắt buộc xác thực email
+        const [result] = await pool.execute(
+            'INSERT INTO users (user_id, full_name, email, password, role, account_status, verification_otp, otp_expires_at) VALUES (?,?, ?, ?, ?, ?, ?, ?)',
+            [id, full_name, email, passwordHash, role, 'pending', otp, otpExpires]
+        );
+        
+        return result;
+    }
+
     static async findByEmail(email) {
         try {
             const [rows] = await pool.execute(
@@ -349,6 +359,43 @@ class User {
             throw error;
         }
     }
+
+    //Admin
+    static async getAllUsers(limit, offset, search) {
+        let query = `SELECT user_id, full_name, email, role, account_status, created_at FROM Users`;
+        let params = [];
+        
+        if (search) {
+            query += ` WHERE full_name LIKE ? OR email LIKE ?`;
+            params.push(`%${search}%`, `%${search}%`);
+        }
+        
+        query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+        
+        // Lưu ý: limit và offset cần parse sang int hoặc string số
+        params.push(limit.toString(), offset.toString());
+        
+        const [rows] = await pool.execute(query, params);
+        return rows;
+    }
+
+    static async countUsers(search) {
+        let query = `SELECT COUNT(*) as total FROM Users`;
+        let params = [];
+        if (search) {
+            query += ` WHERE full_name LIKE ? OR email LIKE ?`;
+            params.push(`%${search}%`, `%${search}%`);
+        }
+        const [rows] = await pool.execute(query, params); // Sửa db.execute -> pool.execute
+        return rows[0].total;
+    }
+
+    static async updateStatus(userId, status){
+        const query = `UPDATE Users SET account_status = ? WHERE user_id = ?`;
+        const [result] = await pool.execute(query, [status, userId]); // Sửa db.execute -> pool.execute
+        return result;
+    }
+
 
 }
 

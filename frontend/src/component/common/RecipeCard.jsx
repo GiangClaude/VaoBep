@@ -28,7 +28,8 @@ export function RecipeCard({
   calories = 350,
   createdAt = "Chưa có dữ liệu",
   commentCount = 0,
-  onClick
+  onClick,
+  expandDirection = "right"
 }) {
 
   const [isHovered, setIsHovered] = useState(false);
@@ -169,7 +170,8 @@ export function RecipeCard({
                 opacity: isHovered ? 1 : 0
               }}
               transition={{ duration: 0.3 }}
-              className="overflow-hidden border-l border-[#ffc857]/30"
+              className={`overflow-hidden border-l border-[#ffc857]/30 bg-white flex-shrink-0 
+                ${expandDirection === 'left' ? 'order-first border-r border-l-0' : ''}`}
             >
               <div className="p-4 h-full flex flex-col w-80">
                 <div className="mb-2">

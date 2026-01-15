@@ -27,6 +27,35 @@ class Ingredient {
         const [rows] = await pool.execute(sql, recipeIds);
         return rows;
     }
+
+    static async getPendingIngredients() {
+        const query = `
+            SELECT i.ingredient_id, i.name, i.status, c.calo_per_100g 
+            FROM Ingredients i
+            LEFT JOIN CaloForIngredients c ON i.ingredient_id = c.ingredient_id
+            WHERE i.status = 'pending'
+        `;
+        const [rows] = await pool.execute(query); // Sửa db.execute -> pool.execute
+        return rows;
+    }
+
+    // 2. Duyệt hoặc Từ chối nguyên liệu
+    static async updateStatus(id, status){
+        const query = `UPDATE Ingredients SET status = ? WHERE ingredient_id = ?`;
+        const [result] = await pool.execute(query, [status, id]); // Sửa db.execute -> pool.execute
+        return result;
+    }
+    
+    // 3. Cập nhật Calo (Admin sửa lại calo cho đúng trước khi duyệt)
+   static async updateCalo(id, calo) {
+        const query = `
+            INSERT INTO CaloForIngredients (ingredient_id, calo_per_100g) 
+            VALUES (?, ?) 
+            ON DUPLICATE KEY UPDATE calo_per_100g = ?
+        `;
+        const [result] = await pool.execute(query, [id, calo, calo]); // Sửa db.execute -> pool.execute
+        return result;
+    }
 }
 
 module.exports = Ingredient;

@@ -643,6 +643,40 @@ class Recipe{
         }
     }
 
+    static async getAllRecipesForAdmin(limit, offset, search) {
+        let query = `
+            SELECT r.recipe_id, r.title, r.status, r.created_at, r.total_calo, 
+                   u.full_name as author_name 
+            FROM Recipes r
+            JOIN Users u ON r.user_id = u.user_id
+        `;
+        let params = [];
+
+        if (search) {
+            query += ` WHERE r.title LIKE ? `;
+            params.push(`%${search}%`);
+        }
+
+        query += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
+        params.push(limit.toString(), offset.toString());
+
+        const [rows] = await pool.execute(query, params);
+        return rows;
+    }
+
+    // 2. [SỬA LỖI] Đếm tổng số recipe
+    static async countAllRecipes(search) {
+        let query = `SELECT COUNT(*) as total FROM Recipes`;
+        let params = [];
+        if (search) {
+            query += ` WHERE title LIKE ?`;
+            params.push(`%${search}%`);
+        }
+        const [rows] = await pool.execute(query, params); // Sửa db.execute -> pool.execute
+        return rows[0].total;
+    }
+
+
     static async getSavedRecipes(userId, sortKey, sortOrder, limit = 10, page = 1) {
         const offset = (page - 1) * limit;
         

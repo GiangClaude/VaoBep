@@ -362,6 +362,125 @@ const getUserProfile = async (req, res) => {
     }
 }
 
+//Admin 
+
+const getAllUsers = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const offset = (page - 1) * limit;
+        
+        // Query đếm tổng số lượng để phân trang
+        const countQuery = `SELECT COUNT(*) as total FROM Users WHERE full_name LIKE ? OR email LIKE ?`;
+        const [totalResult] = await db.promise().query(countQuery, [`%${search}%`, `%${search}%`]);
+        const total = totalResult[0].total;
+
+        // Query lấy dữ liệu
+        const query = `
+            SELECT user_id, full_name, email, role, account_status, points, created_at 
+            FROM Users 
+            WHERE full_name LIKE ? OR email LIKE ?
+            ORDER BY created_at DESC 
+            LIMIT ? OFFSET ?`;
+        
+        const [users] = await db.promise().query(query, [`%${search}%`, `%${search}%`, parseInt(limit), parseInt(offset)]);
+
+        res.status(200).json({
+            users,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error retrieving users' });
+    }
+};
+
+// 2. Xem chi tiết User (UC0060)
+const getUserDetailAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Lấy thông tin user
+        const userQuery = `SELECT user_id, full_name, email, avatar, bio, role, account_status, points, created_at FROM Users WHERE user_id = ?`;
+        const [users] = await db.promise().query(userQuery, [id]);
+        
+        if (users.length === 0) return res.status(404).json({ message: 'User not found' });
+
+        // Lấy thống kê phụ (Số bài đăng, số báo cáo bị nhận)
+        const statsQuery = `
+            SELECT 
+                (SELECT COUNT(*) FROM Recipes WHERE user_id = ?) as total_recipes,
+                (SELECT COUNT(*) FROM Article_Posts WHERE user_id = ?) as total_articles,
+                (SELECT COUNT(*) FROM Reports WHERE post_id IN (SELECT recipe_id FROM Recipes WHERE user_id = ?)) as total_reports_received
+        `;
+        const [stats] = await db.promise().query(statsQuery, [id, id, id]);
+
+        res.status(200).json({
+            user: users[0],
+            stats: stats[0]
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error retrieving user detail' });
+    }
+};
+
+// 3. Khóa/Mở khóa User (UC0059)
+const updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body; // 'active' hoặc 'blocked'
+
+        if (!['active', 'blocked'].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status' });
+        }
+
+        await db.promise().query(`UPDATE Users SET account_status = ? WHERE user_id = ?`, [status, id]);
+        
+        res.status(200).json({ message: `User status updated to ${status}` });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user status' });
+    }
+};
+
+// 4. Tạo tài khoản mới (UC0061)
+const createUserAdmin = async (req, res) => {
+    try {
+        const { full_name, email, password, role } = req.body;
+
+        // Validate cơ bản
+        if (!email || !password || !full_name) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Check email tồn tại
+        const [existing] = await db.promise().query(`SELECT email FROM Users WHERE email = ?`, [email]);
+        if (existing.length > 0) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
+
+        // Hash mật khẩu tạm
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Insert vào DB
+        const query = `
+            INSERT INTO Users (full_name, email, password, role, account_status) 
+            VALUES (?, ?, ?, ?, 'active')`;
+        
+        await db.promise().query(query, [full_name, email, hashedPassword, role || 'user']);
+
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error creating user' });
+    }
+};
+
+
+
 
 module.exports = {
     updatePassword,
@@ -371,5 +490,9 @@ module.exports = {
     dailyCheckIn,
     getPointHistory,
     giftPoints,
-    getUserProfile
+    getUserProfile,
+    getAllUsers,
+    getUserDetailAdmin,
+    updateUserStatus,
+    createUserAdmin
 }
