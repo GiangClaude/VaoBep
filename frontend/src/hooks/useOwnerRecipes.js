@@ -49,26 +49,26 @@ export const useOwnerRecipes = () => {
              }
         }
 
-        // C. Xử lý Ingredients (chuỗi -> mảng)
-        let ingredientsArray = [];
-        if (recipe.ingredient_names) {
-            ingredientsArray = recipe.ingredient_names.split(',');
-        } else {
-            ingredientsArray = ["Đang cập nhật nguyên liệu..."];
-        }
+        // // C. Xử lý Ingredients (chuỗi -> mảng)
+        // let ingredientsArray = [];
+        // if (recipe.ingredient_names) {
+        //     ingredientsArray = recipe.ingredient_names.split(',');
+        // } else {
+        //     ingredientsArray = ["Đang cập nhật nguyên liệu..."];
+        // }
 
         // D. Xử lý Comments
-        let commentsArray = [];
-        if (recipe.comment_data) {
-            const rawComments = recipe.comment_data.split('|||');
-            commentsArray = rawComments.map(str => {
-                const parts = str.split(':::'); 
-                return {
-                    user: parts[0] || "Ẩn danh", 
-                    text: parts[1] || ""        
-                };
-            });
-        }
+        // let commentsArray = [];
+        // if (recipe.comment_data) {
+        //     const rawComments = recipe.comment_data.split('|||');
+        //     commentsArray = rawComments.map(str => {
+        //         const parts = str.split(':::'); 
+        //         return {
+        //             user: parts[0] || "Ẩn danh", 
+        //             text: parts[1] || ""        
+        //         };
+        //     });
+        // }
 
         return {
           id: recipe.recipe_id, 
@@ -85,8 +85,7 @@ export const useOwnerRecipes = () => {
           calories: recipe.total_calo || 0,
           steps: 5, 
           createdAt: new Date(recipe.created_at).toLocaleDateString('vi-VN'),
-          comments: commentsArray,
-          ingredients: ingredientsArray 
+          commentCount: recipe.comment_count || 0,
         };
       });
 

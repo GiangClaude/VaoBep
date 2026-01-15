@@ -17,6 +17,7 @@ export function MyRecipesTab({
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
+  console.log(recipes);
   // [2] State quản lý Modal
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
@@ -253,7 +254,7 @@ export function MyRecipesTab({
                     </div>
                     <div className="flex items-center gap-1">
                       <MessageCircle className="w-4 h-4 text-gray-500" />
-                      <span>{recipe.comments ? recipe.comments.length : 0}</span>
+                      <span>{recipe.commentCount}</span>
                     </div>
                   </div>
 

@@ -278,12 +278,10 @@ export default function ProfilePage() {
   const handleSubmitRecipe = async (data) => {
     try {
       if (editingRecipe) {
-        console.log("Updating recipe:", editingRecipe.recipe_id, data);
         // A. Logic Update
         await updateExistingRecipe(editingRecipe.recipe_id, data);
       } else {
         // B. Logic Create
-        console.log("Creating new recipe:", data);
         await createNewRecipe(data);
 
         setCurrentUser((prevUser) => ({
@@ -299,10 +297,14 @@ export default function ProfilePage() {
       refetch();
 
     } catch (error) {
+      console.error("❌ LỖI CHI TIẾT:", error);
+      
+      // Nếu lỗi có stack trace, in ra luôn
+      if (error.stack) console.error("📍 Vị trí lỗi:", error.stack);
       alert(`❌ Có lỗi xảy ra: ${error.message}`);
     }
   
-    setIsCreateModalOpen(false); 
+    //setIsCreateModalOpen(false); 
   };
 
   const handleCheckIn = async () => {

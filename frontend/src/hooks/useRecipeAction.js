@@ -41,11 +41,7 @@ export function useCreateRecipe() {
 
       // 4. Xử lý Các bước (Steps)
       // Vì Database hiện tại chỉ có cột `instructions` (TEXT), 
-      // tui sẽ gộp mô tả các bước thành 1 đoạn văn bản.
-      const instructionsText = data.steps
-          .map((step, index) => `Bước ${index + 1}: ${step.description}`)
-          .join('\n\n');
-      formData.append('instructions', instructionsText);
+      formData.append('steps', JSON.stringify(data.steps));
       
 
       // 5. Gọi API
@@ -81,7 +77,7 @@ export function useCreateRecipe() {
             
             // Xử lý Ingredients & Steps (chuyển sang JSON string)
             formData.append('ingredients', JSON.stringify(data.ingredients));
-            formData.append('instructions', data.steps.map(s => s.description).join('\n\n')); // Hoặc gửi mảng steps tùy backend
+            formData.append('steps', data.steps.map(s => s.description).join('\n\n')); // Hoặc gửi mảng steps tùy backend
 
             // Xử lý Ảnh: Chỉ gửi nếu người dùng có chọn file mới
             if (data.coverImageFile) {
@@ -109,6 +105,24 @@ export function useCreateRecipe() {
       const response = await recipeApi.getRecipeById(recipeId);
       const dbData = response.data.data; // Dữ liệu thô từ DB
 
+      let parsedSteps = [];
+      if (dbData.instructions) {
+          try {
+              // Thử parse JSON
+              const jsonSteps = JSON.parse(dbData.instructions);
+              if (Array.isArray(jsonSteps)) {
+                  parsedSteps = jsonSteps;
+              }
+          } catch (e) {
+              // Nếu lỗi parse (do là dữ liệu cũ dạng text), ta split dòng
+              parsedSteps = dbData.instructions.split('\n\n').map((desc, index) => ({
+                  id: `old-step-${index}`,
+                  description: desc.replace(/^Bước \d+: /, ''), // Xóa prefix "Bước X:" nếu có
+                  image: ""
+              }));
+          }
+      }
+      
       // LOGIC MAPPING: Chuyển từ DB format -> Form format
       const formattedData = {
           recipe_id: dbData.recipe_id, // Giữ lại ID để biết đang sửa cái nào

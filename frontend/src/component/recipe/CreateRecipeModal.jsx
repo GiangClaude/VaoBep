@@ -116,71 +116,58 @@ useEffect(() => {
     });
   };
 
-// const handleSubmit = (status) => {
-//     // 1. Khởi tạo FormData (Bắt buộc để gửi file ảnh)
-//     const submitData = new FormData();
+// [THAY THẾ TOÀN BỘ HÀM handleSubmit CŨ]
+const handleSubmit = (status) => {
+  // 1. Chuẩn bị dữ liệu Tags an toàn
+  const safeTags = Array.isArray(formData.tags) ? formData.tags : [];
 
-//     // --- A. Append các trường văn bản cơ bản ---
-//     submitData.append("title", formData.title);
-//     submitData.append("description", formData.description);
-//     submitData.append("servings", formData.servings);
-//     submitData.append("cook_time", Number(formData.cookTime) || 60); // Lưu ý: Backend dùng key 'cook_time'
-//     submitData.append("total_calo", formData.totalCalo);
-//     submitData.append("status", status);
-
-//     // --- B. Append Nguyên liệu (Ingredients) ---
-//     // Vì FormData chỉ nhận string, ta phải chuyển mảng object thành chuỗi JSON
-//     // Backend sẽ dùng JSON.parse(req.body.ingredients) để đọc lại
-//     submitData.append("ingredients", JSON.stringify(formData.ingredients));
-
-//     // --- C. Append Các bước (Instructions) ---
-//     // Backend đang lưu instructions dạng Text dài, nên ta nối các bước lại
-//     const instructionsString = formData.steps.map(s => s.description).join("\n\n");
-//     submitData.append("instructions", instructionsString);
-
-//     // --- D. Append Tags (MỚI) ---
-//     // Chỉ lấy mảng các tag_id gửi lên server
-//     // Ví dụ gửi lên: '["tag-uuid-1", "tag-uuid-2"]'
-//     const tagIds = formData.tags.map(t => t.tag_id);
-//     submitData.append("tags", JSON.stringify(tagIds)); 
-
-//     // --- E. Append File Ảnh Bìa (Cover Image) ---
-//     // Quan trọng: Chỉ append nếu người dùng có chọn file mới (formData.coverImageFile khác null)
-//     if (formData.coverImageFile) {
-//         submitData.append("cover_image", formData.coverImageFile);
-//     }
-
-//     // 3. Gửi FormData về hàm cha (nơi gọi API)
-//     onSubmit(submitData);
-//     onClose();
-//   };
-
-  const handleSubmit = (status) => {
-    // CHỈNH SỬA: Không tạo FormData ở đây nữa.
-    // Gom dữ liệu thành object thuần (Plain Object) để gửi sang Hook.
-    
-    // Defensive coding: Đảm bảo tags luôn là mảng
-    const safeTags = Array.isArray(formData.tags) ? formData.tags : [];
-
-    const submitData = {
-        title: formData.title,
-        description: formData.description,
-        servings: formData.servings,
-        cookTime: Number(formData.cookTime) || 60,
-        totalCalo: formData.totalCalo,
-        status: status,
-        ingredients: formData.ingredients,
-        steps: formData.steps,
-        tags: safeTags, // Gửi nguyên object tag (Hook sẽ tự map ra tag_id)
-        
-        // Ảnh: gửi file nếu có file mới, hoặc gửi null
-        coverImageFile: formData.coverImageFile
-    };
-
-    // Gửi Object về hàm cha (nơi gọi API)
-    onSubmit(submitData);
-    onClose();
+  // 2. Gom dữ liệu vào một Object bình thường
+  // Lưu ý: Ta truyền nguyên file object (coverImageFile) để Hook xử lý sau
+  const submitData = {
+      title: formData.title,
+      description: formData.description || "",
+      servings: formData.servings,
+      cookTime: Number(formData.cookTime) || 60,
+      totalCalo: formData.totalCalo || 0,
+      status: status,
+      ingredients: formData.ingredients,
+      steps: formData.steps,
+      tags: safeTags, 
+      
+      // Truyền file ảnh gốc (nếu có)
+      coverImageFile: formData.coverImageFile
   };
+
+  // 3. Gửi Object này sang Hook (useRecipeAction)
+  onSubmit(submitData);
+  onClose();
+};
+  // const handleSubmit = (status) => {
+  //   // CHỈNH SỬA: Không tạo FormData ở đây nữa.
+  //   // Gom dữ liệu thành object thuần (Plain Object) để gửi sang Hook.
+    
+  //   // Defensive coding: Đảm bảo tags luôn là mảng
+  //   const safeTags = Array.isArray(formData.tags) ? formData.tags : [];
+
+  //   const submitData = {
+  //       title: formData.title,
+  //       description: formData.description,
+  //       servings: formData.servings,
+  //       cookTime: Number(formData.cookTime) || 60,
+  //       totalCalo: formData.totalCalo,
+  //       status: status,
+  //       ingredients: formData.ingredients,
+  //       steps: formData.steps,
+  //       tags: safeTags, // Gửi nguyên object tag (Hook sẽ tự map ra tag_id)
+        
+  //       // Ảnh: gửi file nếu có file mới, hoặc gửi null
+  //       coverImageFile: formData.coverImageFile
+  //   };
+
+  //   // Gửi Object về hàm cha (nơi gọi API)
+  //   onSubmit(submitData);
+  //   onClose();
+  // };
 
   const isEditing = !!initialData;
 

@@ -22,13 +22,25 @@ const createRecipe = async (req, res) => {
             totalCalo, // Backup
             ingredients, 
             instructions,
-            tags
+            tags,
+            steps
         } = req.body;
         
         const finalCookTime = cook_time || cookTime || 60;
         const finalTotalCalo = total_calo || totalCalo || 0;
         const finalServings = servings || 1;
         let finalTags = [];
+        let finalInstructions = instructions;
+
+        if (steps) {
+            // Nếu steps là object/array (gửi qua JSON body), ta stringify
+            if (typeof steps === 'object') {
+                finalInstructions = JSON.stringify(steps);
+            } else {
+                // Nếu steps là string (gửi qua FormData), ta giữ nguyên (giả định Frontend đã stringify đúng)
+                finalInstructions = steps;
+            }
+        }
 
         if (tags) {
         try {
@@ -70,7 +82,7 @@ const createRecipe = async (req, res) => {
             userId,
             title,
             description,
-            instructions,
+            instructions: finalInstructions,
             coverImage: coverImageName,
             servings: finalServings,
             cookTime: finalCookTime,
@@ -117,7 +129,8 @@ const updateRecipe = async(req, res) => {
             ingredients, 
             instructions,
             status,
-            tags
+            tags,
+            steps
         } = req.body;
 
         // Chuẩn hóa dữ liệu số
@@ -125,6 +138,15 @@ const updateRecipe = async(req, res) => {
         const finalTotalCalo = totalCalo || total_calo || 0;
         const finalServings = servings || 1;
         let finalTags = null;
+
+        let finalInstructions = instructions;
+        if (steps) {
+             if (typeof steps === 'object') {
+                finalInstructions = JSON.stringify(steps);
+            } else {
+                finalInstructions = steps;
+            }
+        }
 
         if (tags !== undefined) {
          try {
@@ -141,14 +163,14 @@ const updateRecipe = async(req, res) => {
                 return res.status(400).json({ message: "Dữ liệu nguyên liệu lỗi format" });
             }
         } else {
-            ingredientsList = ingredients; // Trường hợp gửi JSON raw (ít gặp nếu dùng FormData)
+            ingredientsList = ingredients || []; // Trường hợp gửi JSON raw (ít gặp nếu dùng FormData)
         }
 
         // 4. Gom dữ liệu để update bảng Recipes
         const recipeData = {
             title,
             description,
-            instructions,
+            instructions: finalInstructions,
             servings: finalServings,
             cook_time: finalCookTime,
             total_calo: finalTotalCalo,
@@ -163,7 +185,7 @@ const updateRecipe = async(req, res) => {
 
         // 6. Gọi Model
         // Lưu ý: Mapping field amount -> quantity để khớp với Model bên dưới
-        const mappedIngredients = ingredientsList.map(item => ({
+        const mappedIngredients = (ingredientsList || []).map(item => ({
             name: item.name,
             unit: item.unit, // Gửi tên đơn vị xuống Model
             quantity: item.amount || item.quantity // Frontend gửi amount, DB cần quantity
