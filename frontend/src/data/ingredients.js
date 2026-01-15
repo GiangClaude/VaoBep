@@ -1,0 +1,51 @@
+// Mock data cho nguyên liệu có sẵn trong hệ thống
+export const availableIngredients = [
+  { id: "ing-001", name: "Thịt gà", category: "protein" },
+  { id: "ing-002", name: "Thịt bò", category: "protein" },
+  { id: "ing-003", name: "Thịt heo", category: "protein" },
+  { id: "ing-004", name: "Tôm", category: "seafood" },
+  { id: "ing-005", name: "Cá hồi", category: "seafood" },
+  { id: "ing-006", name: "Mực", category: "seafood" },
+  { id: "ing-007", name: "Gạo", category: "grain" },
+  { id: "ing-008", name: "Mì ý", category: "grain" },
+  { id: "ing-009", name: "Bánh mì", category: "grain" },
+  { id: "ing-010", name: "Cà chua", category: "vegetable" },
+  { id: "ing-011", name: "Hành tây", category: "vegetable" },
+  { id: "ing-012", name: "Tỏi", category: "vegetable" },
+  { id: "ing-013", name: "Ớt", category: "vegetable" },
+  { id: "ing-014", name: "Cà rốt", category: "vegetable" },
+  { id: "ing-015", name: "Khoai tây", category: "vegetable" },
+  { id: "ing-016", name: "Bông cải xanh", category: "vegetable" },
+  { id: "ing-017", name: "Nước mắm", category: "seasoning" },
+  { id: "ing-018", name: "Nước tương", category: "seasoning" },
+  { id: "ing-019", name: "Dầu ô liu", category: "seasoning" },
+  { id: "ing-020", name: "Đường", category: "seasoning" },
+  { id: "ing-021", name: "Muối", category: "seasoning" },
+  { id: "ing-022", name: "Tiêu", category: "seasoning" },
+  { id: "ing-023", name: "Mật ong", category: "seasoning" },
+  { id: "ing-024", name: "Sữa tươi", category: "dairy" },
+  { id: "ing-025", name: "Bơ", category: "dairy" },
+  { id: "ing-026", name: "Phô mai", category: "dairy" },
+  { id: "ing-027", name: "Trứng gà", category: "protein" },
+  { id: "ing-028", name: "Húng quế", category: "herb" },
+  { id: "ing-029", name: "Ngò rí", category: "herb" },
+  { id: "ing-030", name: "Rau mùi", category: "herb" }
+];
+
+// Đơn vị đo lường
+export const availableUnits = [
+  { id: "unit-001", name: "gram", abbreviation: "g" },
+  { id: "unit-002", name: "kilogram", abbreviation: "kg" },
+  { id: "unit-003", name: "millilit", abbreviation: "ml" },
+  { id: "unit-004", name: "lít", abbreviation: "l" },
+  { id: "unit-005", name: "muỗng canh", abbreviation: "tbsp" },
+  { id: "unit-006", name: "muỗng cà phê", abbreviation: "tsp" },
+  { id: "unit-007", name: "chén", abbreviation: "cup" },
+  { id: "unit-008", name: "củ", abbreviation: "củ" },
+  { id: "unit-009", name: "quả", abbreviation: "quả" },
+  { id: "unit-010", name: "con", abbreviation: "con" },
+  { id: "unit-011", name: "miếng", abbreviation: "miếng" },
+  { id: "unit-012", name: "lát", abbreviation: "lát" },
+  { id: "unit-013", name: "nhánh", abbreviation: "nhánh" },
+  { id: "unit-014", name: "ít", abbreviation: "ít" }
+];
