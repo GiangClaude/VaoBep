@@ -82,7 +82,7 @@ export function SavedRecipeTab() {
                   rating={recipe.rating_avg_score}
                   cookTime={`${recipe.cook_time} phút`}
                   servings={recipe.servings}
-                    ingredients={recipe.ingredients}
+                  ingredients={recipe.ingredients}
 
                   // Các thông tin phụ nếu backend trả về, hoặc để mặc định
                   isLiked = {recipe.is_liked}
