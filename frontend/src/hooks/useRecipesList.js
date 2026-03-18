@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiClient from '../api';
-
+import recipeApi from '../api/recipeApi';
+import { normalizeRecipeList } from '../utils/normalizeRecipe'; // Hàm chuẩn hóa dữ liệu
 // Định nghĩa Base URL cho ảnh — trỏ tới backend nơi static files được serve
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -31,43 +32,44 @@ export default function useRecipesList({ initialRecipes = [] } = {}) {
     return `${API_BASE_URL}/${folder}/${id}/${filename}`;
   };
 
-  const normalizeRecipe = (data) => {
-    // console.log('Raw recipe data from API:', data);
-    return data.map(item => {
-      let parsedComments = [];
-      if (item.comment_data) {
-        parsedComments = item.comment_data.split('|||').map(str => {
-          const parts = str.split(':::');
-          return { 
-             user: parts[0] || "Ẩn danh", 
-             text: parts[1] || "" 
-          };
-        });
-      }
+  // const normalizeRecipe = (data) => {
+  //   // console.log('Raw recipe data from API:', data);
+  //   return data.map(item => {
+  //     let parsedComments = [];
+  //     if (item.comment_data) {
+  //       parsedComments = item.comment_data.split('|||').map(str => {
+  //         const parts = str.split(':::');
+  //         return { 
+  //            user: parts[0] || "Ẩn danh", 
+  //            text: parts[1] || "" 
+  //         };
+  //       });
+  //     }
 
-      return {
-        ...item,
-        id: item.recipe_id || item.id,
-        title: item.title,
-        image: getImageUrl('public/recipes', item.recipe_id, item.cover_image, '/recipe_default.png'),
-        cookTime: item.cook_time ? `${item.cook_time} phút` : null,
-        calories: item.total_calo ? `${item.total_calo} kcal` : null,
-        servings: item.servings || null,
-        rating: item.rating_avg_score ? parseFloat(item.rating_avg_score).toFixed(1) : null,
-        likes: item.like_count || 0,
-        userName: item.author_name || "Ẩn danh",
-        userAvatar: getImageUrl('public/user', item.user_id, item.author_avatar, '/avatar_default.png'),
-        createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : '',
-        commentCount: parsedComments.length || item.comment_count || 0,
-        comments: parsedComments,
-        ingredients: item.ingredient_names ? item.ingredient_names.split(',') : [],
-        steps: 0,
-        liked: item.is_liked !== undefined && item.is_liked !== null ? Boolean(item.is_liked) : undefined,
-        
-        saved: item.is_saved !== undefined && item.is_saved !== null ? Boolean(item.is_saved) : undefined, // Backend trả về is_saved
-      }
-    });
-  };
+  //     //console.log('Parsed comments for recipe ID', item.title, ':', item.is_liked, item.is_saved); // Log để check is_liked và is_saved 
+
+  //     return {
+  //       ...item,
+  //       id: item.recipe_id || item.id,
+  //       title: item.title,
+  //       image: getImageUrl('public/recipes', item.recipe_id, item.cover_image, '/recipe_default.png'),
+  //       cookTime: item.cook_time ? `${item.cook_time} phút` : null,
+  //       calories: item.total_calo ? `${item.total_calo} kcal` : null,
+  //       servings: item.servings || null,
+  //       rating: item.rating_avg_score ? parseFloat(item.rating_avg_score).toFixed(1) : null,
+  //       likes: item.like_count || 0,
+  //       userName: item.author_name || "Ẩn danh",
+  //       userAvatar: getImageUrl('public/user', item.user_id, item.author_avatar, '/avatar_default.png'),
+  //       createdAt: item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : '',
+  //       commentCount: parsedComments.length || item.comment_count || 0,
+  //       comments: parsedComments,
+  //       ingredients: item.ingredient_names ? item.ingredient_names.split(',') : ["Đang cập nhật nguyên liệu..."],
+  //       steps: 0,
+  //       liked: item.is_liked !== undefined && item.is_liked !== null ? Boolean(item.is_liked) : undefined,   
+  //       saved: item.is_saved !== undefined && item.is_saved !== null ? Boolean(item.is_saved) : undefined, // Backend trả về is_saved
+  //     }
+  //   });
+  // };
 
   // --- SỬA LỖI Ở ĐÂY ---
   // Hàm fetchRecipes nhận tham số filter mới nhất
@@ -90,16 +92,19 @@ export default function useRecipesList({ initialRecipes = [] } = {}) {
 
       // console.log('Calling API with params:', params); 
 
-      const resp = await apiClient.get('/recipes', { 
-        params,
-        headers: token ? { Authorization: `Bearer ${token}` } : {} 
-      });
+      // const resp = await apiClient.get('/recipes', { 
+      //   params,
+      //   headers: token ? { Authorization: `Bearer ${token}` } : {} 
+      // });
+
+      const resp = await recipeApi.getAllRecipes(params); // Sử dụng hàm API đã định nghĩa trong recipeApi.js
       
       const responseData = resp.data?.data || [];
+      console.log('API response data:', responseData); // Log để check dữ liệu thô từ API
       const paginationData = resp.data?.pagination || {};
 
-      const normalizedData = normalizeRecipe(responseData);
-
+      const normalizedData = normalizeRecipeList(responseData);
+      console.log('Normalized recipe data:', normalizedData); // Log để check dữ liệu sau khi chuẩn hóa
       setRecipes(normalizedData);
       setPagination(prev => ({
         ...prev,

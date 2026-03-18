@@ -1,4 +1,6 @@
 const InteractionModel = require('../models/interaction.model');
+const RecipeModel = require('../models/recipe.model');
+const { validateReportInput } = require('../utils/validation');
 
 // Helper: Kiểm tra input postType
 const isValidPostType = (type) => ['recipe', 'article', 'dish'].includes(type);
@@ -127,7 +129,42 @@ const getInteractionState = async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: "Lỗi Server: " + err.message });
     }
-}
+};
+
+// 7. Báo cáo bài viết (Report)
+const reportPost = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { postId, postType, reason } = req.body;
+
+        let authorId = "";
+
+        if (postType === "recipe") {
+            const recipe = await RecipeModel.findById(postId);
+            authorId = recipe?.user_id;
+        }
+        // console.log(`Info: ${authorId} - ${postType} - ${postId}`);
+        if (authorId === userId) {
+            return res.status(400).json({ message: "Bạn không thể báo cáo bài viết của chính mình." });
+        }
+        // Validate input
+        const validation = validateReportInput({ postId, postType, reason });
+        if (!validation.valid) {
+            return res.status(400).json({ message: validation.message });
+        }
+
+        // Gọi model để ghi nhận báo cáo
+        const result = await InteractionModel.reportPost({ userId, postId, postType, reason });
+
+        res.status(201).json({
+            success: true,
+            message: 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.',
+            data: result
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Lỗi Server: ' + err.message });
+    }
+};
 
 module.exports = {
     toggleLike,
@@ -136,5 +173,6 @@ module.exports = {
     getComments,
     ratePost,
     followUser,
-    getInteractionState
+    getInteractionState,
+    reportPost
 };

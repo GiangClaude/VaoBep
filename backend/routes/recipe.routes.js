@@ -52,6 +52,7 @@ router.put('/update/:recipeId', protect, uploadRecipeImages, recipeController.up
 router.patch('/status/:recipeId', protect, recipeController.changeRecipeStatus);
 
 router.delete('/delete/:recipeId',protect, recipeController.deleteRecipe);
-// Thêm dòng này trước module.exports
+
+router.get('/search/simple', protect, recipeController.searchSimpleRecipes);
 
 module.exports = router;

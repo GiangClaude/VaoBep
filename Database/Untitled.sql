@@ -55,7 +55,7 @@ CREATE TABLE `Dictionary_Dishes` (
 
 CREATE TABLE `Likes` (
   `user_id` varchar(255) NOT NULL,
-  `post_id` varchar(255) NOT NULL COMMENT 'FK to Recipes, Article_Posts, or Dictionary_Dishes',
+  `post_id` varchar(255) NOT NULL COMMENT 'Recipes, Article_Posts, or Dictionary_Dishes',
   `post_type` ENUM ('recipe', 'article', 'dish') NOT NULL,
   `created_at` timestamp DEFAULT (now()),
   PRIMARY KEY (`user_id`, `post_id`, `post_type`)
@@ -64,7 +64,7 @@ CREATE TABLE `Likes` (
 CREATE TABLE `Comments` (
   `comment_id` varchar(255) PRIMARY KEY DEFAULT (uuid()),
   `user_id` varchar(255) NOT NULL,
-  `post_id` varchar(255) NOT NULL COMMENT 'FK to Recipes, Article_Posts, or Dictionary_Dishes',
+  `post_id` varchar(255) NOT NULL COMMENT 'Recipes, Article_Posts, or Dictionary_Dishes',
   `post_type` ENUM ('recipe', 'article', 'dish') NOT NULL,
   `content` text NOT NULL,
   `created_at` timestamp DEFAULT (now()),
@@ -73,7 +73,7 @@ CREATE TABLE `Comments` (
 
 CREATE TABLE `Ratings` (
   `user_id` varchar(255) NOT NULL,
-  `post_id` varchar(255) NOT NULL COMMENT 'FK to Recipes, Article_Posts, or Dictionary_Dishes',
+  `post_id` varchar(255) NOT NULL COMMENT ' Recipes, Article_Posts, or Dictionary_Dishes',
   `post_type` ENUM ('recipe', 'article', 'dish') NOT NULL,
   `score` int NOT NULL COMMENT 'Score from 1 to 5',
   PRIMARY KEY (`user_id`, `post_id`)
@@ -82,7 +82,7 @@ CREATE TABLE `Ratings` (
 CREATE TABLE `Reports` (
   `report_id` varchar(255) PRIMARY KEY DEFAULT (uuid()),
   `reporter_user_id` varchar(255) NOT NULL,
-  `post_id` varchar(255) NOT NULL COMMENT 'FK to various content tables or Users',
+  `post_id` varchar(255) NOT NULL COMMENT 'various content tables or Users',
   `post_type` ENUM ('recipe', 'article', 'dish') NOT NULL,
   `reason` text NOT NULL,
   `status` ENUM ('pending', 'resolved') NOT NULL DEFAULT 'pending',
@@ -425,37 +425,11 @@ ALTER TABLE `Ratings` ADD FOREIGN KEY (`user_id`) REFERENCES `Users` (`user_id`)
 
 ALTER TABLE `Ratings` ADD FOREIGN KEY (`post_id`) REFERENCES `Recipes` (`recipe_id`);
 
-ALTER TABLE `Ratings` ADD FOREIGN KEY (`post_id`) REFERENCES `Article_Posts` (`article_id`);
-
-ALTER TABLE `Ratings` ADD FOREIGN KEY (`post_id`) REFERENCES `Dictionary_Dishes` (`dish_id`);
-
-ALTER TABLE `Reports` ADD FOREIGN KEY (`reporter_user_id`) REFERENCES `Users` (`user_id`);
-
 ALTER TABLE `Recipe_Post_Links` ADD FOREIGN KEY (`source_recipe_id`) REFERENCES `Recipes` (`recipe_id`);
 
 ALTER TABLE `tag_post` ADD FOREIGN KEY (`tag_id`) REFERENCES `Tags` (`tag_id`);
 
-ALTER TABLE `tag_post` ADD FOREIGN KEY (`post_id`) REFERENCES `Recipes` (`recipe_id`);
-
-ALTER TABLE `tag_post` ADD FOREIGN KEY (`post_id`) REFERENCES `Article_Posts` (`article_id`);
-
-ALTER TABLE `tag_post` ADD FOREIGN KEY (`post_id`) REFERENCES `Dictionary_Dishes` (`dish_id`);
-
-ALTER TABLE `Comments` ADD FOREIGN KEY (`post_id`) REFERENCES `Dictionary_Dishes` (`dish_id`);
-
-ALTER TABLE `Comments` ADD FOREIGN KEY (`post_id`) REFERENCES `Recipes` (`recipe_id`);
-
-ALTER TABLE `Comments` ADD FOREIGN KEY (`post_id`) REFERENCES `Article_Posts` (`article_id`);
-
-ALTER TABLE `Reports` ADD FOREIGN KEY (`post_id`) REFERENCES `Recipes` (`recipe_id`);
-
-ALTER TABLE `Reports` ADD FOREIGN KEY (`post_id`) REFERENCES `Dictionary_Dishes` (`dish_id`);
-
-ALTER TABLE `Reports` ADD FOREIGN KEY (`post_id`) REFERENCES `Article_Posts` (`article_id`);
-
 ALTER TABLE `Likes` ADD FOREIGN KEY (`user_id`) REFERENCES `Users` (`user_id`);
 
 -- Khóa ngoại liên kết với các bảng nội dung (Nội dung nào được like)
-ALTER TABLE `Likes` ADD FOREIGN KEY (`post_id`) REFERENCES `Recipes` (`recipe_id`);
-ALTER TABLE `Likes` ADD FOREIGN KEY (`post_id`) REFERENCES `Article_Posts` (`article_id`);
-ALTER TABLE `Likes` ADD FOREIGN KEY (`post_id`) REFERENCES `Dictionary_Dishes` (`dish_id`);
+-- Khóa ngoại liên kết với các bảng nội dung (Nội dung nào được like)

@@ -1,7 +1,11 @@
 import { BookOpen, ArrowRight } from "lucide-react";
 import ArticleCard from "../common/ArticleCard";
+import {useNavigate, Link} from 'react-router-dom';
 
 export default function ArticleSection({ articles }) {
+  const navigate = useNavigate();
+  const goToArticle = (id) => navigate(`/article/${id}`);
+  console.log("ArticleSection - articles: ", articles);
   return (
     <section className="mb-12">
       {/* Section Header */}
@@ -27,17 +31,21 @@ export default function ArticleSection({ articles }) {
 
       {/* Articles Grid */}
       <div className="grid grid-cols-1 gap-4">
-        {articles.slice(0, 3).map((article) => (
+        {articles.slice(0, 3).map((a) => (
           <ArticleCard
-            key={article.id}
-            image={article.image}
-            title={article.title}
-            author={article.author}
-            date={article.date}
-            readTime={article.readTime}
-            excerpt={article.excerpt}
-            category={article.category}
-          />
+            id={a.id}
+            author = {a.author}
+            authorAvatar={a.authorAvatar}
+            date={a.date}
+            readTime={a.readTime}
+            title={a.title}
+            excerpt={a.excerpt}
+            image={a.image}
+            tags={a.rawTags || a.tags || []}
+            // category={a.category}
+            commentCount={a.commentCount}
+            onClick={() => goToArticle(a.id)}
+            />
         ))}
       </div>
     </section>

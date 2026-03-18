@@ -54,7 +54,7 @@ export default function Modal({
 
           {/* Body */}
           <div className="px-5 pb-4">
-            <p className="text-gray-600 leading-relaxed">{message}</p>
+            <div className="text-gray-600 leading-relaxed">{message}</div>
           </div>
 
           {/* Footer Actions */}

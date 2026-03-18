@@ -42,6 +42,13 @@ const interactionApi = {
         return response;
     },
 
+    // 7. Báo cáo bài viết (Report)
+    reportPost: async (postId, reason, postType = 'recipe') => {
+        const payload = { postId: String(postId), postType, reason };
+        const response = await apiClient.post('/interaction/report', payload);
+        return response;
+    },
+
     followUser: async (followingId) => {
         // Backend yêu cầu body: { followingId: "..." }
         const response = await apiClient.post('/interaction/follow', { followingId });

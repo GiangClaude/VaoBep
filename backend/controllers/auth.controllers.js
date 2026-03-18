@@ -112,9 +112,9 @@ const protect = async (req, res, next) => {
             }
 
             
-            req.user = await UserModel.findAuth(decoded.id);
-            console.log('User gán vào req.user:', req.user);
-
+            const fetchedUser = await UserModel.findAuth(decoded.id);
+            req.user = Array.isArray(fetchedUser) ? fetchedUser[0] : fetchedUser;
+            
             if (!req.user) {
                 return res.status(401).json({ message: 'User không còn tồn tại.' });
             }

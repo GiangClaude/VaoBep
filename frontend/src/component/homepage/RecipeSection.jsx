@@ -7,7 +7,7 @@ import { ViewMoreCard } from "./ViewMoreCard"; // Đảm bảo đường dẫn n
 export function RecipeSection({ title, recipes, onRecipeClick ,onViewMoreClick}) {
   const scrollContainerRef = useRef(null);
 
-  console.log("RecipeSection: ", recipes);
+  // console.log("RecipeSection: ", recipes);
   const scroll = (direction) => {
     if (scrollContainerRef.current) {
       const scrollAmount = 400;
@@ -94,8 +94,8 @@ export function RecipeSection({ title, recipes, onRecipeClick ,onViewMoreClick})
           {recipes.map((recipe) => (
             <RecipeCard
               key={recipe.id}
-              // Truyền toàn bộ properties của recipe vào
-              {...recipe} 
+              // Truyền toàn bộ object recipe vào component
+              recipe={recipe}
               // Quan trọng: Truyền hàm xử lý click
               onClick={() => onRecipeClick && onRecipeClick(recipe.id)}
             />

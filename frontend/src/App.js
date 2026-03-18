@@ -21,6 +21,9 @@ import RecipesListPage from './pages/RecipesListPage';
 import SearchPage from './pages/SearchPage';
 import UserProfilePage from './pages/UserProfilePage';
 
+import ArticleDetailPage from './pages/ArticleDetailPage';
+import ArticlesListPage from './pages/ArticlesListPage';
+
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUserPage from './pages/admin/AdminUserPage';
 import AdminRecipePage from './pages/admin/AdminRecipePage';
@@ -78,8 +81,11 @@ function App() {
               <Route path="/homepage" element={<HomePage />} />
               <Route path="/recipes" element={<RecipesListPage />} />
               <Route path="/recipe/:id" element={<RecipeDetailPage />} />
+              <Route path="/articles" element={<ArticlesListPage />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/user/:id" element={<UserProfilePage />} />
+
+              <Route path="/article/:articleId" element={<ArticleDetailPage />} />
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                  <Route path="/profile" element={<ProfilePage />} />

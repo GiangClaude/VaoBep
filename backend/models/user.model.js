@@ -4,6 +4,7 @@ const pool = db.pool;
 
 
 class User {
+    //Create user cho user đăng ký
     static async create(name, email, passwordHash, otp, otpExpires) {
         const [result] = await pool.execute(
             'INSERT INTO users (full_name, email, password, account_status, verification_otp, otp_expires_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -12,6 +13,7 @@ class User {
         return result.insertId;
     }
 
+    //Create user với role cho admin
     static async createWithRole({id, full_name, email, passwordHash, role, otp, otpExpires }) {
         // Lưu ý: account_status để là 'pending' để bắt buộc xác thực email
         const [result] = await pool.execute(
@@ -212,12 +214,12 @@ class User {
         return rows[0] ? rows[0].password : null;
     };
 
-    // // Chủ động đổi mk => cần mật khẩu cũ
-    // static async updatePassword(userId,  hashedNewPassword) {
-    //     const updateSql = "UPDATE users SET password = ? WHERE user_id = ?";
-    //     await pool.execute(updateSql, [hashedNewPassword, userId]);
-    //     return true;
-    // }
+    // Chủ động đổi mk => cần mật khẩu cũ
+    static async updatePassword(userId,  hashedNewPassword) {
+        const updateSql = "UPDATE users SET password = ? WHERE user_id = ?";
+        await pool.execute(updateSql, [hashedNewPassword, userId]);
+        return true;
+    }
 
     // Quên mật khẩu nên phải đổi
     static async changePassword(userId, hashedNewPassword){
@@ -260,9 +262,9 @@ class User {
             const countSql = `
                 SELECT COUNT(*) as total 
                 FROM Users 
-                WHERE (full_name LIKE ? OR email LIKE ?) AND account_status = 'active'
+                WHERE (full_name LIKE ?) AND account_status = 'active'
             `;
-            const [countRows] = await pool.execute(countSql, [kw, kw]);
+            const [countRows] = await pool.execute(countSql, [kw]);
             const totalItems = countRows[0].total;
 
             // Xử lý Sort

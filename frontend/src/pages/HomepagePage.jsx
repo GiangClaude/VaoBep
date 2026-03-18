@@ -17,17 +17,17 @@ import DictionaryBanner from "../component/homepage/DictionaryBanner";
 import ArticleSection from "../component/homepage/ArticleSection";
 import  Sidebar  from '../component/homepage/Sidebar';
 import ArticleCard from "../component/common/ArticleCard";
-import { articles } from "../data/articles";
-
+import useFeaturedArticles from '../hooks/useFeaturedArticles';
 export default function HomePage() {
   const { recipes: latestRecipes, loading: latestLoading } = useRecentlyRecipes();
   const { recipes: ownerRecipes, loading: ownerLoading} = useOwnerRecipes();
+  const { articles: featuredArticles, loading: featuredLoading } = useFeaturedArticles(3);
   const navigate = useNavigate();
-
   const handleNavigateToDetail = (id) => {
     const recipe = (latestRecipes || []).find(r => String(r.id) === String(id)) || (ownerRecipes || []).find(r => String(r.id) === String(id)) || (forYouRecipes || []).find(r => String(r.id) === String(id));
     navigate(`/recipe/${id}`, { state: { recipe } });
   };
+  const goToArticle = (id) => navigate(`/article/${id}`);
   const handleViewMoreRecipes = () => {
     // Chuyển hướng sang trang danh sách công thức (RecipesListPage)
     navigate('/recipes');
@@ -45,8 +45,12 @@ export default function HomePage() {
         <div className="lg:col-span-8">
           <RecipeSection title="For You" recipes={forYouRecipes} onRecipeClick={handleNavigateToDetail} onViewMoreClick={handleViewMoreRecipes}/>
 
-          {/* Article Section */}
-          <ArticleSection articles={articles} />
+          {/* Article Section (featured) */}
+          {featuredLoading ? (
+            <div className="w-full h-40 flex items-center justify-center text-[#7d5a3f]">Đang tải bài viết nổi bật...</div>
+          ) : (
+            <ArticleSection articles={featuredArticles} />
+          )}
             
 
           {latestLoading ? (

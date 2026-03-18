@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import userApi from '../api/userApi';
 import interactionApi from '../api/interactionApi';
-
+import recipeApi from '../api/recipeApi';
+import { normalizeRecipeList } from '../utils/normalizeRecipe';
 export const useUserProfile = (userId) => {
     const [user, setUser] = useState(null);
     const [recipes, setRecipes] = useState([]);
@@ -16,9 +17,10 @@ export const useUserProfile = (userId) => {
         try {
             // 1. Lấy thông tin User
             const response = await userApi.getUserProfile(userId);
-            
+            const recipe = await recipeApi.getUserRecipes(userId);
             // [DEBUG] Xem response thực tế là gì
-            console.log("👉 API Response for User:", response);
+            // console.log("👉 API Response for User:", response);
+            // console.log("👉 API Response for Recipes:", recipe);
 
             // [FIX LỖI] Kiểm tra xem response có bọc trong .data không (do axios)
             // Nếu có interceptor thì response là data, nếu không thì response.data mới là data
@@ -30,8 +32,27 @@ export const useUserProfile = (userId) => {
                 setError(actualData.message || "Lỗi không xác định từ server");
             }
 
-            // 2. Lấy danh sách công thức (Tạm thời để rỗng)
-            setRecipes([]); 
+            // const API_BASE_URL = "http://localhost:5000";
+            // const normalizedRecipes = (recipe.data.data || []).map(r => ({
+            //     id: r.recipe_id || r.id,
+            //     title: r.title || "",
+            //     description: r.description || "",
+            //     steps: r.steps || 5,
+            //     cookTime: r.cook_time ? `${r.cook_time} phút` : "",
+            //     servings: r.servings ? `${r.servings} người` : "",
+            //     calories: r.total_calo !== undefined && r.total_calo !== null ? Number(r.total_calo) : 0,
+            //     image: r.cover_image ? `${API_BASE_URL}/public/recipes/${r.recipe_id || r.id}/${r.cover_image}` : "/default.jpg",
+            //     createdAt: r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : "",
+            //     status: r.status || "public",
+            //     likes: r.like_count !== undefined && r.like_count !== null ? Number(r.like_count) : 0,
+            //     rating: r.rating_avg_score !== undefined && r.rating_avg_score !== null ? Number(r.rating_avg_score).toFixed(1) : "0.0",
+            //     commentCount: r.comment_count !== undefined && r.comment_count !== null ? Number(r.comment_count) : 0,
+            //     userName: r.author_name || "Thành viên Bếp",
+            //     userAvatar: r.author_avatar
+            //       ? `${API_BASE_URL}/public/user/${r.user_id}/${r.author_avatar}`
+            //       : "/assets/avatar_default.png"
+            // }));
+            setRecipes(normalizeRecipeList(recipe.data.data || []));
 
         } catch (err) {
             console.error("❌ Error fetching user profile:", err);

@@ -17,7 +17,6 @@ export function MyRecipesTab({
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
-  console.log(recipes);
   // [2] State quản lý Modal
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
@@ -91,6 +90,7 @@ export function MyRecipesTab({
         ]
     });
   };
+
 
   return (
     <div>
@@ -176,7 +176,7 @@ export function MyRecipesTab({
                 {/* Image */}
                 <div className="relative h-48 overflow-hidden">
                   <ImageWithFallback
-                    src={recipe.image}
+                    src={recipe.image || recipe.cover_image}
                     alt={recipe.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />

@@ -22,7 +22,11 @@ const storage = multer.diskStorage({
     else if (req.savedRecipeId) {
         const recipeId = req.savedRecipeId;
         uploadPath = path.join(__dirname, '../public/recipes', recipeId);
-    } else {
+    } else if (req.savedArticleId) {
+        const articleId = req.savedArticleId;
+        uploadPath = path.join(__dirname, '../public/articles', articleId);
+    } 
+    else {
         // Fallback nếu không xác định được (tránh lỗi crash)
         uploadPath = path.join(__dirname, '../public/temp');
     }
@@ -47,7 +51,8 @@ const storage = multer.diskStorage({
     if (file.fieldname === 'cover_image') prefix = 'cover';
     else if (file.fieldname === 'result') prefix = 'result';
     else if (file.fieldname === 'avatar') prefix = 'avatar'; // Thêm case cho avatar
-
+    else if (file.fieldname === 'article_images') prefix = 'article';
+    
     // --- SỬA ĐỔI KẾT THÚC ---
 
     // 3. Tạo chuỗi ngẫu nhiên nhỏ để tránh trùng lặp nếu up nhiều ảnh cùng lúc

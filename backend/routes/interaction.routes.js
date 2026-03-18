@@ -17,6 +17,9 @@ router.post('/rate', protect, interactionController.ratePost);
 // Nhóm Follow
 router.post('/follow', protect, interactionController.followUser);
 
+// Nhóm Report
+router.post('/report', protect, interactionController.reportPost);
+
 // Check trạng thái (để frontend tô màu nút)
 router.get('/state', protect, interactionController.getInteractionState);
 

@@ -7,6 +7,7 @@ export function ProfileHeader({
   isFollowing,
   onEditProfile,
   onFollowToggle,
+  onGift,
   onReport
 }) {
   const getRoleBadge = (role) => {
@@ -98,6 +99,20 @@ export function ProfileHeader({
                       Theo dõi
                     </>
                   )}
+                </motion.button>
+
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onGift}
+                  className={`
+                      bg-white text-[#ff6b35] px-6 py-3 rounded-full flex items-center gap-2 transition-all shadow-lg font-semibold`}
+                >
+                    <>
+                      <UserMinus className="w-4 h-4" />
+                      Tặng điểm
+                    </>
                 </motion.button>
 
                 <motion.button

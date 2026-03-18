@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import interactionApi from "../api/interactionApi";
 import Modal from "../component/common/modal"; 
+import ReportModalComponent from "../component/common/ReportModal";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 
@@ -247,6 +248,37 @@ export default function useInteraction({
         });
     };
 
+    // --- 8. Xử lý Báo cáo (Report) ---
+    const [reportModal, setReportModal] = useState({ isOpen: false, loading: false, serverError: '' });
+
+    const openReportModal = (e) => {
+        e && e.stopPropagation();
+        if (!checkAuth()) return;
+        setReportModal({ isOpen: true, loading: false, serverError: '' });
+    };
+
+    const handleCancelReport = () => {
+        setReportModal({ isOpen: false, loading: false, serverError: '' });
+    };
+
+    const handleSubmitReport = async (reason) => {
+        if (!reason || reason.trim() === '') {
+            setReportModal(prev => ({ ...prev, serverError: 'Vui lòng chọn một lý do báo cáo' }));
+            return;
+        }
+        setReportModal(prev => ({ ...prev, loading: true, serverError: '' }));
+        try {
+            await interactionApi.reportPost(String(id), reason, type);
+            setReportModal({ isOpen: false, loading: false, serverError: '' });
+            setModalConfig({ isOpen: true, title: 'Báo cáo thành công', message: 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.', type: 'success', actions: [] });
+            // Optionally broadcast update for report_count if needed
+        } catch (err) {
+            handleCancelReport();
+            //setReportModal(prev => ({ ...prev, loading: false, serverError: err?.response?.data?.message || 'Có lỗi xảy ra' }));
+            setModalConfig({ isOpen: true, title: 'Báo cáo thất bại', message: err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.', type: 'error', actions: [] });
+        }
+    };
+
     const InteractionModal = () => (
         <Modal 
             isOpen={modalConfig.isOpen}
@@ -258,11 +290,23 @@ export default function useInteraction({
         />
     );
 
+    const ReportModal = () => (
+        <ReportModalComponent
+            isOpen={reportModal.isOpen}
+            onClose={handleCancelReport}
+            onSubmit={handleSubmitReport}
+            loading={reportModal.loading}
+            serverError={reportModal.serverError}
+        />
+    );
+
     return {
         state,
         handleToggleLike,
         handleToggleSave,
         handleShare,
-        InteractionModal
+        handleReport: openReportModal,
+        InteractionModal,
+        ReportModal
     };
 }

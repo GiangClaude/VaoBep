@@ -155,9 +155,6 @@ class Recipe{
             connection.release();
         }
     }
-
-
-
     static async update(recipeId, recipeData, ingredientList, tagList) {
         const connection = await pool.getConnection();
         let newIngredientsPending = false;
@@ -367,6 +364,7 @@ class Recipe{
             const recipeSql = `
                 SELECT 
                     R.*, 
+                    U.user_id AS author_id,
                     U.full_name AS author_name, 
                     U.avatar AS author_avatar
                 FROM Recipes R
@@ -420,6 +418,45 @@ class Recipe{
             throw error;
         } finally {
             if (connection) connection.release();
+        }
+    }
+
+        /**
+     * Hàm tìm kiếm nhanh Recipe để phục vụ việc gắn link vào Article
+     * Trả về: Tên món, Tác giả, Tag, Cover Image
+     */
+    static async searchSimpleRecipes(keyword) {
+        try {
+            // Giải thích: 
+            // 1. Join Users để lấy tên tác giả (full_name)
+            // 2. Left Join tag_post và Tags để lấy danh sách tên tag
+            // 3. Group by để mỗi Recipe chỉ hiện 1 dòng duy nhất
+            const sql = `
+                SELECT 
+                    r.recipe_id, 
+                    r.title, 
+                    r.cover_image, 
+                    u.full_name AS author_name,
+                    u.avatar AS author_avatar,
+                    u.user_id,
+                    GROUP_CONCAT(t.name SEPARATOR ', ') AS tags
+                FROM Recipes r
+                JOIN Users u ON r.user_id = u.user_id
+                LEFT JOIN tag_post tp ON r.recipe_id = tp.post_id AND tp.post_type = 'recipe'
+                LEFT JOIN Tags t ON tp.tag_id = t.tag_id
+                WHERE r.status = 'public' 
+                AND (r.title LIKE ? OR u.full_name LIKE ? OR t.name LIKE ?)
+                GROUP BY r.recipe_id, u.full_name
+                LIMIT 20
+            `;
+
+            const searchVal = `%${keyword}%`;
+            const [rows] = await pool.execute(sql, [searchVal, searchVal, searchVal]);
+            
+            return rows;
+        } catch (error) {
+            console.error("Lỗi Recipe.searchSimpleRecipes:", error);
+            throw error;
         }
     }
 
@@ -478,17 +515,17 @@ class Recipe{
 
             // --- DATA ---
             const finalQuery = selectFragment + allJoins + whereString + groupByString + orderLimitOffset;
-            const finalParams = [currentUserId,currentUserId, ...filterParams, limitNum, skip];
-
+            const finalParams = [currentUserId, currentUserId, ...filterParams, limitNum, skip];
             
             const [result] = await pool.query(finalQuery, finalParams);
-            
+            // console.log("Debug getRecipes - Raw Result:", result);
             const formattedResult = result.map(row => ({
                     ...row,
                     is_liked: !!row.is_liked,
                     is_saved: !!row.is_saved
                 }));
 
+            // console.log("Debug getRecipes - Formatted Result:", formattedResult);
             return {
                 recipes: formattedResult,
                 totalItems: totalItems
@@ -562,9 +599,7 @@ class Recipe{
                 criteria.MIN_AVG_RATING,
             ];
 
-            console.log("Vừa gán tham số xong");
             const [result] = await pool.execute(sql, sqlParams);
-            console.log("Vừa mới truy vấn dtb");
             return result;
         } catch(err) {
             console.log(err.message);
@@ -575,12 +610,35 @@ class Recipe{
     static async getOwnerRecipe(userId){
         try {
             const sql = `
-                SELECT * FROM recipes
-                WHERE user_id = ?
-                ORDER BY update_at DESC
+                SELECT 
+                R.*, 
+                U.full_name as author_name, 
+                U.avatar as author_avatar,
+                GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,
+                
+                GROUP_CONCAT(
+                    DISTINCT CONCAT(Commenter.full_name, ':::', C.content) 
+                    SEPARATOR '|||'
+                ) as comment_data
+
+            FROM Recipes R
+            JOIN Users U ON R.user_id = U.user_id
+            
+            -- Join Ingredients (Giữ nguyên)
+            LEFT JOIN recipe_ingredients RI ON R.recipe_id = RI.recipe_id
+            LEFT JOIN Ingredients I ON RI.ingredient_id = I.ingredient_id
+            
+            -- Join Comments (MỚI)
+            -- Lưu ý điều kiện post_type = 'recipe'
+            LEFT JOIN Comments C ON R.recipe_id = C.post_id AND C.post_type = 'recipe'
+            -- Join User lần 2 (đặt tên là Commenter) để lấy tên người bình luận
+            LEFT JOIN Users Commenter ON C.user_id = Commenter.user_id
+
+            WHERE R.status = 'public' and R.user_id = ?
+            GROUP BY R.recipe_id
+            ORDER BY R.created_at DESC 
             `
             const [result] = await pool.execute(sql, [userId]);
-            console.log(`Đang lấy công thức cá nhân: ${result}`);
             return result;
         } catch (error) {
             console.error('Lỗi Model (getOwnerRecipe):', error);

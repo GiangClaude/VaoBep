@@ -21,6 +21,7 @@ export default function RecipesListPage() {
     onRecipeClick
   } = useRecipesList();
 
+
   const handleRecipeClick = (id) => onRecipeClick(id, navigate);
   // Component Phân trang nhỏ gọn
   const Pagination = () => {
@@ -157,43 +158,16 @@ export default function RecipesListPage() {
         <div className={`grid grid-cols-1 lg:grid-cols-2 gap-1 transition-opacity duration-300 ${loading ? 'opacity-40' : 'opacity-100'}`}>
             {recipes.map((recipe, index) => (
             <motion.div
-                key={recipe.recipeId || index}
+              key={recipe.id || recipe.recipeId || index}
                 initial={{ opacity: 0}}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className="relative mt-4"
             >
-                <RecipeCard 
-                    // 1. ID & Thông tin cơ bản
-                    id={recipe.id}
-                    title={recipe.title}
-                    description={recipe.description}
-                    image={recipe.image} // URL ảnh đã được xử lý trong useRecipesList
-                    
-                    // 2. Thông tin tác giả
-                    // useRecipesList trả về ...item (chứa author_id)
-                    userId={recipe.author_id || recipe.user_id} 
-                    userName={recipe.userName}
-                    userAvatar={recipe.userAvatar}
-
-                    // 3. Số liệu nấu ăn
-                    cookTime={recipe.cookTime}
-                    servings={recipe.servings}
-                    calories={recipe.calories} // Hook trả về key 'calories'
-
-                    ingredients={recipe.ingredients}
-                    // 4. Chỉ số tương tác
-                    likes={recipe.likes}
-                    rating={recipe.rating}
-                    commentCount={recipe.commentCount}
-                    
-                    // 5. Trạng thái (Quan trọng: Map đúng tên biến)
-                    isLiked={recipe.liked} // Hook trả về 'liked', Card cần 'isLiked'
-                    isSaved={recipe.saved} // Hook trả về 'saved', Card cần 'isSaved'
-
-                    // 6. Sự kiện click
-                    onClick={() => handleRecipeClick(recipe.id)}
-                />
+              <RecipeCard
+                recipe={recipe}
+                onClick={() => handleRecipeClick(recipe.id)}
+              />
             </motion.div>
             ))}
         </div>

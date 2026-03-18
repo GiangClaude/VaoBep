@@ -18,8 +18,10 @@ class Interaction {
                 `SELECT status FROM Recipes WHERE recipe_id = ?`,
                 [postId]
             );
-            console.log(ispublic[0].status);
-            if (ispublic[0].status == 'draft' || ispublic[0].status == 'hidden'){
+            if (!ispublic || ispublic.length === 0) {
+                throw new Error('Không tìm thấy bài viết');
+            }
+            if (ispublic[0].status === 'draft' || ispublic[0].status === 'hidden') {
                 throw new Error('Bài viết không công khai');
             }
             
@@ -165,6 +167,53 @@ class Interaction {
         };
     }
 
+    // Thêm vào trong class Interaction của file models/interaction.model.js
+
+    // Hàm cập nhật nội dung bình luận
+    static async updateComment(commentId, userId, newContent) {
+        // Chỉ cập nhật khi đúng comment_id và người tạo (user_id)
+        const sql = `UPDATE Comments SET content = ?, update_at = NOW() WHERE comment_id = ? AND user_id = ?`;
+        const [result] = await pool.execute(sql, [newContent, commentId, userId]);
+        return result.affectedRows > 0;
+    }
+
+    // Hàm xóa bình luận và giảm comment_count của bài viết
+    static async deleteComment({ commentId, userId, postId, postType }) {
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // 1. Xóa comment (Đảm bảo đúng user_id để chống xóa lén)
+            const sqlDelete = `DELETE FROM Comments WHERE comment_id = ? AND user_id = ?`;
+            const [result] = await connection.execute(sqlDelete, [commentId, userId]);
+            
+            if (result.affectedRows === 0) throw new Error("Không tìm thấy comment hoặc bạn không có quyền xóa.");
+
+            // 2. Xác định bảng cần giảm comment_count
+            let targetTable = '';
+            let idColumn = '';
+            if (postType === 'recipe') { targetTable = 'Recipes'; idColumn = 'recipe_id'; }
+            else if (postType === 'article') { targetTable = 'Article_Posts'; idColumn = 'article_id'; }
+            else if (postType === 'dish') { targetTable = 'Dictionary_Dishes'; idColumn = 'dish_id'; }
+
+            // 3. Giảm comment_count đi 1 (Dùng GREATEST để tránh số âm)
+            if (targetTable) {
+                await connection.execute(
+                    `UPDATE ${targetTable} SET comment_count = GREATEST(comment_count - 1, 0) WHERE ${idColumn} = ?`,
+                    [postId]
+                );
+            }
+
+            await connection.commit();
+            return { success: true };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
     // --- 4. RATING (Đánh giá sao) ---
     static async ratePost({ userId, postId, postType, score }) {
         const connection = await pool.getConnection();
@@ -276,6 +325,51 @@ class Interaction {
             saved: saveRows.length > 0,
             rated: rateRows.length > 0 ? rateRows[0].score : 0
         };
+    }
+
+    // --- 6. REPORT (Báo cáo bài viết) ---
+    static async reportPost({ userId, postId, postType, reason }) {
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Xác định bảng cần update report_count
+            let targetTable = '';
+            let idColumn = '';
+            if (postType === 'recipe') { targetTable = 'Recipes'; idColumn = 'recipe_id'; }
+            else if (postType === 'article') { targetTable = 'Article_Posts'; idColumn = 'article_id'; }
+            else if (postType === 'dish') { targetTable = 'Dictionary_Dishes'; idColumn = 'dish_id'; }
+            else { throw new Error('Invalid post_type'); }
+
+            // Kiểm tra đã báo cáo chưa (chống spam, 1 user chỉ báo cáo 1 lần/post)
+            const [exists] = await connection.execute(
+                `SELECT * FROM Reports WHERE reporter_user_id = ? AND post_id = ? AND post_type = ?`,
+                [userId, postId, postType]
+            );
+            if (exists.length > 0) {
+                throw new Error('Bạn đã báo cáo bài viết này trước đó');
+            }
+
+            // Ghi nhận báo cáo
+            await connection.execute(
+                `INSERT INTO Reports (reporter_user_id, post_id, post_type, reason) VALUES (?, ?, ?, ?)`,
+                [userId, postId, postType, reason]
+            );
+
+            // Tăng report_count cho post
+            await connection.execute(
+                `UPDATE ${targetTable} SET report_count = report_count + 1 WHERE ${idColumn} = ?`,
+                [postId]
+            );
+
+            await connection.commit();
+            return { success: true };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }
 

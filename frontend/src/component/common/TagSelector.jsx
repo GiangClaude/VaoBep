@@ -1,34 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Plus, Tag as TagIcon } from "lucide-react";
-import tagApi from "../../api/tagApi"; // Import api bạn đã gửi
+import useTags from "../../hooks/useTags";
 
-let cachedTags = null;
-
-export default function TagSelector({ selectedTags, onChange }) {
-  const [availableTags, setAvailableTags] = useState([]); // List tag từ server
+// 1. THÊM PROPS VÀO ĐÂY (selectedTags, onChange)
+export default function TagSelector({ selectedTags = [], onChange }) {
+  // Gán giá trị mặc định [] cho availableTags để tránh lỗi khi data chưa tải xong
+  const { tags: availableTags = [] } = useTags();
   const [inputValue, setInputValue] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-
-  // 1. Lấy danh sách tags từ server khi mount
-  useEffect(() => {
-
-    if (cachedTags && cachedTags.length > 0) {
-          setAvailableTags(cachedTags);
-          return;
-      }
-    const fetchTags = async () => {
-      try {
-        const res = await tagApi.getAllTags();
-        if (res.data && res.data.success) {
-          cachedTags = res.data.data;
-           setAvailableTags(res.data.data);
-        }
-      } catch (err) {
-        console.error("Lỗi tải tags:", err);
-      }
-    };
-    fetchTags();
-  }, []);
 
   // 2. Xử lý thêm tag
   const handleAddTag = (tag) => {
@@ -38,7 +17,7 @@ export default function TagSelector({ selectedTags, onChange }) {
     }
     setInputValue("");
     setShowSuggestions(false);
-  };
+  }; // Đã thêm dấu chấm phẩy cho đúng chuẩn
 
   // 3. Xử lý xóa tag
   const handleRemoveTag = (tagId) => {
@@ -46,10 +25,13 @@ export default function TagSelector({ selectedTags, onChange }) {
   };
 
   // Lọc danh sách gợi ý theo input
-  const filteredTags = availableTags.filter(tag => 
-     tag.name.toLowerCase().includes(inputValue.toLowerCase()) &&
-     !selectedTags.some(selected => selected.tag_id === tag.tag_id)
-  );
+  // Thêm điều kiện kiểm tra availableTags có tồn tại không trước khi filter
+  const filteredTags = Array.isArray(availableTags) 
+    ? availableTags.filter(tag => 
+        tag.name.toLowerCase().includes(inputValue.toLowerCase()) &&
+        !selectedTags.some(selected => selected.tag_id === tag.tag_id)
+      )
+    : [];
 
   return (
     <div className="space-y-3">
@@ -76,6 +58,7 @@ export default function TagSelector({ selectedTags, onChange }) {
                 {filteredTags.length > 0 ? (
                     filteredTags.map(tag => (
                         <button
+                            type="button" // Thêm type button để tránh submit form ngoài ý muốn
                             key={tag.tag_id}
                             onClick={() => handleAddTag(tag)}
                             className="w-full text-left px-4 py-3 hover:bg-[#fff9f0] hover:text-[#ff6b35] transition-colors flex justify-between items-center"
@@ -92,8 +75,13 @@ export default function TagSelector({ selectedTags, onChange }) {
             </div>
         )}
         
-        {/* Click ra ngoài để tắt gợi ý (Bạn có thể dùng hook useOnClickOutside để xịn hơn) */}
-        {showSuggestions && <div className="fixed inset-0 z-0" onClick={() => setShowSuggestions(false)} />}
+        {/* Overlay để tắt gợi ý khi click ra ngoài */}
+        {showSuggestions && (
+            <div 
+                className="fixed inset-0 z-0" 
+                onClick={() => setShowSuggestions(false)} 
+            />
+        )}
       </div>
 
       {/* Selected Tags Display (Chips) */}
@@ -101,7 +89,11 @@ export default function TagSelector({ selectedTags, onChange }) {
         {selectedTags.map(tag => (
             <span key={tag.tag_id} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#ff6b35]/10 text-[#ff6b35] text-sm font-medium border border-[#ff6b35]/20">
                 {tag.name}
-                <button onClick={() => handleRemoveTag(tag.tag_id)} className="hover:text-red-500">
+                <button 
+                    type="button"
+                    onClick={() => handleRemoveTag(tag.tag_id)} 
+                    className="hover:text-red-500"
+                >
                     <X className="w-3 h-3" />
                 </button>
             </span>

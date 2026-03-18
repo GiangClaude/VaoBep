@@ -46,7 +46,7 @@ const Header = () => {
               <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center text-white font-bold">
                 C
               </div>
-              <span className="text-xl font-bold text-gray-800">CozyHub</span>
+              <span className="text-xl font-bold text-gray-800">VaoBep</span>
             </div>
           </div>
 
@@ -98,7 +98,7 @@ const Header = () => {
                 </button>
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                  <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
                     <div className="p-3 border-b border-gray-200">
                       <p className="text-sm font-semibold text-gray-800">{currentUser.fullName}</p>
                       <p className="text-xs text-gray-500">{currentUser.email}</p>

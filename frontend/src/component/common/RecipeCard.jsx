@@ -1,62 +1,63 @@
 import { useState } from "react";
 import { 
   Clock, Users, Heart, Star, ArrowRight, ChefHat, 
-  Flame, MessageCircle, Share2, Bookmark 
+  Flame, MessageCircle, Share2, Bookmark, AlertCircle 
 } from "lucide-react"; 
 import { motion } from "motion/react";
 import ImageWithFallBack from "../figma/ImageWithFallBack";
 import useInteraction from "../../hooks/useInteraction"; 
 import {getAvatarUrl, getRecipeImageUrl} from "../../utils/imageHelper"
 
-export function RecipeCard({
-  id,
-  image,
-  title,
-  userId,
-  userName,
-  userAvatar,
-  cookTime,
-  servings,
-  likes,
-  rating,
-  // [THÊM MỚI] Nhận trạng thái ban đầu từ cha
-  isLiked, 
-  isSaved,
-  description = "Công thức ngon miệng, dễ làm và được rất nhiều người yêu thích. Hãy thử ngay hôm nay!",
-  ingredients = ["Chưa có nguyên liệu"],
-  steps = 5,
-  calories = 350,
-  createdAt = "Chưa có dữ liệu",
-  commentCount = 0,
-  onClick,
-  expandDirection = "right"
-}) {
+export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) {
+
+  // Recipe object is assumed to be normalized already
+  const {
+    id,
+    image,
+    title,
+    userName,
+    userAvatar,
+    cookTime,
+    servings,
+    likes,
+    rating,
+    isLiked,
+    isSaved,
+    description,
+    ingredientNames,
+    stepsCount,    // <-- THÊM: Lấy stepsCount từ data
+    detailedSteps, // <-- THÊM: Lấy detailedSteps để fallback
+    calories,
+    createdAt,
+    commentCount
+  } = recipe;
+
+  const displaySteps = stepsCount || (detailedSteps ? detailedSteps.length : 0);
 
   const [isHovered, setIsHovered] = useState(false);
-  
-  console.log(id, userId);
 
   // 1. Khởi tạo hook interaction với dữ liệu ban đầu đầy đủ
-  const { 
-    state: interactionState, 
-    handleToggleLike, 
-    handleToggleSave, 
-    handleShare, 
-    InteractionModal 
+  const {
+    state: interactionState,
+    handleToggleLike,
+    handleToggleSave,
+    handleShare,
+    InteractionModal,
+    handleReport,
+    ReportModal
   } = useInteraction({
     id,
     type: 'recipe',
-    // [QUAN TRỌNG] Truyền trạng thái liked/saved vào đây
-    initialData: { 
-        likes, 
-        rating, 
-        commentCount, 
-        liked: isLiked, 
-        saved: isSaved
+    initialData: {
+      likes,
+      rating,
+      commentCount,
+      liked: isLiked,
+      saved: isSaved
     }
   });
 
-  console.log("RecipeCard Interaction State:", interactionState);
+  // console.log("RecipeCard Interaction State:", interactionState);
   
   return (
     <>
@@ -121,8 +122,17 @@ export function RecipeCard({
 
                   <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-1 shadow-md">
                     <Star className="w-4 h-4 text-[#ffc857]" />
-                    <span className="text-sm font-medium text-[#7d5a3f]">{rating}</span>
+                    <span className="text-sm font-medium text-[#7d5a3f]">{Math.round(rating*100)/100}</span>
                   </div>
+
+                  {/* Nút Báo cáo */}
+                  <button 
+                    onClick={handleReport}
+                    className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md"
+                    title="Báo cáo bài viết"
+                  >
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                  </button>
                 </div>
 
                 {/* --- SAVE BUTTON (Top Left) --- */}
@@ -137,7 +147,7 @@ export function RecipeCard({
                 {/* User Badge */}
                 <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-full shadow-md">
                   <ImageWithFallBack
-                    src={getAvatarUrl(userId, userAvatar)}
+                    src={userAvatar}
                     alt={userName}
                     className="w-6 h-6 rounded-full object-cover"
                   />
@@ -186,19 +196,26 @@ export function RecipeCard({
                     Nguyên liệu chính:
                   </h4>
                   <ul className="text-sm text-[#7d5a3f] space-y-1">
-                    {ingredients.slice(0, 3).map((ingredient, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#ffc857]"></span>
-                        {ingredient}
-                      </li>
-                    ))}
+                    {ingredientNames && ingredientNames.length > 0
+                      ? ingredientNames.slice(0, 3).map((ingredient, index) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#ffc857]"></span>
+                            {ingredient}
+                          </li>
+                        ))
+                      : (
+                          <li className="flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#ffc857]"></span>
+                            Chưa có nguyên liệu
+                          </li>
+                        )}
                   </ul>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-2">
                   <div className="bg-[#fff9f0] p-3 rounded-xl">
                     <div className="text-xs text-[#7d5a3f] mb-1">Số bước</div>
-                    <div className="text-base font-semibold text-[#ff6b35]">{steps} bước</div>
+                    <div className="text-base font-semibold text-[#ff6b35]">{displaySteps} bước</div>
                   </div>
                   <div className="bg-[#fff9f0] p-3 rounded-xl">
                     <div className="text-xs text-[#7d5a3f] mb-1 flex items-center gap-1">
@@ -243,6 +260,7 @@ export function RecipeCard({
       </motion.div>
       
       <InteractionModal />
+      <ReportModal />
     </>
   );
 }

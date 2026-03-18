@@ -101,6 +101,37 @@ const verifyAdminMiddleware = async (req, res, next) => {
     }
 };
 
+// Thêm vào backend/utils/auth.utils.js
+const verifyProMiddleware = async (req, res, next) => {
+    try {
+        // Sử dụng protect middleware trước đó đã gắn req.user
+        const userId = req.user?.user_id || req.user?.id; // Tùy thuộc vào payload JWT của bạn
+        
+        if (!userId) {
+            return res.status(401).json({ message: "Vui lòng đăng nhập" });
+        }
+
+        const user = await UserModel.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: "Không tìm thấy người dùng" });
+        }
+
+        // Chỉ cho phép pro hoặc admin
+        if (user.role === 'pro' || user.role === 'admin') {
+            req.user = user; 
+            return next();
+        } else {
+            return res.status(403).json({ message: "Truy cập bị từ chối. Chỉ dành cho Chuyên gia hoặc Admin." });
+        }
+    } catch (error) {
+        console.error("Pro Auth Error:", error);
+        return res.status(500).json({ message: "Lỗi phân quyền chuyên gia" });
+    }
+};
+
+// Nhớ export thêm verifyProMiddleware
+
 module.exports = {
     hashPassword,
     comparePassword,
@@ -109,5 +140,6 @@ module.exports = {
     generateOTP,
     validateOTP, 
     getUserIdFromToken,
-    verifyAdminMiddleware
+    verifyAdminMiddleware,
+    verifyProMiddleware
 };

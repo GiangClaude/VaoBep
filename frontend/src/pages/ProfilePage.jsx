@@ -4,6 +4,7 @@ import { Footer } from "../component/common/Footer";
 import { ProfileHeader } from "../component/profile/ProfileHeader";
 import { ProfileTabs } from "../component/profile/ProfileTabs";
 import { MyRecipesTab } from "../component/profile/MyRecipeTab";
+import { MyArticlesTab } from "../component/profile/MyArticlesTab";
 import { ProfileInfoTab } from "../component/profile/ProfileInfoTab";
 import { PointsTab } from "../component/profile/PointsTab";
 import { SettingsTab } from "../component/profile/SettingsTab";
@@ -377,7 +378,7 @@ export default function ProfilePage() {
         />
 
         {/* Profile Tabs */}
-       <div className="sticky top-0 z-40 bg-[#fff9f0]/95 backdrop-blur-sm py-2 transition-all">
+       <div className="top-0 z-40 bg-[#fff9f0]/95 backdrop-blur-sm py-2 transition-all">
             <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
 
@@ -394,6 +395,10 @@ export default function ProfilePage() {
                 onPromote={handlePromoteRecipe}
                 onCreateNew={handleCreateNew}
               />
+            )}
+
+            {activeTab === "my-articles" && (
+              <MyArticlesTab />
             )}
 
             {activeTab === "saved" && (

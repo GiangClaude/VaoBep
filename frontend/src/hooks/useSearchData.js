@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import userApi from "../api/userApi";
 import recipeApi from "../api/recipeApi";
 import interactionApi from "../api/interactionApi";
+import articleApi from "../api/articleApi";
 import { mockUsers, mockRecipes, mockArticles } from "../data/mockSearchData";
 import { getAvatarUrl, getRecipeImageUrl } from "../utils/imageHelper";
-// Cấu hình URL Backend (theo các file bạn gửi là port 5000)
-const API_BASE_URL = "http://localhost:5000";
-
-export const useSearchData = ({ keyword, activeTab, userSort, recipeFilter }) => {
+import { normalizeRecipeList } from "../utils/normalizeRecipe";
+import { normalizeArticleList } from "../utils/normalizeArticle"; 
+export const useSearchData = ({ keyword, activeTab, userSort, recipeFilter, articleFilter, page = 1 }) => {
   const [users, setUsers] = useState([]);
   const [recipes, setRecipes] = useState([]);
   const [articles, setArticles] = useState([]);
+  const [pagination, setPagination] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -21,56 +22,59 @@ export const useSearchData = ({ keyword, activeTab, userSort, recipeFilter }) =>
       setLoading(true);
       try {
         const USE_MOCK_DATA = false; // Toggle mock data tại đây
-
-        if (USE_MOCK_DATA) {
-            setTimeout(() => {
-                setUsers(mockUsers);
-                setRecipes(mockRecipes);
-                setArticles(mockArticles);
-                setLoading(false);
-            }, 800);
-        } else {
+            const limit = activeTab === "all" ? 8 : 12;
             // Logic tính limit dựa trên activeTab (giữ nguyên logic cũ)
             const limitUser = activeTab === "user" ? 12 : 10;
             const limitRecipe = activeTab === "recipe" ? 12 : 8;
 
+
+            const normRecipeFilter = {
+              ...recipeFilter,
+              tags: recipeFilter?.tags?.join(','),
+            };
+
+            const normArticleFilter = {
+              q: keyword,
+              sort: articleFilter?.sort || 'newest',
+              tags: articleFilter?.tags?.join(','),
+              limit,
+              page
+            };
+
+            const promises = [];
+
+            if (activeTab === 'all' || activeTab === 'user') {
+                promises.push(userApi.searchUsers({ keyword, limit, sort: userSort, page }));
+            } else promises.push(Promise.resolve(null));
+
+            if (activeTab === 'all' || activeTab === 'recipe') {
+                promises.push(recipeApi.getAllRecipes({ keyword, limit, ...normRecipeFilter, page }));
+            } else promises.push(Promise.resolve(null));
+
+            if (activeTab === 'all' || activeTab === 'article') {
+                promises.push(articleApi.getPublicArticles(normArticleFilter));
+            } else promises.push(Promise.resolve(null));
+
+            // Chuẩn hóa filter trước khi truyền vào API
+            // const normalizedFilter = {
+            //   ...recipeFilter,
+            //   tags: Array.isArray(recipeFilter.tags) && recipeFilter.tags.length > 0 ? recipeFilter.tags.join(',') : undefined,
+            //   cookingTime: recipeFilter.cookingTime || undefined,
+            //   minRating: recipeFilter.minRating > 0 ? recipeFilter.minRating : undefined
+            // };
+
             // Gọi API song song
-            const [userRes, recipeRes] = await Promise.all([
-                // 1. Search Users
-                userApi.searchUsers({ 
-                    keyword: keyword, 
-                    limit: limitUser, 
-                    sort: userSort 
-                }),
-                
-                // 2. Search Recipes
-                recipeApi.getAllRecipes({ 
-                    keyword: keyword, 
-                    limit: limitRecipe, 
-                    ...recipeFilter 
-                })
-            ]);
+            const [userRes, recipeRes, articleRes] = await Promise.all(promises);
 
             // --- CHUẨN HÓA DỮ LIỆU USER ---
-            const normalizedUsers = (userRes.data.data || []).map(user => ({
-                ...user,
-                // Xử lý avatar user
-            }));
-
-            // --- CHUẨN HÓA DỮ LIỆU RECIPE ---
-            const normalizedRecipes = (recipeRes.data.data || []).map(recipe => ({
-                ...recipe,
-                // Xử lý ảnh bìa recipe
-                // Xử lý avatar tác giả trong recipe
-                // Format lại các trường hiển thị khác
-                displayCookTime: recipe.cook_time ? `${recipe.cook_time} phút` : "N/A",
-                displayServings: recipe.servings ? `${recipe.servings} người` : "N/A"
-            }));
-
-            setUsers(normalizedUsers);
-            setRecipes(normalizedRecipes);
-            setArticles(mockArticles); // Article chưa có API search nên dùng mock
-        }
+            if (userRes) setUsers(userRes.data.data || []);
+            if (recipeRes) setRecipes(normalizeRecipeList(recipeRes.data.data || []));
+            
+            if (articleRes) {
+                setArticles(normalizeArticleList(articleRes.data.data || []));
+                // Lưu thông tin phân trang từ Backend trả về
+                setPagination(articleRes.data.pagination || {});
+            }
       } catch (error) {
         console.error("Search Error:", error);
       } finally {
@@ -79,7 +83,7 @@ export const useSearchData = ({ keyword, activeTab, userSort, recipeFilter }) =>
     };
 
     fetchData();
-  }, [keyword, activeTab, userSort, recipeFilter]);
+  }, [keyword, activeTab, userSort, recipeFilter, articleFilter, page]);
 
   const handleFollowUser = async (userId) => {
     // A. Optimistic Update: Cập nhật giao diện ngay lập tức
@@ -120,5 +124,5 @@ export const useSearchData = ({ keyword, activeTab, userSort, recipeFilter }) =>
   };
 
 
-  return { users, recipes, articles, loading, handleFollowUser };
+  return { users, recipes, articles, pagination, loading, handleFollowUser };
 };

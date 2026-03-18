@@ -73,24 +73,23 @@ export function SavedRecipeTab() {
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
               >
                 <RecipeCard
-                  id={recipe.recipe_id}
-                  image={`${API_BASE_URL}/public/recipes/${recipe.recipe_id}/${recipe.cover_image}`}
-                  title={recipe.title}
-                  userName={recipe.author_name}
-                  userAvatar={`${API_BASE_URL}/public/user/${recipe.user_id}/${recipe.author_avatar}`} // Avatar cần xử lý url đầy đủ nếu chưa có
-                  likes={recipe.like_count}
-                  rating={recipe.rating_avg_score}
-                  cookTime={`${recipe.cook_time} phút`}
-                  servings={recipe.servings}
-                  ingredients={recipe.ingredients}
-
-                  // Các thông tin phụ nếu backend trả về, hoặc để mặc định
-                  isLiked = {recipe.is_liked}
-                  isSaved={true}
-                  description={recipe.description}
-                  commentCount={recipe.comment_count || 0}
+                  recipe={{
+                    id: recipe.recipe_id,
+                    image: `${API_BASE_URL}/public/recipes/${recipe.recipe_id}/${recipe.cover_image}`,
+                    title: recipe.title,
+                    userName: recipe.author_name,
+                    userAvatar: `${API_BASE_URL}/public/user/${recipe.user_id}/${recipe.author_avatar}`,
+                    likes: recipe.like_count,
+                    rating: recipe.rating_avg_score,
+                    cookTime: `${recipe.cook_time} phút`,
+                    servings: recipe.servings,
+                    ingredients: recipe.ingredients,
+                    isLiked: recipe.is_liked,
+                    isSaved: true,
+                    description: recipe.description,
+                    commentCount: recipe.comment_count || 0
+                  }}
                   onClick={() => navigate(`/recipe/${recipe.recipe_id}`)}
-                  
                 />
               </motion.div>
             ))}

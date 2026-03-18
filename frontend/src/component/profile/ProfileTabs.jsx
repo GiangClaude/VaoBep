@@ -2,7 +2,8 @@ import { FileText, Heart, User, Coins, Settings } from "lucide-react";
 import { motion } from "motion/react";
 
 const tabs = [
-  { id: "my-recipes", label: "Bài Viết Của Tôi", icon: FileText },
+  { id: "my-recipes", label: "Công Thức Của Tôi", icon: FileText },
+  { id: "my-articles", label: "Bài Viết", icon: FileText },
   { id: "saved", label: "Đã Lưu", icon: Heart },
   { id: "info", label: "Thông Tin", icon: User },
   { id: "points", label: "Quản Lý Điểm", icon: Coins },

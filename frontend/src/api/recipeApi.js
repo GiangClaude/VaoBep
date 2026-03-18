@@ -54,13 +54,24 @@ const recipeApi = {
 
     getAllRecipes: async (params) => {
         console.log("Calling API Recipes with params:", params); // Log để check params trước khi gửi
-        const response = await apiClient.get('/recipes', { params });
+        const response = await apiClient.get('/recipes', {params});
         return response;
     },
     
     getSavedRecipes: async (params) => {
         // params: { page, limit, sortKey, sortOrder }
         const response = await apiClient.get('/recipes/saved', { params });
+        return response;
+    }
+    ,
+    getUserRecipes: async (userId) => {
+        const response = await apiClient.get(`/recipes/user/${userId}`);
+        return response;
+    }
+    ,
+    // Simple search used by Article editor to attach recipes
+    searchSimple: async (keyword) => {
+        const response = await apiClient.get('/recipes/search/simple', { params: { keyword } });
         return response;
     }
 }

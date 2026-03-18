@@ -1,8 +1,10 @@
 const { keyword } = require('color-convert');
 const IngredientModel = require('../models/ingredient.model');
 const RecipeModel = require('../models/recipe.model');
+const UserModel = require('../models/user.model');
 const paginationHelper = require('../utils/paginationHelper');
 const { checkRecipeOwner } = require('../utils/recipe.utils');
+const { getUserIdFromToken } = require('../utils/auth.utils');
 // const paginationHelper;//Thêm vào utils
 
 const createRecipe = async (req, res) => {
@@ -277,22 +279,11 @@ const getRecipes = async(req, res) => {
             // ... (các filters khác)
         };
 
-        // [THÊM] Logic lấy current User ID (Optional Auth)
-        let currentUserId = null;
-        
-        // Kiểm tra header Authorization xem có token không
-        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-            try {
-                const token = req.headers.authorization.split(' ')[1];
-                const decoded = jwt.verify(token, process.env.JWT_SECRET); // Đảm bảo đúng biến môi trường
-                currentUserId = decoded.user_id; // Hoặc decoded.id tùy cấu hình JWT của bạn
-            } catch (error) {
-                console.log("Token invalid or expired, treating as guest");
-            }
-        }
+        let currentUserId = getUserIdFromToken(req);
 
         const {recipes, totalItems} = await RecipeModel.getRecipes(page, limit, filters, currentUserId);
 
+        // console.log("Controller getRecipes - Total Items:", recipes);
         const pagination = paginationHelper.createPagination(page, limit, totalItems);
 
         res.status(200).json({
@@ -487,10 +478,43 @@ const getSavedRecipes = async (req, res) => {
     }
 };
 
+const searchSimpleRecipes = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+
+        const user = await UserModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy người dùng" });
+        }
+        if (user.role === 'user') {
+            return res.status(403).json({ success: false, message: "Bạn không có quyền truy cập tính năng này" });
+        }
+
+        const { keyword } = req.query;
+        if (!keyword) {
+            return res.status(200).json({ success: true, data: [] });
+        }
+
+        const recipes = await RecipeModel.searchSimpleRecipes(keyword);
+
+        res.status(200).json({
+            success: true,
+            message: "Tìm kiếm công thức thành công",
+            data: recipes
+        });
+    } catch (err) {
+        console.error("Lỗi searchSimpleRecipes Controller:", err);
+        res.status(500).json({ success: false, message: "Lỗi server: " + err.message });
+    }
+};
+
+// Đừng quên thêm searchSimpleRecipes vào phần module.exports cuối file nhé bà!
+
 module.exports = {
     getRecipes,
     getRecentlyRecipes,
     getFeatureRecipes,
+    searchSimpleRecipes,
     createRecipe, 
     updateRecipe,
     getRecipeById,

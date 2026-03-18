@@ -3,12 +3,14 @@ import { Footer } from "../component/common/Footer";
 import { motion } from "motion/react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
-  Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Send, ArrowLeft, Bookmark, TrendingUp
+  Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Send, ArrowLeft, Bookmark, TrendingUp, AlertCircle
 } from "lucide-react";
 import ImageWithFallBack from "../component/figma/ImageWithFallBack";
 import useRecipeDetail from '../hooks/useRecipeDetail';
 import Modal from "../component/common/modal"; // [THÊM IMPORT MODAL]
-
+import useInteraction from '../hooks/useInteraction';
+import {useAuth} from '../AuthContext';
+//Sửa hàm này
 const getAvatarUrl = (user) => {
     if (user.avatar && user.avatar.startsWith('http')) return user.avatar;
     return user.avatar 
@@ -18,10 +20,11 @@ const getAvatarUrl = (user) => {
 
 export default function RecipeDetailPage() {
   const { id } = useParams();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const recipeFromState = location.state?.recipe;
-
+  
   const {
     recipeState,
     loading,
@@ -36,19 +39,26 @@ export default function RecipeDetailPage() {
     handleRating,
     handleCommentSubmit,
     loadingComments,
-    requireLogin,   // [LẤY TỪ HOOK]
-    setRequireLogin // [LẤY TỪ HOOK]
+    requireLogin,   
+    setRequireLogin 
   } = useRecipeDetail({ id, initialRecipe: recipeFromState });
+
+  // --- Interaction hook cho report ---
+  const {
+    InteractionModal,
+    handleReport,
+    ReportModal
+  } = useInteraction({ id, type: 'recipe', initialData: {} });
 
   // --- LOADING / ERROR STATES ---
   if (loading && !recipeState) return <div className="min-h-screen bg-[#fff9f0] flex items-center justify-center text-[#7d5a3f]">Đang tải...</div>;
   if (!recipeState) return <div className="min-h-screen bg-[#fff9f0] text-center pt-20">Không tìm thấy công thức</div>;
-
   const { detailedDescription, detailedIngredients, detailedSteps } = recipeState;
-
+  const isAuthor = currentUser? currentUser.id === recipeState?.userId : false;
   return (
     <div className="min-h-screen bg-[#fff9f0]">
-      
+      <InteractionModal />
+      <ReportModal />
       {/* [THÊM MODAL VÀO ĐÂY] */}
       <Modal 
         isOpen={requireLogin}
@@ -90,6 +100,20 @@ export default function RecipeDetailPage() {
                 <motion.button onClick={handleSave} whileTap={{ scale: 0.9 }} className={`p-3 rounded-full backdrop-blur-md shadow-lg ${isSaved ? "bg-[#ffc857] text-white" : "bg-white/90 text-[#7d5a3f]"}`}>
                   <Bookmark className="w-6 h-6" fill={isSaved ? "currentColor" : "none"} />
                 </motion.button>
+                {/* Nút báo cáo: Luôn hiển thị nhưng thay đổi trạng thái và giao diện dựa trên isAuthor */}
+              <motion.button 
+                onClick={isAuthor ? undefined : handleReport} 
+                whileTap={isAuthor ? {} : { scale: 0.9 }} 
+                disabled={isAuthor}
+                className={`p-3 rounded-full backdrop-blur-md shadow-lg transition-all ${
+                  isAuthor 
+                    ? 'bg-gray-200/80 text-gray-400 cursor-not-allowed opacity-60' 
+                    : 'bg-white/90 text-red-500 hover:bg-red-50'
+                }`}                
+                title={isAuthor ? "Đây là công thức của bạn, không thể báo cáo" : "Báo cáo bài viết"}
+              >
+                <AlertCircle className="w-6 h-6" />
+              </motion.button>
               </div>
             </div>
 

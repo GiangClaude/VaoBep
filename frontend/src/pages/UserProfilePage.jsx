@@ -20,7 +20,7 @@ export default function UserProfilePage() {
   
   const { user, recipes, loading, error, handleFollow } = useUserProfile(id);
   const { sendGift } = usePoints(); // Hook xử lý tặng điểm
-
+  // console.log("UserProfilePage - recipes:", recipes);
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
 
   // Xử lý Loading
@@ -55,10 +55,9 @@ export default function UserProfilePage() {
     <div className="min-h-screen bg-[#fff9f0]">
       <main className="container mx-auto px-4 py-8">
         {/* Profile Header (Public Mode) */}
-        {/* Tái sử dụng ProfileHeader, truyền các prop để hiện nút Follow/Gift */}
         <ProfileHeader
           user={user}
-          isOwnProfile={false} // Quan trọng: Đánh dấu đây là profile người khác
+          isOwnProfile={false} 
           isFollowing={user.isFollowing}
           onFollowToggle={handleFollow}
           onGift={() => setIsGiftModalOpen(true)}

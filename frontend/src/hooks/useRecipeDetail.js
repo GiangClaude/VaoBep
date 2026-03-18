@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import recipeApi from '../api/recipeApi';
 import interactionApi from '../api/interactionApi';
-
+import {normalizeRecipe} from '../utils/normalizeRecipe';
 const API_BASE_URL = 'http://localhost:5000';
 
 export default function useRecipeDetail({ id, initialRecipe = null }) {
@@ -29,68 +29,68 @@ export default function useRecipeDetail({ id, initialRecipe = null }) {
     return false; // Lỗi khác
   };
 
-  const normalizeData = (data) => {
-    // ... (Giữ nguyên logic normalizeData cũ của bạn)
-    if (!data) return null;
-    const getImageUrl = (folder, itemId, filename) => {
-        if (!filename) return folder === 'user' ? '/avatar_default.png' : '/recipe_default.png';
-        if (filename.startsWith('http')) return filename;
-        return `${API_BASE_URL}/public/${folder === 'user' ? 'user' : 'recipes'}/${itemId}/${filename}`;
-    };
-    let steps = [];
-    if (data.instructions) {
-        try {
-            // 1. Thử parse JSON (cho dữ liệu Mới)
-            const parsedSteps = JSON.parse(data.instructions);
+//   const normalizeData = (data) => {
+//     // ... (Giữ nguyên logic normalizeData cũ của bạn)
+//     if (!data) return null;
+//     const getImageUrl = (folder, itemId, filename) => {
+//         if (!filename) return folder === 'user' ? '/avatar_default.png' : '/recipe_default.png';
+//         if (filename.startsWith('http')) return filename;
+//         return `${API_BASE_URL}/public/${folder === 'user' ? 'user' : 'recipes'}/${itemId}/${filename}`;
+//     };
+//     let steps = [];
+//     if (data.instructions) {
+//         try {
+//             // 1. Thử parse JSON (cho dữ liệu Mới)
+//             const parsedSteps = JSON.parse(data.instructions);
             
-            // Kiểm tra nếu parse ra đúng là mảng
-            if (Array.isArray(parsedSteps)) {
-                steps = parsedSteps.map((stepItem, index) => ({
-                    step: index + 1,
-                    // Xử lý trường hợp stepItem là object {description: "..."} hoặc string "..."
-                    description: typeof stepItem === 'object' ? stepItem.description : stepItem,
-                    image: stepItem.image || null
-                }));
-            } else {
-                // Nếu parse được nhưng không phải mảng, ném lỗi để xuống catch
-                throw new Error("Instructions is not an array");
-            }
-        } catch (e) {
-            // 2. Fallback: Xử lý dạng text cũ (split xuống dòng)
-            // Dành cho các bài viết cũ chưa update sang JSON
-            steps = data.instructions.split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0)
-                .map((line, index) => ({
-                    step: index + 1,
-                    description: line,
-                    image: null
-                }));
-        }
-    }
-    let ingredients = [];
-    if (Array.isArray(data.ingredients)) {
-        ingredients = data.ingredients.map(ing => ({name: ing.ingredient_name, amount: `${ing.quantity} ${ing.unit_name}`}));
-    }
-    return {
-        ...data,
-        id: data.recipe_id,
-        title: data.title,
-        description: data.description,
-        image: getImageUrl('recipe', data.recipe_id, data.cover_image),
-        userAvatar: getImageUrl('user', data.user_id, data.author_avatar),
-        userName: data.author_name || "Ẩn danh",
-        cookTime: data.cook_time ? `${data.cook_time} phút` : 'Wait',
-        servings: data.servings,
-        calories: data.total_calo, 
-        rating: data.rating_avg_score ? parseFloat(data.rating_avg_score).toFixed(1) : 0,
-        likes: data.like_count || 0,
-        createdAt: data.created_at ? new Date(data.created_at).toLocaleDateString('vi-VN') : '',
-        detailedSteps: steps,
-        detailedIngredients: ingredients,
-        detailedDescription: data.description
-    };
-  };
+//             // Kiểm tra nếu parse ra đúng là mảng
+//             if (Array.isArray(parsedSteps)) {
+//                 steps = parsedSteps.map((stepItem, index) => ({
+//                     step: index + 1,
+//                     // Xử lý trường hợp stepItem là object {description: "..."} hoặc string "..."
+//                     description: typeof stepItem === 'object' ? stepItem.description : stepItem,
+//                     image: stepItem.image || null
+//                 }));
+//             } else {
+//                 // Nếu parse được nhưng không phải mảng, ném lỗi để xuống catch
+//                 throw new Error("Instructions is not an array");
+//             }
+//         } catch (e) {
+//             // 2. Fallback: Xử lý dạng text cũ (split xuống dòng)
+//             // Dành cho các bài viết cũ chưa update sang JSON
+//             steps = data.instructions.split('\n')
+//                 .map(line => line.trim())
+//                 .filter(line => line.length > 0)
+//                 .map((line, index) => ({
+//                     step: index + 1,
+//                     description: line,
+//                     image: null
+//                 }));
+//         }
+//     }
+//     let ingredients = [];
+//     if (Array.isArray(data.ingredients)) {
+//         ingredients = data.ingredients.map(ing => ({name: ing.ingredient_name, amount: `${ing.quantity} ${ing.unit_name}`}));
+//     }
+//     return {
+//         ...data,
+//         id: data.recipe_id,
+//         title: data.title,
+//         description: data.description,
+//         image: getImageUrl('recipe', data.recipe_id, data.cover_image),
+//         userAvatar: getImageUrl('user', data.user_id, data.author_avatar),
+//         userName: data.author_name || "Ẩn danh",
+//         cookTime: data.cook_time ? `${data.cook_time} phút` : 'Wait',
+//         servings: data.servings,
+//         calories: data.total_calo, 
+//         rating: data.rating_avg_score ? parseFloat(data.rating_avg_score).toFixed(1) : 0,
+//         likes: data.like_count || 0,
+//         createdAt: data.created_at ? new Date(data.created_at).toLocaleDateString('vi-VN') : '',
+//         detailedSteps: steps,
+//         detailedIngredients: ingredients,
+//         detailedDescription: data.description
+//     };
+//   };
 
   const fetchAllData = useCallback(async () => {
     if (!id) return;
@@ -104,7 +104,7 @@ export default function useRecipeDetail({ id, initialRecipe = null }) {
 
         if (recipeResp.status === 'fulfilled') {
             const rawData = recipeResp.value.data?.data || recipeResp.value.data;
-            setRecipeState(normalizeData(rawData));
+            setRecipeState(normalizeRecipe(rawData));
         }
         if (interactionResp.status === 'fulfilled' && interactionResp.value.data.success) {
             const state = interactionResp.value.data.data;
