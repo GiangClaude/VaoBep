@@ -19,11 +19,13 @@ const storage = multer.diskStorage({
         uploadPath = path.join(__dirname, '../public/user', userId);
     } 
     // 2. Kiểm tra nếu upload Recipe (Dựa vào req.savedRecipeId hoặc logic cũ)
-    else if (req.savedRecipeId) {
-        const recipeId = req.savedRecipeId;
+    else if (req.savedRecipeId || req.params.recipeId) {
+        // Ưu tiên ID mới tạo (Create), nếu không có thì lấy từ params (Update)
+        const recipeId = req.savedRecipeId || req.params.recipeId;
         uploadPath = path.join(__dirname, '../public/recipes', recipeId);
-    } else if (req.savedArticleId) {
-        const articleId = req.savedArticleId;
+    } else if (req.savedArticleId || req.params.articleId) {
+        // Ưu tiên ID mới tạo (Create), nếu không có thì lấy từ params (Update)
+        const articleId = req.savedArticleId || req.params.articleId;
         uploadPath = path.join(__dirname, '../public/articles', articleId);
     } 
     else {

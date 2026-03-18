@@ -1,6 +1,8 @@
 const ArticleModel = require('../models/article.model');
 const paginationHelper = require('../utils/paginationHelper');
 const db = require('../config/db');
+const fs = require('fs');
+const path = require('path');
 const TagModel = require('../models/tag.model');
 const InteractionModel = require('../models/interaction.model');
 const RecipeLinkModel = require('../models/recipe_link.model');
@@ -115,8 +117,20 @@ const ArticleController = {
             let updateData = { title, description, content, status, read_time};
 
             // Xử lý nếu có cập nhật ảnh bìa mới
+            // Xử lý nếu có cập nhật ảnh bìa mới
             if (req.files && req.files['cover_image'] && req.files['cover_image'].length > 0) {
-                updateData.cover_image = req.files['cover_image'][0].filename;
+                const newImageName = req.files['cover_image'][0].filename;
+                
+                // --- THÊM MỚI: Xóa ảnh cũ nếu tồn tại ---
+                if (article.cover_image) {
+                    const oldFilePath = path.join(__dirname, '../public/articles', articleId, article.cover_image);
+                    if (fs.existsSync(oldFilePath)) {
+                        fs.unlinkSync(oldFilePath); // Xóa file lẻ
+                    }
+                }
+                // ---------------------------------------
+                
+                updateData.cover_image = newImageName;
             }
 
             // Xóa các trường undefined để không update đè null vào DB
@@ -162,16 +176,21 @@ const ArticleController = {
                 return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa bài viết này!' });
             }
 
+            // --- THÊM MỚI: Xóa thư mục ảnh vật lý ---
+            const articleDir = path.join(__dirname, '../public/articles', articleId);
+            if (fs.existsSync(articleDir)) {
+                // Xóa thư mục và tất cả file bên trong (recursive)
+                fs.rmSync(articleDir, { recursive: true, force: true });
+            }
+            // ---------------------------------------
+
             await ArticleModel.deleteById(articleId);
 
             res.status(200).json({
                 success: true,
-                message: "Đã xóa bài viết thành công!"
+                message: "Đã xóa bài viết và dữ liệu hình ảnh thành công!"
             });
-        } catch (err) {
-            console.error("Lỗi delete article:", err);
-            res.status(500).json({ success: false, message: "Lỗi server: " + err.message });
-        }
+        } catch (err) { /*...*/ }
     },
 
     // 4. Lấy danh sách bài viết công khai (Cho trang Học thuật)

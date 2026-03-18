@@ -127,9 +127,9 @@ export default function useArticleAction() {
       formData.append('recipeIds', JSON.stringify(recipeIds));
 
       let response;
-      console.log("Debug saveArticle formData entries:", Array.from(formData.entries()));
-      if (data.id) {
-        response = await articleApi.updateArticle(data.id, formData);
+      
+      if (data.id || data.article_id) {
+        response = await articleApi.updateArticle(data.id || data.article_id, formData);
       } else {
         response = await articleApi.createArticle(formData);
       }

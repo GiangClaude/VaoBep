@@ -36,33 +36,41 @@ export default function ArticleEditorModal({ isOpen, onClose, initialData = null
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
+        // Bước 2 chúng ta đã sửa normalizeArticle để nó hiểu cả 'excerpt' và 'description'
         const clean = normalizeArticle(initialData);
+        
         setFormData({
           id: clean.id,
-          title: clean.title,
-          excerpt: clean.excerpt,
-          content: clean.content,
-          status: clean.status,
-          tags: clean.tags, 
-          recipes: clean.recipes,
+          title: clean.title || '',
+          excerpt: clean.excerpt || '', // Bây giờ đã có dữ liệu từ hàm normalize đã fix
+          content: clean.content || '',
+          status: clean.status || 'draft',
+          tags: clean.tags || [],
+          recipes: clean.recipes || [],
           coverFile: null,
-          coverPreview: clean.image,
-          readTime: clean.readTime
+          coverPreview: clean.image || null,
+          readTime: clean.readTime || '1 phút'
         });
 
-        if (editorRef.current) {
-          editorRef.current.innerHTML = clean.content || "";
-        }
+        // Đưa việc gán nội dung vào setTimeout để đảm bảo Editor DOM đã sẵn sàng
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.innerHTML = clean.content || "";
+          }
+        }, 0);
+        
       } else {
-        setFormData({ id: null, title: '', excerpt: '', content: '', status: 'draft', tags: [], recipes: [], coverFile: null, coverPreview: null, readTime: '1 phút' });
-        if (editorRef.current) {
-          editorRef.current.innerHTML = "";
-        }
+        // Reset form khi tạo mới
+        setFormData({ 
+          id: null, title: '', excerpt: '', content: '', 
+          status: 'draft', tags: [], recipes: [], 
+          coverFile: null, coverPreview: null, readTime: '1 phút' 
+        });
+        if (editorRef.current) editorRef.current.innerHTML = "";
       }
       setErrors({});
     }
   }, [initialData, isOpen]);
-
   // Helper cập nhật field trong formData
   const updateField = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));

@@ -16,7 +16,7 @@ export function normalizeArticle(a) {
   return {
     id: a.article_id || a.id,
     title: a.title || "",
-    excerpt: a.description || "", // Đổi tên 'description' thành 'excerpt' cho khớp ArticleCard
+    excerpt: a.description || a.excerpt || "", // Đổi tên 'description' thành 'excerpt' cho khớp ArticleCard
     content: a.content || "",
     image: a.cover_image ? getArticleImageUrl(a.article_id || a.id, a.cover_image) : (a.image || null),
     status: a.status || "public",
