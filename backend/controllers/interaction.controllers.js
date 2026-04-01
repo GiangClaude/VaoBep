@@ -1,7 +1,8 @@
+const { data } = require('autoprefixer');
 const InteractionModel = require('../models/interaction.model');
 const RecipeModel = require('../models/recipe.model');
 const { validateReportInput } = require('../utils/validation');
-
+const {validateInteractionInput, validateCommentInput} = require('../utils/validation');
 // Helper: Kiểm tra input postType
 const isValidPostType = (type) => ['recipe', 'article', 'dish'].includes(type);
 
@@ -11,17 +12,23 @@ const toggleLike = async (req, res) => {
         const userId = req.user.user_id;
         const { postId, postType } = req.body; // { postId: "...", postType: "recipe" }
 
-        if (!isValidPostType(postType)) return res.status(400).json({ message: "postType không hợp lệ" });
+        const validation = validateInteractionInput({ postId, postType });
+        if (!validation.valid) {
+            return res.status(400).json({ success: false, message: validation.message });
+        }
 
         const result = await InteractionModel.toggleLike({ userId, postId, postType });
-        
+        const typeName = (postType === 'recipe') ? 'công thức' : 
+                         (postType === 'article') ? 'bài viết' : 'món ăn';
+                        
         res.status(200).json({
             success: true,
-            message: result.isLiked ? "Đã like" : "Đã bỏ like",
+            message: result.isLiked ? `Đã thích ${typeName}` : `Đã bỏ thích ${typeName}`,
             data: { isLiked: result.isLiked }
         });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi Server: " + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
     }
 };
 
@@ -31,17 +38,24 @@ const toggleSave = async (req, res) => {
         const userId = req.user.user_id;
         const { postId, postType } = req.body;
 
-        if (!isValidPostType(postType)) return res.status(400).json({ message: "postType không hợp lệ" });
+        const validation = validateInteractionInput({ postId, postType });
+        if (!validation.valid) {
+            return res.status(400).json({ success: false, message: validation.message });
+        }
 
         const result = await InteractionModel.toggleSave({ userId, postId, postType });
 
+        const typeName = (postType === 'recipe') ? 'công thức' : 
+                         (postType === 'article') ? 'bài viết' : 'món ăn';
+
         res.status(200).json({
             success: true,
-            message: result.isSaved ? "Đã lưu vào bộ sưu tập" : "Đã bỏ lưu",
+            message: result.isSaved ? `Đã lưu ${typeName}` : `Đã bỏ lưu ${typeName}`,
             data: { isSaved: result.isSaved }
         });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi Server: " + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
     }
 };
 
@@ -49,18 +63,87 @@ const toggleSave = async (req, res) => {
 const postComment = async (req, res) => {
     try {
         const userId = req.user.user_id;
-        const { postId, postType, content } = req.body;
+        const { postId, postType, content, parentId } = req.body;
 
         if (!isValidPostType(postType)) return res.status(400).json({ message: "postType không hợp lệ" });
         if (!content || content.trim() === "") return res.status(400).json({ message: "Nội dung bình luận không được để trống" });
 
-        await InteractionModel.createComment({ userId, postId, postType, content });
+        const validation = validateCommentInput({ postId, postType, content, parentId });
+        if (!validation.valid) {
+            return res.status(400).json({ success: false, message: validation.message });
+        }
 
-        res.status(201).json({ success: true, message: "Bình luận thành công" });
+        const newComment = await InteractionModel.createComment({ userId, postId, postType, content, parentId });
+        console.log("New comment created:", newComment);
+
+        res.status(201).json({ 
+            success: true, 
+            message: parentId ? "Phản hồi thành công" : "Bình luận thành công" ,
+            newComment
+        });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi Server: " + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
     }
 };
+
+// 3.1 Chỉnh sửa bình luận
+const editComment = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { commentId } = req.params; // Lấy từ URL /api/interaction/comment/:commentId
+        const { content } = req.body;
+
+        const comment = await InteractionModel.getCommentById(commentId);
+        if (!comment) {
+            return res.status(404).json({ success: false, message: "Bình luận không tồn tại" });
+        } else if (comment.user_id !== userId) {
+            return res.status(403).json({ success: false, message: "Bạn không có quyền chỉnh sửa bình luận này" });
+        }
+        // 1. Validate input
+        if (!content || content.trim() === "") {
+            return res.status(400).json({ success: false, message: "Nội dung không được để trống" });
+        }
+        // 2. Gọi model update
+        const success = await InteractionModel.updateComment(commentId, userId, content);
+
+        if (!success) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Không tìm thấy bình luận hoặc bạn không có quyền chỉnh sửa." 
+            });
+        }
+
+        res.status(200).json({ success: true, message: "Cập nhật bình luận thành công" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+const deleteComment = async (req, res) => {
+    try {
+        
+        const userId = req.user.user_id;
+        const { commentId } = req.params; // Lấy từ URL /api/interaction/comment/:commentId
+        const comment = await InteractionModel.getCommentById(commentId);
+        if (!comment) {
+            return res.status(404).json({ success: false, message: "Bình luận không tồn tại" });
+        } else if (comment.user_id !== userId) {
+            return res.status(403).json({ success: false, message: "Bạn không có quyền xóa bình luận này" });
+        }
+        const success = await InteractionModel.deleteComment(commentId, userId);
+
+        if (!success) {
+            return res.status(403).json({ 
+                success: false, 
+                message: "Không tìm thấy bình luận hoặc bạn không có quyền xóa." 
+            });
+        }
+        res.status(200).json({ success: true, message: "Xóa bình luận thành công" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+}
 
 const getComments = async (req, res) => {
     try {
@@ -73,7 +156,22 @@ const getComments = async (req, res) => {
         const data = await InteractionModel.getComments(postId, postType, page, limit);
         res.status(200).json({ success: true, data });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi Server: " + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
+    }
+};
+
+// Lấy danh sách phản hồi của một comment (Lazy Load)
+const getReplies = async (req, res) => {
+    try {
+        const { parentId } = req.params; // Lấy từ URL: /api/interaction/comments/:parentId/replies
+        
+        if (!parentId) return res.status(400).json({ message: "Thiếu ID bình luận cha" });
+
+        const replies = await InteractionModel.getReplies(parentId);
+        res.status(200).json({ success: true, data: replies });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 
@@ -94,7 +192,8 @@ const ratePost = async (req, res) => {
             data: result // Trả về điểm TB mới để update giao diện
         });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi Server: " + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
     }
 };
 
@@ -114,7 +213,8 @@ const followUser = async (req, res) => {
             data: { isFollowing: result.isFollowing }
         });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi Server: " + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
     }
 };
 
@@ -123,11 +223,15 @@ const getInteractionState = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const { postId, postType } = req.query;
-        
+        const validation = validateInteractionInput({ postId, postType });
+        if (!validation.valid) {
+            return res.status(400).json({ success: false, message: validation.message });
+        }
         const state = await InteractionModel.getUserInteractionState(userId, postId, postType);
         res.status(200).json({ success: true, data: state });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi Server: " + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
     }
 };
 
@@ -162,7 +266,8 @@ const reportPost = async (req, res) => {
             data: result
         });
     } catch (err) {
-        res.status(500).json({ message: 'Lỗi Server: ' + err.message });
+        const status = (err.message.includes('không tồn tại') || err.message.includes('không công khai')) ? 400 : 500;
+        res.status(status).json({ success: false, message: err.message });
     }
 };
 
@@ -170,7 +275,10 @@ module.exports = {
     toggleLike,
     toggleSave,
     postComment,
+    editComment,
+    deleteComment,
     getComments,
+    getReplies,
     ratePost,
     followUser,
     getInteractionState,

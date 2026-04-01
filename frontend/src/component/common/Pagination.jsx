@@ -2,6 +2,8 @@ import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Pagination = ({ pagination, onPageChange }) => {
+     if (!pagination) return null; 
+     
     const { currentPage, totalPages, totalItems } = pagination;
 
     // Không hiện nếu chỉ có 1 trang hoặc không có dữ liệu

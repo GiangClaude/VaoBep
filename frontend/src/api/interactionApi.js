@@ -23,8 +23,8 @@ const interactionApi = {
     },
 
     // 4. Gửi bình luận
-    postComment: async (postId, content, postType = 'recipe') => {
-        const response = await apiClient.post('/interaction/comment', { postId, postType, content });
+    postComment: async (postId, content, postType = 'recipe', parentId = null) => {
+        const response = await apiClient.post('/interaction/comment', { postId, postType, content, parentId });
         return response;
     },
 
@@ -33,6 +33,24 @@ const interactionApi = {
         const response = await apiClient.get('/interaction/comments', {
             params: { postId, postType, page, limit: 10 }
         });
+        return response;
+    },
+
+    // Lấy danh sách phản hồi của một comment (Lazy Load)
+    getReplies: async (parentId) => {
+        const response = await apiClient.get(`/interaction/comments/${parentId}/replies`);
+        return response;
+    },
+
+    // Chỉnh sửa bình luận
+    updateComment: async (commentId, content) => {
+        const response = await apiClient.put(`/interaction/comment/${commentId}`, { content });
+        return response;
+    },
+
+    // Xóa bình luận
+    deleteComment: async (commentId) => {
+        const response = await apiClient.delete(`/interaction/comment/${commentId}`);
         return response;
     },
 

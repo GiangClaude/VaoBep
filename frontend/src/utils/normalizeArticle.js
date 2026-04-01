@@ -45,11 +45,15 @@ export function normalizeArticle(a) {
     // Giữ lại mảng tags gốc nguyên bản phòng khi trang Detail cần dùng
     // rawTags: a.tags || [],
     // Thêm nội dung đầy đủ và bình luận nếu có để trang detail dùng
+    likeCount: a.like_count !== undefined ? Number(a.like_count) : 0,
     comments: a.comments || [],
     totalComments: a.total_comments || (a.comment_count !== undefined ? Number(a.comment_count) : 0),
     // Ngày thô để hiển thị theo nhiều định dạng nếu cần
     // createdAtRaw: a.created_at || null,
-    linkedRecipes: a.linked_recipes || [] // Thêm trường này để lưu công thức liên kết nếu có
+    linkedRecipes: a.linked_recipes || [],
+    is_liked: a.is_liked || false, // Thêm trường này để lưu trạng thái đã thích hay chưa,
+    is_saved: a.is_saved || false // Thêm trường này để lưu công thức liên kết nếu có,
+
   };
 }
 

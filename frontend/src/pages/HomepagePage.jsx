@@ -19,6 +19,7 @@ import  Sidebar  from '../component/homepage/Sidebar';
 import ArticleCard from "../component/common/ArticleCard";
 import useFeaturedArticles from '../hooks/useFeaturedArticles';
 export default function HomePage() {
+  // window.scrollTo(0, 0);
   const { recipes: latestRecipes, loading: latestLoading } = useRecentlyRecipes();
   const { recipes: ownerRecipes, loading: ownerLoading} = useOwnerRecipes();
   const { articles: featuredArticles, loading: featuredLoading } = useFeaturedArticles(3);

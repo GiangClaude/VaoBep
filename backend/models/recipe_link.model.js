@@ -58,9 +58,10 @@ class RecipeLinkModel {
     static async getLinkedRecipesByArticleId(articleId) {
         // Giải thích: Hàm này join sang bảng Recipes để lấy thông tin hiển thị
         const sql = `
-            SELECT r.recipe_id, r.title, r.cover_image, r.status
+            SELECT r.recipe_id, r.title, r.cover_image, r.status, u.user_id as author_id, u.full_name as author_name
             FROM Recipes r
             JOIN Recipe_Post_Links rpl ON r.recipe_id = rpl.linked_post_id
+            JOIN Users u ON r.user_id = u.user_id
             WHERE rpl.source_recipe_id = ? AND rpl.linked_post_type = 'recipe'
         `;
         const [rows] = await pool.execute(sql, [articleId]);

@@ -1,8 +1,9 @@
-const ArticleModel = require('../models/article.model');
 const paginationHelper = require('../utils/paginationHelper');
+const { getUserIdFromToken } = require('../utils/auth.utils');
 const db = require('../config/db');
 const fs = require('fs');
 const path = require('path');
+const ArticleModel = require('../models/article.model');
 const TagModel = require('../models/tag.model');
 const InteractionModel = require('../models/interaction.model');
 const RecipeLinkModel = require('../models/recipe_link.model');
@@ -198,12 +199,14 @@ const ArticleController = {
             try {
                 // 1. Lấy và chuẩn hóa các tham số từ Query String
                 const page = parseInt(req.query.page) || 1;
-                const limit = parseInt(req.query.limit) || 10;
+                const limit = parseInt(req.query.limit) || 5;
                 const offset = (page - 1) * limit;
                 
                 const keyword = req.query.q || ""; // Từ khóa tìm kiếm
                 const sort = req.query.sort || "newest"; // Mặc định là mới nhất
                 
+
+
                 // Xử lý tags: Chấp nhận cả dạng mảng hoặc chuỗi phân tách bằng dấu phẩy
                 let tagIds = [];
                 if (req.query.tags) {
@@ -231,6 +234,20 @@ const ArticleController = {
                         linked_recipes: linkedRecipes 
                     };
                 }));
+
+                const userId = getUserIdFromToken(req); // Lấy từ token (nếu có)
+                if (userId && articlesWithDetails.length > 0) {
+                    const postIds = articlesWithDetails.map(a => a.article_id);
+                    const interactionStates = await InteractionModel.getBatchInteractionState(userId, postIds, 'article');
+                    // Ghép trạng thái vào từng bài viết
+                    articlesWithDetails.forEach(article => {
+                        const state = interactionStates[article.article_id];
+                        article.is_liked = state ? state.liked : false;
+                        article.is_saved = state ? state.saved : false;
+                    });
+                }
+
+                console.log("Danh sách bài viết đã lấy:", articlesWithDetails);
 
                 // 4. Trả về kết quả kèm thông tin phân trang
                 res.status(200).json({
@@ -293,7 +310,7 @@ const ArticleController = {
     getArticleById: async (req, res) => {
         try {
             const { articleId } = req.params;
-
+            const userId = getUserIdFromToken(req);
             // Bước 1: Lấy thông tin bài viết gốc trước
             const article = await ArticleModel.findById(articleId);
 
@@ -307,17 +324,21 @@ const ArticleController = {
 
             // Bước 2: Chạy song song 2 luồng để lấy Tags và Comments (Tăng tốc độ)
             // Lấy trang 1, 10 comments đầu tiên (có thể lấy page từ req.query nếu bạn muốn làm nút "Tải thêm")
-            const [tags, commentsData, linkedRecipes] = await Promise.all([
+            const [tags, commentsData, linkedRecipes, interactionState] = await Promise.all([
                 TagModel.getTagsByPostId(articleId), 
                 InteractionModel.getComments(articleId, 'article', 1, 10),
-                RecipeLinkModel.getLinkedRecipesByArticleId(articleId) // Lấy món ăn đã gắn
+                RecipeLinkModel.getLinkedRecipesByArticleId(articleId), // Lấy món ăn đã gắn
+                InteractionModel.getBatchInteractionState(userId, [articleId], 'article')   
             ]);
-
+            const state = interactionState ? interactionState[articleId] : null;
             // Bước 3: Đóng gói tất cả vào 1 cục data và trả về cho Client
             article.tags = tags;
             article.comments = commentsData.comments;
-            article.total_comments = commentsData.total;
+            article.total_comments = article.commentCount;
             article.linked_recipes = linkedRecipes;
+            
+            article.is_liked = state ? state.liked : false;
+            article.is_saved = state ? state.saved : false;
 
             res.status(200).json({
                 success: true,

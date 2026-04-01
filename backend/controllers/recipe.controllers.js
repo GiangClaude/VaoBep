@@ -325,7 +325,6 @@ const getRecentlyRecipes = async(req, res) => {
 const getFeatureRecipes = async(req, res) => {
     try {
         const recipes = await RecipeModel.getFeatureRecipes();
-        console.log("Vua lay recipe xong!");
         if (recipes.length <= 0) {
             res.status(404).json({
                 message: "Khong cos feature thoa man",

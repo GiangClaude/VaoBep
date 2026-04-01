@@ -95,7 +95,7 @@ const ArticleModel = {
         let params = [];
         // Tích hợp luôn công thức tính score từ hàm getFeaturedArticles cũ của bạn vào đây
         let query = `
-            SELECT a.article_id, a.title, a.description, a.cover_image, a.created_at, a.comment_count, a.read_time, a.report_count,
+            SELECT a.article_id, a.title, a.description, a.cover_image, a.created_at, a.comment_count, a.read_time, a.like_count,
                    u.full_name as author_name, u.avatar as author_avatar, u.user_id as author_id,
                    (
                        (LOG(1 + COALESCE(a.comment_count,0)) * 2)

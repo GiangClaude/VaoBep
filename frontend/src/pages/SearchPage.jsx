@@ -80,6 +80,7 @@ export default function SearchPage() {
     const handleTabChange = (tabId) => {
         setActiveTab(tabId);
         setCurrentPage(1); // Đổi tab thì reset về trang 1
+        window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn lên đầu trang khi đổi trang
     };
 
     const handleFilterChange = (type, newFilter) => {
@@ -190,7 +191,7 @@ export default function SearchPage() {
 
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen ">
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">

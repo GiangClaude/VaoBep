@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-
+import ScrollToTop from "./utils/ScrollToTop";
 // [THAY ĐỔI] Import AuthProvider và useAuth từ context đã tách
 import { AuthProvider, useAuth } from './AuthContext';
 
@@ -70,6 +70,7 @@ function App() {
     // [THAY ĐỔI] Bọc toàn bộ ứng dụng trong AuthProvider
     <AuthProvider>
       <BrowserRouter>
+      <ScrollToTop />
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<LoginPage />} />

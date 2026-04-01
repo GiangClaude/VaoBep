@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom'; // <--- THÊM MỚI: Dùng để đưa modal ra khỏi Card
 import { motion, AnimatePresence } from 'motion/react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
@@ -22,54 +23,66 @@ export default function Modal({
 
   const { icon: Icon, color, bg } = modalTypes[type] || modalTypes.info;
 
-  return (
-    <AnimatePresence>
-      {/* Overlay: fixed, full screen, chặn click xuyên qua */}
+  // Sử dụng createPortal để gắn Modal vào cuối thẻ <body> thay vì nằm trong ArticleCard
+  return createPortal(
+    <AnimatePresence mode="wait">
+      {/* Overlay: fixed, full screen */}
       <motion.div
+        key="modal-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        // QUAN TRỌNG: Chặn click từ Modal lan ra ArticleCard cha bên dưới
+        onClick={(e) => {
+          e.stopPropagation(); 
+          // Nếu muốn click ra ngoài để đóng, có thể gọi onClose() ở đây
+        }}
+        className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       >
-        {/* Modal Content */}
+        {/* Modal Content Container */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+          key="modal-content"
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          transition={{ type: "spring", duration: 0.4, bounce: 0.3 }}
+          // Chặn click bên trong modal không làm kích hoạt đóng modal từ overlay
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
         >
-          {/* Header */}
-          <div className="p-5 flex items-center gap-4">
-            <div className={`p-3 rounded-full ${bg} ${color}`}>
-              <Icon className="w-6 h-6" />
+          {/* Header Section */}
+          <div className="p-6 flex flex-col items-center text-center gap-4 border-b border-gray-50">
+            <div className={`p-4 rounded-2xl ${bg} ${color} shadow-inner`}>
+              <Icon className="w-8 h-8" />
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">{title}</h3>
             </div>
-            {/* Nút đóng góc trên (tùy chọn) */}
-            {/* <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X className="w-5 h-5" />
-            </button> */}
           </div>
 
-          {/* Body */}
-          <div className="px-5 pb-4">
-            <div className="text-gray-600 leading-relaxed">{message}</div>
+          {/* Body Section */}
+          <div className="px-6 py-5">
+            <div className="text-gray-600 text-center leading-relaxed font-medium">
+              {message}
+            </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="p-5 bg-gray-50 flex gap-3 justify-end">
+          <div className="p-5 bg-gray-50/80 flex flex-col sm:flex-row gap-3">
             {actions.length > 0 ? (
               actions.map((action, index) => (
                 <button
                   key={index}
-                  onClick={action.onClick}
-                  className={`px-4 py-2 rounded-full font-medium transition-all transform active:scale-95 ${
+                  onClick={(e) => {
+                    e.stopPropagation(); // Chặn click nút bấm làm nhảy trang detail
+                    action.onClick();
+                  }}
+                  className={`flex-1 px-5 py-3 rounded-2xl font-bold transition-all transform active:scale-95 text-sm ${
                     action.style === 'primary' 
-                      ? 'bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white shadow-md hover:shadow-lg'
+                      ? 'bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white shadow-lg shadow-orange-200 hover:brightness-110'
                       : action.style === 'danger'
-                      ? 'bg-red-500 text-white hover:bg-red-600'
-                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+                      ? 'bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-100'
+                      : 'bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   {action.label}
@@ -77,8 +90,11 @@ export default function Modal({
               ))
             ) : (
               <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="w-full px-5 py-3 bg-gray-200 text-gray-700 rounded-2xl font-bold hover:bg-gray-300 transition-colors"
               >
                 Đóng
               </button>
@@ -86,6 +102,7 @@ export default function Modal({
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body // Gắn trực tiếp vào body của trang web
   );
 }

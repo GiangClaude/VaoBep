@@ -10,7 +10,9 @@ router.post('/save', protect, interactionController.toggleSave);
 // Nhóm Comment
 router.post('/comment', protect, interactionController.postComment);
 router.get('/comments', interactionController.getComments); // Không cần protect nếu cho khách xem cmt
-
+router.get('/comments/:parentId/replies', interactionController.getReplies);
+router.put('/comment/:commentId', protect, interactionController.editComment);
+router.delete('/comment/:commentId', protect, interactionController.deleteComment);
 // Nhóm Rating
 router.post('/rate', protect, interactionController.ratePost);
 

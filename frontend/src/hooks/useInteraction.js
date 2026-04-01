@@ -4,7 +4,6 @@ import Modal from "../component/common/modal";
 import ReportModalComponent from "../component/common/ReportModal";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
-
 // Tên sự kiện chung cho việc đồng bộ tương tác
 const INTERACTION_EVENT = 'interaction-sync-event';
 
@@ -15,6 +14,7 @@ export default function useInteraction({
 }) {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
+    const [toast, setToast] = useState({ show: false, message: "" });
 
     // State hiển thị trên UI
     const [state, setState] = useState({
@@ -205,7 +205,6 @@ export default function useInteraction({
     const handleToggleSave = async (e) => {
         e && e.stopPropagation();
 
-        console.log("DEBUG SAVE - Đang gửi lên server:", { id, type, currentUser });
         if (!id) {
             console.error("LỖI: ID bị undefined, không thể gọi API!");
             return;
@@ -223,13 +222,70 @@ export default function useInteraction({
         
 
         try {
-            await interactionApi.toggleSave(id, type);
+            const res = await interactionApi.toggleSave(id, type);
+            setToast({ show: true, message: res.data.message });
         } catch (error) {
             console.error("Lỗi save:", error);
             // Revert nếu lỗi
             broadcastUpdate({
                 saved: oldState.saved
             });
+        }
+    };
+
+    // --- 6.1. Xử lý Gửi Bình luận (Có đồng bộ số lượng) ---
+    const handlePostComment = async (content, parentId = null) => {
+        if (!checkAuth()) return null;
+        try {
+            const res = await interactionApi.postComment(id, content, type, parentId);
+            if (res.data.success) {
+                // Đồng bộ tăng commentCount lên 1 cho toàn hệ thống
+                broadcastUpdate({
+                    commentCount: state.commentCount + 1
+                });
+                return res.data.newComment; // Trả về để UI biết đường hiển thị comment mới
+            }
+        } catch (error) {
+            console.error("Lỗi gửi bình luận:", error);
+            setToast({ show: true, message: error.response?.data?.message || "Không thể gửi bình luận" });
+            return null;
+        }
+    };
+
+    // --- 6.2. Xử lý Xóa Bình luận (Quan trọng: Trừ đúng số lượng Cascade) ---
+    const handleDeleteComment = async (commentId, replyCount = 0) => {
+        if (!checkAuth()) return false;
+        try {
+            const res = await interactionApi.deleteComment(commentId);
+            if (res.data.success) {
+                // Tính toán số lượng cần trừ: bản thân nó + các reply con bị mất do cascade
+                const totalToRemove = 1 + Number(replyCount);
+                broadcastUpdate({
+                    commentCount: Math.max(0, state.commentCount - totalToRemove)
+                });
+                setToast({ show: true, message: "Đã xóa bình luận" });
+                return true;
+            }
+        } catch (error) {
+            console.error("Lỗi xóa bình luận:", error);
+            setToast({ show: true, message: "Không thể xóa bình luận" });
+            return false;
+        }
+    };
+
+    // --- 6.3. Xử lý Sửa Bình luận ---
+    const handleEditComment = async (commentId, content) => {
+        if (!checkAuth()) return null;
+        try {
+            const res = await interactionApi.updateComment(commentId, content);
+            if (res.data.success) {
+                setToast({ show: true, message: "Đã cập nhật bình luận" });
+                return res.data.data; // Trả về thông tin update_at mới
+            }
+        } catch (error) {
+            console.error("Lỗi sửa bình luận:", error);
+            setToast({ show: true, message: "Không thể sửa bình luận" });
+            return null;
         }
     };
 
@@ -279,6 +335,8 @@ export default function useInteraction({
         }
     };
 
+    const closeToast = () => setToast({ ...toast, show: false });
+
     const InteractionModal = () => (
         <Modal 
             isOpen={modalConfig.isOpen}
@@ -302,8 +360,13 @@ export default function useInteraction({
 
     return {
         state,
+        toast,
+        closeToast,
         handleToggleLike,
         handleToggleSave,
+        handlePostComment,
+        handleDeleteComment,
+        handleEditComment,
         handleShare,
         handleReport: openReportModal,
         InteractionModal,

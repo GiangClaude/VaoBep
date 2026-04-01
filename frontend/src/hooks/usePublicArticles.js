@@ -1,37 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import articleApi from '../api/articleApi';
 import { normalizeArticleList } from '../utils/normalizeArticle';
 
-export default function usePublicArticles(page = 1, limit = 10) {
+export default function usePublicArticles(page = 1, limit = 10, filters = {}) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState(null);
+  
+  // Dùng Ref để lưu trữ timer của debounce, tránh tạo mới khi render
+  const debounceTimer = useRef(null);
 
-  const fetchArticles = async (p = page, l = limit) => {
+  // 1. Hàm fetch chính
+  const fetchArticles = useCallback(async (isSearchImmediate = false) => {
     setLoading(true);
     setError(null);
     try {
-      const params = { page: p, limit: l };
+      const params = { 
+        page, 
+        limit: 5,
+        sort: filters.sort || 'newest',
+        tags: (filters.tags && filters.tags.length > 0) ? filters.tags.join(',') : undefined,
+        q: filters.searchTerm || undefined
+      };
+
       const response = await articleApi.getPublicArticles(params);
-      // Backend returns { success, message, data, pagination }
       const respData = response.data;
+      console.log("Dữ liệu bài viết nhận được từ API:", respData);
       setArticles(normalizeArticleList(respData.data || []));
       setPagination(respData.pagination || null);
-      setLoading(false);
-      return normalizeArticleList(respData.data || []);
     } catch (err) {
-      setLoading(false);
       const msg = err.response?.data?.message || err.message || 'Lỗi khi lấy danh sách bài viết';
       setError(msg);
-      throw err;
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [page, limit, filters.sort, filters.tags, filters.searchTerm]); 
+  // Chỉ phụ thuộc vào các giá trị nguyên thủy bên trong filters
 
+  // 2. useEffect để xử lý việc gọi API
   useEffect(() => {
-    fetchArticles(page, limit).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit]);
+    // Nếu có searchTerm, áp dụng Debounce (chờ 500ms)
+    if (filters.searchTerm) {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      
+      debounceTimer.current = setTimeout(() => {
+        fetchArticles();
+      }, 500); // Người dùng ngừng gõ 0.5s mới load
+    } else {
+      // Nếu không có searchTerm (hoặc chỉ đổi Page/Sort/Tags), gọi ngay lập tức
+      fetchArticles();
+    }
+
+    // Cleanup function: xóa timer khi component unmount hoặc filters thay đổi
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [fetchArticles]); // fetchArticles đã được memoized bởi useCallback ở trên
 
   return { articles, loading, error, pagination, fetchArticles };
 }

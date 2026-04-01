@@ -2,7 +2,59 @@
 const db = require('../config/db');
 const pool = db.pool;
 
+
+
 class Interaction {
+
+    // --- Hàm Helper nội bộ: Kiểm tra sự tồn tại và trạng thái của bài viết ---
+    static async _validatePostStatus(connection, postId, postType) {
+        let targetTable = '';
+        let idColumn = '';
+
+        if (postType === 'recipe') { targetTable = 'Recipes'; idColumn = 'recipe_id'; }
+        else if (postType === 'article') { targetTable = 'Article_Posts'; idColumn = 'article_id'; }
+        else if (postType === 'dish') { targetTable = 'Dictionary_Dishes'; idColumn = 'dish_id'; }
+        else { throw new Error('Loại bài viết không hợp lệ'); }
+
+        // Truy vấn kiểm tra
+        // Lưu ý: bảng Dictionary_Dishes trong SQL của bạn không có cột status nên mặc định là công khai
+        const selectFields = (postType === 'dish') ? '1 as exists_flag' : 'status';
+        const [rows] = await connection.execute(
+            `SELECT ${selectFields} FROM ${targetTable} WHERE ${idColumn} = ?`,
+            [postId]
+        );
+
+        if (rows.length === 0) {
+            throw new Error('Nội dung không tồn tại');
+        }
+
+        if (postType !== 'dish' && rows[0].status !== 'public') {
+            throw new Error('Nội dung này hiện không công khai và không thể tương tác');
+        }
+
+        return { targetTable, idColumn };
+    }
+
+    // --- Hàm Helper nội bộ: Kiểm tra độ sâu của comment ---
+    static async _getCommentDepth(connection, commentId) {
+        if (!commentId) return 0; // Không có parentId => Cấp 0 (Root)
+
+        // Truy vấn lấy parent_id của comment hiện tại và parent_id của comment cha nó
+        const sql = `
+            SELECT c1.parent_id AS p1_parent, c2.parent_id AS p2_parent
+            FROM Comments c1
+            LEFT JOIN Comments c2 ON c1.parent_id = c2.comment_id
+            WHERE c1.comment_id = ?
+        `;
+        const [rows] = await connection.execute(sql, [commentId]);
+        
+        if (rows.length === 0) throw new Error('Bình luận cha không tồn tại');
+
+        if (rows[0].p1_parent === null) return 1; // Cha là Root => Comment mới sẽ là cấp 1
+        if (rows[0].p2_parent === null) return 2; // Cha là cấp 1 => Comment mới sẽ là cấp 2
+        
+        return 3; // Cha đã là cấp 2 hoặc sâu hơn
+    }
     
     // --- 1. LIKE / UNLIKE (Hỗ trợ Recipe, Article, Dish) ---
     static async toggleLike({ userId, postId, postType }) {
@@ -11,25 +63,13 @@ class Interaction {
             await connection.beginTransaction();
 
             // Xác định bảng cần update count
-            let targetTable = '';
-            let idColumn = '';
+            const { targetTable, idColumn } = await this._validatePostStatus(connection, postId, postType);
 
-            const [ispublic] = await connection.execute(
-                `SELECT status FROM Recipes WHERE recipe_id = ?`,
+            const [postRows] = await connection.execute(
+                `SELECT ${postType === 'dish' ? '1' : 'status'} FROM ${targetTable} WHERE ${idColumn} = ?`,
                 [postId]
             );
-            if (!ispublic || ispublic.length === 0) {
-                throw new Error('Không tìm thấy bài viết');
-            }
-            if (ispublic[0].status === 'draft' || ispublic[0].status === 'hidden') {
-                throw new Error('Bài viết không công khai');
-            }
             
-            if (postType === 'recipe') { targetTable = 'Recipes'; idColumn = 'recipe_id'; }
-            else if (postType === 'article') { targetTable = 'Article_Posts'; idColumn = 'article_id'; }
-            else if (postType === 'dish') { targetTable = 'Dictionary_Dishes'; idColumn = 'dish_id'; }
-            else { throw new Error('Invalid post_type'); }
-
             // Kiểm tra đã like chưa
             const [exists] = await connection.execute(
                 `SELECT * FROM Likes WHERE user_id = ? AND post_id = ? AND post_type = ?`,
@@ -73,10 +113,15 @@ class Interaction {
         }
     }
 
+
+
     // --- 2. SAVE / UNSAVE (Bookmark) ---
     static async toggleSave({ userId, postId, postType }) {
         const connection = await pool.getConnection();
         try {
+
+            await this._validatePostStatus(connection, postId, postType);
+
             // Kiểm tra đã lưu chưa
             const [exists] = await connection.execute(
                 `SELECT * FROM Saved_Posts WHERE user_id = ? AND post_id = ? AND post_type = ?`,
@@ -108,34 +153,70 @@ class Interaction {
     }
 
     // --- 3. COMMENT (Bình luận) ---
-    static async createComment({ userId, postId, postType, content }) {
+    static async createComment({ userId, postId, postType, content, parentId = null}) {
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
 
+            await this._validatePostStatus(connection, postId, postType);
+
+            if (parentId) {
+                const depth = await this._getCommentDepth(connection, parentId);
+                if (depth >= 3) {
+                    throw new Error('Hệ thống chỉ hỗ trợ phản hồi tối đa 2 cấp');
+                }
+            }
+
              // Xác định bảng cần update comment_count
-            let targetTable = '';
-            let idColumn = '';
-            if (postType === 'recipe') { targetTable = 'Recipes'; idColumn = 'recipe_id'; }
-            else if (postType === 'article') { targetTable = 'Article_Posts'; idColumn = 'article_id'; }
-            else if (postType === 'dish') { targetTable = 'Dictionary_Dishes'; idColumn = 'dish_id'; }
+            const { targetTable, idColumn } = await this._validatePostStatus(connection, postId, postType);
+
+            const commentId = crypto.randomUUID();
 
             // Insert Comment
             // Lưu ý: bảng Comments có cột comment_id default uuid() nhưng MySQL < 8.0 có thể cần gen ID từ code.
             // Giả sử DB tự gen hoặc dùng uuid() trong SQL
-            const sqlInsert = `INSERT INTO Comments (user_id, post_id, post_type, content) VALUES (?, ?, ?, ?)`;
-            await connection.execute(sqlInsert, [userId, postId, postType, content]);
+            const sqlInsert = `INSERT INTO Comments (comment_id, user_id, post_id, post_type, content, parent_id) VALUES (?, ?, ?, ?, ?, ?)`;
+            await connection.execute(sqlInsert, [commentId, userId, postId, postType, content, parentId]);
 
-            // Update Count
-            if (targetTable) {
-                await connection.execute(
-                    `UPDATE ${targetTable} SET comment_count = comment_count + 1 WHERE ${idColumn} = ?`,
-                    [postId]
-                );
+            // // Update Count
+            // if (targetTable) {
+            //     await connection.execute(
+            //         `UPDATE ${targetTable} SET comment_count = comment_count + 1 WHERE ${idColumn} = ?`,
+            //         [postId]
+            //     );
+            // }
+
+            if (parentId) {
+                let currentParentId = parentId;
+                while (currentParentId) {
+                    //Tăng reply_count cho cha hiện tại
+                    await connection.execute(
+                        `UPDATE Comments SET reply_count = reply_count + 1 WHERE comment_id = ?`,
+                        [currentParentId]
+                    );
+                    
+                    // Tìm ID của cha cấp cao hơn (nếu có)
+                    const [pRows] = await connection.execute(
+                        `SELECT parent_id FROM Comments WHERE comment_id = ?`,
+                        [currentParentId]
+                    );
+                    currentParentId = pRows[0]?.parent_id; 
+                }
             }
 
+            const [rows] = await connection.execute(`
+                SELECT 
+                    c.comment_id, c.content, c.created_at, c.update_at, c.parent_id, c.post_id, c.post_type, c.user_id,
+                    u.full_name, u.avatar,
+                    (SELECT COUNT(*) FROM Comments WHERE parent_id = c.comment_id) as reply_count
+                FROM Comments c
+                JOIN Users u ON c.user_id = u.user_id
+                WHERE c.comment_id = ?
+            `, [commentId]);
+            
+
             await connection.commit();
-            return { success: true };
+            return rows[0];
         } catch (error) {
             await connection.rollback();
             throw error;
@@ -147,17 +228,19 @@ class Interaction {
     static async getComments(postId, postType, page = 1, limit = 10) {
         const offset = (page - 1) * limit;
         const sql = `
-            SELECT C.*, U.full_name, U.avatar 
+            SELECT C.*, U.full_name, U.avatar,
+                   C.reply_count
             FROM Comments C
             JOIN Users U ON C.user_id = U.user_id
-            WHERE C.post_id = ? AND C.post_type = ?
+            WHERE C.post_id = ? AND C.post_type = ? AND C.parent_id IS NULL
             ORDER BY C.created_at DESC
+            LIMIT ? OFFSET ?
         `;
-        const [rows] = await pool.execute(sql, [postId, postType]);
+        const [rows] = await pool.execute(sql, [postId, postType, limit.toString(), offset.toString()]);
         
         // Đếm tổng comment để phân trang
         const [countRows] = await pool.execute(
-            `SELECT COUNT(*) as total FROM Comments WHERE post_id = ? AND post_type = ?`, 
+            `SELECT COUNT(*) as total FROM Comments WHERE post_id = ? AND post_type = ? AND parent_id IS NULL`, 
             [postId, postType]
         );
         
@@ -165,6 +248,26 @@ class Interaction {
             comments: rows,
             total: countRows[0].total
         };
+    }
+
+    static async getCommentById(commentId) {
+        const sql = `SELECT * FROM Comments WHERE comment_id = ?`;
+        const [rows] = await pool.execute(sql, [commentId]);
+        return rows.length > 0 ? rows[0] : null;
+    }
+
+    // Hàm lấy danh sách phản hồi (Lazy Load)
+    static async getReplies(parentId) {
+        const sql = `
+            SELECT C.*, U.full_name, U.avatar,
+                   C.reply_count
+            FROM Comments C
+            JOIN Users U ON C.user_id = U.user_id
+            WHERE C.parent_id = ?
+            ORDER BY C.created_at ASC
+        `;
+        const [rows] = await pool.execute(sql, [parentId]);
+        return rows;
     }
 
     // Thêm vào trong class Interaction của file models/interaction.model.js
@@ -178,34 +281,70 @@ class Interaction {
     }
 
     // Hàm xóa bình luận và giảm comment_count của bài viết
-    static async deleteComment({ commentId, userId, postId, postType }) {
+// Hàm xóa bình luận và tất cả phản hồi con, trigger sẽ tự lo việc giảm comment_count
+    static async deleteComment(commentId, userId) {
+        console.log("Attempting to delete comment and its replies:", { commentId, userId });
+
         const connection = await pool.getConnection();
         try {
             await connection.beginTransaction();
 
-            // 1. Xóa comment (Đảm bảo đúng user_id để chống xóa lén)
-            const sqlDelete = `DELETE FROM Comments WHERE comment_id = ? AND user_id = ?`;
-            const [result] = await connection.execute(sqlDelete, [commentId, userId]);
-            
-            if (result.affectedRows === 0) throw new Error("Không tìm thấy comment hoặc bạn không có quyền xóa.");
+            // 1. Kiểm tra xem comment có tồn tại và thuộc về user này không để chống xóa lén
+            const [checkOwner] = await connection.execute(
+                `SELECT comment_id FROM Comments WHERE comment_id = ? AND user_id = ?`,
+                [commentId, userId]
+            );
 
-            // 2. Xác định bảng cần giảm comment_count
-            let targetTable = '';
-            let idColumn = '';
-            if (postType === 'recipe') { targetTable = 'Recipes'; idColumn = 'recipe_id'; }
-            else if (postType === 'article') { targetTable = 'Article_Posts'; idColumn = 'article_id'; }
-            else if (postType === 'dish') { targetTable = 'Dictionary_Dishes'; idColumn = 'dish_id'; }
-
-            // 3. Giảm comment_count đi 1 (Dùng GREATEST để tránh số âm)
-            if (targetTable) {
-                await connection.execute(
-                    `UPDATE ${targetTable} SET comment_count = GREATEST(comment_count - 1, 0) WHERE ${idColumn} = ?`,
-                    [postId]
-                );
+            if (checkOwner.length === 0) {
+                throw new Error("Không tìm thấy comment hoặc bạn không có quyền xóa.");
             }
 
+            // 2. Truy vấn lấy ID của comment cha và toàn bộ comment con/cháu (hỗ trợ 2 cấp)
+            const sqlGetIds = `
+                SELECT comment_id FROM Comments 
+                WHERE comment_id = ? 
+                   OR parent_id = ? 
+                   OR parent_id IN (SELECT comment_id FROM Comments WHERE parent_id = ?)
+            `;
+            const [rows] = await connection.execute(sqlGetIds, [commentId, commentId, commentId]);
+            
+            // Tạo mảng chứa tất cả các ID cần xóa
+            const idsToDelete = rows.map(row => row.comment_id);
+
+            // 3. Thực hiện xóa tất cả các ID trong 1 câu lệnh
+            // Lưu ý: Lệnh IN() này sẽ kích hoạt trigger after_comment_delete cho TỪNG bình luận bị xóa
+            if (idsToDelete.length > 0) {
+                const [targetComment] = await connection.execute(
+                    `SELECT parent_id FROM Comments WHERE comment_id = ?`, [commentId]
+                );
+                const topParentId = targetComment[0]?.parent_id;
+
+                // Thực hiện xóa (idsToDelete chứa bản thân nó và toàn bộ con cháu)
+                const totalToRemove = idsToDelete.length;
+                const placeholders = idsToDelete.map(() => '?').join(',');
+                const sqlDelete = `DELETE FROM Comments WHERE comment_id IN (${placeholders})`;
+                await connection.execute(sqlDelete, idsToDelete);
+
+                // Nếu nó có cha, cập nhật trừ reply_count cho các cấp bên trên
+                if (topParentId) {
+                    let currentParentId = topParentId;
+                    while (currentParentId) {
+                        await connection.execute(
+                            `UPDATE Comments SET reply_count = GREATEST(reply_count - ?, 0) WHERE comment_id = ?`,
+                            [totalToRemove, currentParentId]
+                        );
+                        const [pRows] = await connection.execute(`SELECT parent_id FROM Comments WHERE comment_id = ?`, [currentParentId]);
+                        currentParentId = pRows[0]?.parent_id;
+                    }
+                }
+
+            }
+
+
             await connection.commit();
-            return { success: true };
+            
+            // Trả về số lượng comment đã xóa để client có thể biết
+            return { success: true, deletedCount: idsToDelete.length };
         } catch (error) {
             await connection.rollback();
             throw error;
@@ -303,7 +442,7 @@ class Interaction {
         }
     }
     
-    // Check trạng thái (Dùng khi load trang chi tiết)
+    // Check trạng thái của user với các bài viết (Dùng khi load trang chi tiết)
     static async getUserInteractionState(userId, postId, postType) {
         if (!userId) return { liked: false, saved: false, rated: 0 };
         
@@ -370,6 +509,75 @@ class Interaction {
         } finally {
             connection.release();
         }
+    }
+
+    // --- Lấy trạng thái tương tác cho danh sách bài viết (Batch Check) ---
+    static async getBatchInteractionState(userId, postIds, postType) {
+        if (!userId || postIds.length === 0) return {};
+
+        const placeholders = postIds.map(() => '?').join(',');
+        
+        // 1. Lấy danh sách các bài đã Like
+        const [likeRows] = await pool.execute(
+            `SELECT post_id FROM Likes WHERE user_id = ? AND post_type = ? AND post_id IN (${placeholders})`,
+            [userId, postType, ...postIds]
+        );
+
+        // 2. Lấy danh sách các bài đã Save
+        const [saveRows] = await pool.execute(
+            `SELECT post_id FROM Saved_Posts WHERE user_id = ? AND post_type = ? AND post_id IN (${placeholders})`,
+            [userId, postType, ...postIds]
+        );
+
+        // 3. Chuyển thành Map để Controller dễ ghép
+        const results = {};
+        postIds.forEach(id => results[id] = { liked: false, saved: false });
+        
+        likeRows.forEach(row => { if (results[row.post_id]) results[row.post_id].liked = true; });
+        saveRows.forEach(row => { if (results[row.post_id]) results[row.post_id].saved = true; });
+
+        return results;
+    }
+
+    static async getInteractionCounts(postId, postType) {
+        try {
+            let tableName = '';
+            let idColumn = '';
+            let selectFields = '';
+
+            // Phân loại để chọn đúng bảng và các cột cần lấy
+            if (postType === 'recipe') {
+                tableName = 'Recipes';
+                idColumn = 'recipe_id';
+                // Bảng Recipes có đầy đủ like, comment và rating
+                selectFields = 'like_count, comment_count, rating_count, rating_avg_score, report_count';
+            } else if (postType === 'article') {
+                tableName = 'Article_Posts';
+                idColumn = 'article_id';
+                // Bảng Article chỉ có like, comment và report (theo cấu trúc ông mô tả)
+                selectFields = 'like_count, comment_count, report_count';
+            } else if (postType === 'dish') {
+                tableName = 'Dictionary_Dishes';
+                idColumn = 'dish_id';
+                // Bảng Dish cũng tương tự Article
+                selectFields = 'like_count, comment_count, report_count';
+            } else {
+                throw new Error('Loại bài viết không hợp lệ');
+            }
+
+            const query = `SELECT ${selectFields} FROM ${tableName} WHERE ${idColumn} = ?`;
+            const [rows] = await pool.execute(query, [postId]);
+            if (rows.length === 0) {
+                throw new Error('Không tìm thấy bài viết');
+            }
+
+            // Trả về trực tiếp dòng dữ liệu chứa các con số
+            return rows[0];
+        } catch (error) {
+            console.error("Lỗi khi lấy dữ liệu tổng hợp tương tác:", error);
+            throw error;
+        }
+
     }
 }
 

@@ -142,7 +142,7 @@ export default function useRecipesList({ initialRecipes = [] } = {}) {
     if (page >= 1 && page <= pagination.totalPages) {
       // Khi chuyển trang thì dùng filters hiện tại trong state là ổn
       fetchRecipes(page, filters);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
