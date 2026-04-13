@@ -25,6 +25,7 @@ const uploadArticleImages = upload.fields([
 
 // Lấy danh sách bài của chính mình
 router.get('/me/owner', protect, verifyProMiddleware, articleController.getOwnerArticles);
+router.get('/me/saved', protect, articleController.getSavedArticles);
 
 // Đăng bài viết mới
 router.post('/create', 
@@ -49,6 +50,7 @@ router.delete('/delete/:articleId',
     verifyProMiddleware, 
     articleController.deleteArticle
 );
+
 
 // ==========================================
 // CÁC ROUTES DÀNH CHO NGƯỜI DÙNG/KHÁCH (GUEST)

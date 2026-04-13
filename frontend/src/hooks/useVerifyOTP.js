@@ -104,6 +104,7 @@ export const useVerifyOTP = () => {
   // 6. Gọi API Verify
   const handleVerify = async () => {
     const otpValue = otp.join('');
+    const intent = location.state?.intent || 'register';
     if (otpValue.length !== 6) {
       setError('Vui lòng nhập đủ 6 số');
       return;
@@ -111,10 +112,23 @@ export const useVerifyOTP = () => {
 
     setLoading(true);
     try {
-      const response = await authApi.verifyOTP({ email, otp: otpValue });
-      setSuccess(true);
-      alert(response.message || "Xác thực thành công!");
-      navigate('/login');
+      if (intent === 'reset_password') {
+        // LUỒNG QUÊN MẬT KHẨU: Chỉ verify xem OTP đúng không
+        await authApi.verifyOTP({ email, otp: otpValue });
+        
+        // Nếu API không ném lỗi tức là OTP đúng -> Chuyển sang trang đặt mật khẩu mới
+        navigate('/reset-password', { 
+            state: { email, otp: otpValue } // Truyền kèm OTP sang để trang sau đổi pass
+        });
+      } else {
+        // LUỒNG ĐĂNG KÝ: Gọi API kích hoạt tài khoản
+        const response = await authApi.activateAccount({ email, otp: otpValue });
+        
+        setSuccess(true);
+        alert(response.message || "Kích hoạt tài khoản thành công!");
+        // Có thể navigate về trang login, hoặc lưu token và cho vào trang chủ luôn
+        navigate('/login'); 
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Lỗi kết nối máy chủ.');
     } finally {

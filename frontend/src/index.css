@@ -105,3 +105,18 @@ code {
     animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
+
+@layer components {
+    /* Xóa padding, nền và bóng đổ của mapbox để nhường chỗ cho style của React component */
+    .dish-popup-container .mapboxgl-popup-content {
+        @apply p-0 bg-transparent shadow-none border-none;
+    }
+
+    /* Đổi màu mũi tên popup cho tiệp với màu nền của DishPopupCard (#fff9f0) */
+    .dish-popup-container.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
+        border-top-color: #fff9f0;
+    }
+    .dish-popup-container.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+        border-bottom-color: #fff9f0;
+    }
+}

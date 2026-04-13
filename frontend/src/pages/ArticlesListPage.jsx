@@ -74,20 +74,13 @@ export default function ArticlesListPage() {
                 <motion.div key={a.id || idx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
                   {/* Use Facebook-style post for first item on page */}
                     <ArticleCard
-                      id={a.id}
-                      author = {a.author}
-                      authorAvatar={a.authorAvatar}
-                      date={a.date}
-                      readTime={a.readTime}
-                      title={a.title}
-                      excerpt={a.excerpt}
-                      image={a.image}
+                      {...a}
+                      
                       tags = {a.rawTags || a.tags || [] }
                     //   category={a.category}
                       commentCount={a.totalComments}
                       onClick={() => goToArticle(a.id)}
-                      isLiked={a.is_liked}
-                      isSaved={a.is_saved}
+                    
                     />
                 </motion.div>
               ))

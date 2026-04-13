@@ -10,8 +10,11 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 //Xác thực
 router.post('/verify-otp', authController.verifyOTP);
+router.post('/activate-account', authController.activateAccount);
 router.post('/resend-otp', authController.resendOTP)
+//Quên mật khẩu
 router.post('/request-password-reset', authController.requestPasswordReset)
 router.put('/reset-password', authController.resetPassword);
-
+//Chủ động đổi mật khẩu
+router.put('/change-password', protect, authController.changePasswordAuth);
 module.exports = router;

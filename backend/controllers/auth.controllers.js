@@ -131,6 +131,28 @@ const protect = async (req, res, next) => {
 }
 
 const verifyOTP = async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        return res.status(400).json({ error: 'Email and OTP are required' });
+    }
+
+    try {
+        // Hàm validateOTP của bạn đã có sẵn logic ném lỗi nếu sai hoặc hết hạn
+        const user = await authUtils.validateOTP(email, otp);
+
+        res.status(200).json({
+            success: true,
+            message: 'OTP hợp lệ.'
+            // user: { id: user.user_id, name: user.full_name, email: user.email }
+        });
+    } catch (error) {
+        console.error('Error during OTP verification only:', error);
+        res.status(400).json({ error: error.message }); // Trả về lỗi do validateOTP ném ra
+    }
+}
+
+const activateAccount = async (req, res) => {
     const {email, otp} = req.body;
 
     if (!email || !otp) {
@@ -204,6 +226,8 @@ const resendOTP = async (req, res) => {
     }
 }
 
+
+// Yêu cầu đặt lại mật khẩu (gửi OTP về email) (chỉ cho user đã đăng nhập, có token hợp lệ)
 const requestPasswordReset = async(req, res) => {
     try {
         const {email} = req.body;
@@ -244,6 +268,38 @@ const requestPasswordReset = async(req, res) => {
     }
 }
 
+// Xử lý đổi mật khẩu cho user đang đăng nhập bằng mật khẩu cũ
+const changePasswordAuth = async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user.user_id || req.user.id;
+
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: 'Vui lòng nhập mật khẩu cũ và mới' });
+    }
+
+    try {
+        // Lấy password hiện tại từ DB để so sánh
+        const currentHashedPassword = await UserModel.findPasswordByUserId(userId);
+        
+        // Kiểm tra mật khẩu cũ có đúng không
+        const isMatch = await authUtils.comparePassword(oldPassword, currentHashedPassword);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Mật khẩu cũ không chính xác' });
+        }
+
+        // Mã hóa mật khẩu mới và lưu xuống DB
+        const hashedNewPassword = await authUtils.hashPassword(newPassword);
+        await UserModel.changePassword(userId, hashedNewPassword); // Dùng chung 1 hàm ở Model là đủ
+
+        res.status(200).json({ message: 'Đổi mật khẩu thành công' });
+    } catch (error) {
+        console.error('Lỗi khi đổi mật khẩu chủ động:', error);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
+}
+
+// Nhớ thêm changePasswordAuth vào module.exports ở cuối file nhé!
+
 //Đổi mật khẩu khi đã quên mật khẩu cũ => sử dụng hàm changePassword
 const resetPassword = async(req, res) => {
     const {email, otp, newPassword} = req.body;
@@ -255,7 +311,8 @@ const resetPassword = async(req, res) => {
     }
 
     try {
-        const user = await authUtils.validateOTP(email, otp);
+        const user = await UserModel.findByEmail(email);
+        // const user = await authUtils.validateOTP(email, otp);
         const hashedNewPassword = await authUtils.hashPassword(newPassword);
         await UserModel.changePassword(user.user_id, hashedNewPassword);
 
@@ -275,7 +332,9 @@ module.exports = {
     login,
     protect, 
     verifyOTP,
+    activateAccount,
     resendOTP,
     requestPasswordReset,
+    changePasswordAuth,
     resetPassword
 };

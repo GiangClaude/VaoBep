@@ -34,7 +34,13 @@ const articleApi = {
 	deleteArticle: async (id) => {
 		const response = await apiClient.delete(`/articles/delete/${id}`);
 		return response;
-	}
+	},
+
+	getSavedArticles: async (params = {}) => {
+        // params sẽ chứa page, limit, sort...
+        const response = await apiClient.get('/articles/me/saved', { params });
+        return response;
+    },
 };
 
 export default articleApi;

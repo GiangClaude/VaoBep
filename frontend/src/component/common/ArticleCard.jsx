@@ -5,6 +5,8 @@ import ImageWithFallback from '../figma/ImageWithFallBack';
 import useInteraction from '../../hooks/useInteraction';
 import Toast from '../common/Toast'; 
 import CommentSection from '../comment/CommentSection'; 
+import { Lock } from 'lucide-react'; // Import thêm icon Lock
+import { useAuth } from '../../AuthContext';
 
 // Hàm render badge trạng thái bài viết
 const renderStatusBadge = (status) => {
@@ -39,10 +41,32 @@ export default function ArticleCard({
   onDelete,        
   onClick,
   tags = [],
-  isLiked = false,
-  isSaved = false,
+  is_liked = false,
+  is_saved = false,
   likeCount = 0
 }) {
+  console.log('Render ArticleCard với props:', { id, 
+  author, 
+  authorAvatar, 
+  date, 
+  readTime, 
+  title, 
+  excerpt, 
+  category, 
+  image, 
+  commentCount, 
+  status,          
+  isOwnerView,     
+  onEdit,          
+  onDelete,        
+  onClick,
+  tags,
+  is_liked,
+  is_saved,
+  likeCount});
+
+  const { currentUser } = useAuth();
+
   const [showMenu, setShowMenu] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
   const [showComments, setShowComments] = useState(false); // State quản lý hiển thị bình luận
@@ -54,12 +78,17 @@ export default function ArticleCard({
       id: id,
       type: 'article',
       initialData: {
-        liked: isLiked,
-        saved: isSaved,
+        liked: is_liked,
+        saved: is_saved,
         likes: likeCount,
         commentCount: commentCount
       }
   });
+
+  // console.log(currentUser);
+  //Xem xét biến cái này thành utils gọi nhiều cho cả recipe, article
+  const isOwner = currentUser?.id === (author?.id || author);
+  const isLocked = !isOwner && (status === 'draft' || status === 'banned' || status === 'hidden');
   
   const { InteractionModal, ReportModal } = interactionHook;
 
@@ -68,6 +97,33 @@ export default function ArticleCard({
     e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài Card
     setShowComments(!showComments);
   };
+
+if (isLocked) {
+  return (
+    <div className="flex flex-col h-full bg-gray-50 rounded-2xl border border-dashed border-gray-300 p-8 items-center justify-center text-center relative group">
+      <Lock className="w-8 h-8 text-gray-300 mb-3" />
+      <h3 className="text-gray-500 font-bold text-sm">Nội dung đã bị ẩn</h3>
+      
+      {/* Nút bỏ lưu cho bài viết bị khóa */}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          interactionHook.handleToggleSave(e); // Gọi hàm bỏ lưu bình thường
+        }}
+        className="mt-4 text-xs text-red-500 font-medium hover:underline flex items-center gap-1"
+      >
+        <Trash2 className="w-3 h-3" /> Gỡ khỏi mục đã lưu
+      </button>
+      
+      <Toast 
+        message={interactionHook.toast.message} 
+        isVisible={interactionHook.toast.show} 
+        onClose={interactionHook.closeToast} 
+      />
+    </div>
+  );
+}
+
   
   return (
     <motion.article 
@@ -176,7 +232,7 @@ export default function ArticleCard({
           className={`flex items-center gap-2 transition-colors group ${interactionHook.state.liked ? 'text-red-500' : 'hover:text-[#ff6b35]'}`}
         >
           <Heart className={`w-5 h-5 ${interactionHook.state.liked ? 'fill-current' : 'group-hover:fill-orange-50'}`} /> 
-          <span>{likeCount > 0 ? likeCount : 'Thích'}</span>
+          <span>{likeCount > 0 ? likeCount : ''} Thích</span>
         </button>
 
         {/* Nút bật/tắt bình luận */}
@@ -185,7 +241,7 @@ export default function ArticleCard({
           className="flex items-center gap-2 hover:text-[#ff6b35] transition-colors group"
         >
           <MessageCircle className="w-5 h-5 group-hover:fill-orange-50" /> 
-          <span>{commentCount > 0 ? commentCount : 'Bình luận'}</span>          
+          <span>{commentCount > 0 ? commentCount : ''} Bình luận</span>          
         </button>
 
         <button 

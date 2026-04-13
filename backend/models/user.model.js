@@ -215,11 +215,11 @@ class User {
     };
 
     // Chủ động đổi mk => cần mật khẩu cũ
-    static async updatePassword(userId,  hashedNewPassword) {
-        const updateSql = "UPDATE users SET password = ? WHERE user_id = ?";
-        await pool.execute(updateSql, [hashedNewPassword, userId]);
-        return true;
-    }
+    // static async updatePassword(userId,  hashedNewPassword) {
+    //     const updateSql = "UPDATE users SET password = ? WHERE user_id = ?";
+    //     await pool.execute(updateSql, [hashedNewPassword, userId]);
+    //     return true;
+    // }
 
     // Quên mật khẩu nên phải đổi
     static async changePassword(userId, hashedNewPassword){

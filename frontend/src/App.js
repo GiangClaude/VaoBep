@@ -14,6 +14,8 @@ import AdminRoute from './component/admin/AdminRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import VerifyOTPPage from './pages/VerifyOTPPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import HomePage from './pages/HomepagePage';
 import ProfilePage from './pages/ProfilePage';
 import RecipeDetailPage from './pages/RecipeDetailPage';
@@ -23,6 +25,9 @@ import UserProfilePage from './pages/UserProfilePage';
 
 import ArticleDetailPage from './pages/ArticleDetailPage';
 import ArticlesListPage from './pages/ArticlesListPage';
+
+import DishMap from './pages/DishMap';
+import DishDetailPage from './pages/DishDetailPage';
 
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUserPage from './pages/admin/AdminUserPage';
@@ -76,7 +81,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/verify-otp" element={<VerifyOTPPage />} />
-
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />  
             {/* Main App Routes */}
             <Route element={<MainLayout />}>
               <Route path="/homepage" element={<HomePage />} />
@@ -87,6 +93,9 @@ function App() {
               <Route path="/user/:id" element={<UserProfilePage />} />
 
               <Route path="/article/:articleId" element={<ArticleDetailPage />} />
+
+              <Route path="/dish-map" element={<DishMap />} />
+              <Route path="/dish/:id" element={<DishDetailPage />} />
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                  <Route path="/profile" element={<ProfilePage />} />

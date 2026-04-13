@@ -39,3 +39,16 @@ export const getArticleImageUrl = (articleId, cover_image) => {
 
     return `${API_URL}/public/articles/${articleId}/${cover_image}`;
 };
+
+// Thêm hàm này vào file imageHelper.js hiện tại của bạn
+export const getDishImageUrl = (dishId, image_url) => {
+    if (!image_url) return '/assets/dish_default.png'; // Ảnh mặc định
+
+    // Nếu là link tuyệt đối (như 100 món từ TasteAtlas bạn gửi) thì trả về luôn
+    if (image_url.toString().startsWith('http') || image_url.toString().startsWith('blob:')) {
+        return image_url;
+    }
+
+    // Nếu là ảnh local trong backend
+    return `${API_URL}/public/dictionaryDish/${dishId}/${image_url}`;
+};

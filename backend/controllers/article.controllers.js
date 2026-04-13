@@ -67,7 +67,7 @@ const ArticleController = {
             }
 
             if (parsedRecipeIds.length > 0) {
-                await RecipeLinkModel.addRecipeLinksToArticle(connection, articleId, parsedRecipeIds);
+                await RecipeLinkModel.addLinks(connection, parsedRecipeIds, articleId, 'article');
             }
 
             await connection.commit();
@@ -147,7 +147,7 @@ const ArticleController = {
             if (recipeIds !== undefined) {
                 let parsedRecipeIds = typeof recipeIds === 'string' ? JSON.parse(recipeIds) : recipeIds;
                 // Xóa cũ - Thêm mới liên kết
-                await RecipeLinkModel.updateRecipeLinksForArticle(connection, articleId, parsedRecipeIds);
+                 await RecipeLinkModel.updateLinks(connection, articleId, 'article', parsedRecipeIds);
             }
 
             await connection.commit();
@@ -226,7 +226,7 @@ const ArticleController = {
                 const articlesWithDetails = await Promise.all(articles.map(async (article) => {
                     const [tags, linkedRecipes] = await Promise.all([
                         TagModel.getTagsByPostId(article.article_id),
-                        RecipeLinkModel.getLinkedRecipesByArticleId(article.article_id)
+                        RecipeLinkModel.getRecipesByPost(article.article_id, 'article')
                     ]);
                     return { 
                         ...article, 
@@ -271,7 +271,7 @@ const ArticleController = {
             const articlesWithTags = await Promise.all(articles.map(async (article) => {
                 const [tags, linkedRecipes] = await Promise.all([
                     TagModel.getTagsByPostId(article.article_id),
-                    RecipeLinkModel.getLinkedRecipesByArticleId(article.article_id)
+                    RecipeLinkModel.getRecipesByPost(article.article_id, 'article')
                 ]);
                 return { ...article, tags, linked_recipes: linkedRecipes };
             }));
@@ -291,7 +291,7 @@ const ArticleController = {
             const articlesWithTags = await Promise.all(articles.map(async (article) => {
                 const [tags, linkedRecipes] = await Promise.all([
                     TagModel.getTagsByPostId(article.article_id),
-                    RecipeLinkModel.getLinkedRecipesByArticleId(article.article_id)
+                    RecipeLinkModel.getRecipesByPost(article.article_id, 'article')
                 ]);
                 return { ...article, tags, linked_recipes: linkedRecipes };
             })); 
@@ -327,7 +327,7 @@ const ArticleController = {
             const [tags, commentsData, linkedRecipes, interactionState] = await Promise.all([
                 TagModel.getTagsByPostId(articleId), 
                 InteractionModel.getComments(articleId, 'article', 1, 10),
-                RecipeLinkModel.getLinkedRecipesByArticleId(articleId), // Lấy món ăn đã gắn
+                RecipeLinkModel.getRecipesByPost(articleId, 'article'), // Lấy món ăn đã gắn
                 InteractionModel.getBatchInteractionState(userId, [articleId], 'article')   
             ]);
             const state = interactionState ? interactionState[articleId] : null;
@@ -348,7 +348,57 @@ const ArticleController = {
             console.error("Lỗi get article details:", err);
             res.status(500).json({ success: false, message: "Lỗi server: " + err.message });
         }
-    }
+    },
+
+    // Thêm vào ArticleController trong file article.controllers.js
+
+    getSavedArticles: async (req, res) => {
+        try {
+            const userId = req.user.user_id; // Lấy từ protect middleware
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 6;
+            const offset = (page - 1) * limit;
+
+            // console.log(`User ${userId} đang yêu cầu danh sách bài viết đã lưu, page: ${page}, limit: ${limit}`);
+            // 1. Lấy danh sách bài viết từ bảng Saved_Posts
+            const [articles, totalItems] = await Promise.all([
+                ArticleModel.getSavedArticlesByUser({ userId, limit, offset }),
+                ArticleModel.countSavedArticlesByUser(userId)
+            ]);
+
+            // 2. Gắn thêm Tags cho từng bài viết
+            const articlesWithDetails = await Promise.all(articles.map(async (article) => {
+                const tags = await TagModel.getTagsByPostId(article.article_id);
+                return { 
+                    ...article, 
+                    tags 
+                };
+            }));
+
+            // 3. Kiểm tra trạng thái Like/Save (Batch check) 
+            // để các nút trên Card hiển thị đúng (Chắc chắn is_saved sẽ là true)
+            if (articlesWithDetails.length > 0) {
+                const postIds = articlesWithDetails.map(a => a.article_id);
+                const interactionStates = await InteractionModel.getBatchInteractionState(userId, postIds, 'article');
+                
+                articlesWithDetails.forEach(article => {
+                    const state = interactionStates[article.article_id];
+                    article.is_liked = state ? state.liked : false;
+                    article.is_saved = state ? state.saved : true; // Vì đang ở trang "Đã lưu"
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: "Lấy danh sách bài viết đã lưu thành công",
+                data: articlesWithDetails,
+                pagination: paginationHelper.createPagination(page, limit, totalItems)
+            });
+        } catch (err) {
+            console.error("Lỗi get saved articles:", err);
+            res.status(500).json({ success: false, message: "Lỗi server: " + err.message });
+        }
+    },
 };
 
 module.exports = ArticleController;

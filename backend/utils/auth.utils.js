@@ -50,6 +50,7 @@ const validateOTP = async (email, otp) => {
 }
 
 const getUserIdFromToken = (req) => {
+    console.log("Authorization header:", req.headers.authorization); // Debug log để kiểm tra header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             const token = req.headers.authorization.split(' ')[1];

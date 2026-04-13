@@ -23,7 +23,7 @@ const Header = () => {
     { label: 'Trang Chủ', to: '/homepage' },
     { label: 'Công Thức', to: '/recipes' },
     { label: 'Bài Viết', to: '/articles' }, // Ví dụ, nếu chưa có route thì để #
-    { label: 'Từ Điển', to: '/dictionary' },
+    { label: 'Từ Điển', to: '/dish-map' },
   ];
 
   const handleSearch = (e) => {

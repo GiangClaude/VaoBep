@@ -219,6 +219,38 @@ const ArticleModel = {
         return rows;
     },
 
+    // Thêm vào ArticleModel trong file article.model.js
+
+    // Lấy danh sách bài viết đã lưu của 1 user
+    getSavedArticlesByUser: async ({ userId, limit, offset }) => {
+        const query = `
+            SELECT 
+                a.article_id, a.title, a.description, a.cover_image, a.created_at, 
+                a.comment_count, a.read_time, a.like_count, a.status,
+                s.created_at as saved_at,
+                u.full_name as author_name, u.avatar as author_avatar, u.user_id as author_id
+            FROM Saved_Posts s
+            JOIN Article_Posts a ON s.post_id = a.article_id
+            JOIN Users u ON a.user_id = u.user_id
+            WHERE s.user_id = ? AND s.post_type = 'article'
+            ORDER BY s.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        const [rows] = await pool.execute(query, [userId, limit.toString(), offset.toString()]);
+        return rows;
+    },
+
+    // Đếm tổng số bài đã lưu để phân trang
+    countSavedArticlesByUser: async (userId) => {
+        const query = `
+            SELECT COUNT(*) as total 
+            FROM Saved_Posts 
+            WHERE user_id = ? AND post_type = 'article'
+        `;
+        const [rows] = await pool.execute(query, [userId]);
+        return rows[0].total;
+    },
+
     // 5. Lấy bài viết của chính chuyên gia đó
     getOwnerArticles: async (userId) => {
         const query = `

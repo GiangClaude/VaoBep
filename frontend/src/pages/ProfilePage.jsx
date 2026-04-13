@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import  Header  from "../component/common/Header";
 import { Footer } from "../component/common/Footer";
 import { ProfileHeader } from "../component/profile/ProfileHeader";
@@ -11,6 +12,7 @@ import { SettingsTab } from "../component/profile/SettingsTab";
 import { ProfileSidebar } from "../component/profile/ProfileSidebar";
 import { CreateRecipeModal } from "../component/recipe/CreateRecipeModal";
 import Modal from "../component/common/modal";
+import { ChangePasswordModal } from "../component/profile/ChangePasswordModal";
 import { SavedRecipeTab } from "../component/profile/SavedRecipeTab";
 
 
@@ -19,105 +21,8 @@ import {useOwnerRecipes} from "../hooks/useOwnerRecipes";
 import { useCreateRecipe } from "../hooks/useRecipeAction";
 import { useUpdateProfile } from "../hooks/useProfile";
 import { usePoints } from "../hooks/usePoints";
+import { useChangePassword } from "../hooks/useChangePassword"; 
 
-// Mock Data
-const mockUser = {
-  id: "user-001",
-  avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-  fullName: "Nguyễn Minh Anh",
-  email: "minhanh@vaobep.com",
-  bio: "Đam mê nấu ăn và chia sẻ công thức. Chuyên về món Việt truyền thống và món Âu hiện đại. 🍳👨‍🍳",
-  role: "vip",
-  points: 12500,
-  joinedAt: "15/03/2023",
-  stats: {
-    recipes: 48,
-    saved: 125,
-    followers: 2340
-  }
-};
-
-const mockRecipes = [
-  {
-    id: "1",
-    image: "https://images.unsplash.com/photo-1712579733874-c3a79f0f9d12?w=600",
-    title: "Gà Nướng Mật Ong Thơm Lừng",
-    status: "public",
-    likes: 1420,
-    rating: 4.8,
-    comments: 89,
-    isTrusted: true,
-    createdAt: "2 ngày trước"
-  },
-  {
-    id: "2",
-    image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=600",
-    title: "Pasta Carbonara Ý Đích Thực",
-    status: "public",
-    likes: 980,
-    rating: 4.9,
-    comments: 67,
-    createdAt: "1 tuần trước"
-  },
-  {
-    id: "3",
-    image: "https://images.unsplash.com/photo-1607257882338-70f7dd2ae344?w=600",
-    title: "Bánh Tiramisu Mềm Mịn",
-    status: "draft",
-    likes: 0,
-    rating: 0,
-    comments: 0,
-    createdAt: "5 giờ trước"
-  },
-  {
-    id: "4",
-    image: "https://images.unsplash.com/photo-1614442316719-1e38c661c29c?w=600",
-    title: "Pizza Margherita Tự Làm",
-    status: "hidden",
-    likes: 1750,
-    rating: 4.8,
-    comments: 103,
-    createdAt: "4 ngày trước"
-  }
-];
-
-const mockPointsHistory = [
-  {
-    id: "1",
-    date: "25/11/2024",
-    reason: "Điểm danh hàng ngày",
-    points: 10,
-    type: "earn"
-  },
-  {
-    id: "2",
-    date: "24/11/2024",
-    reason: "Quảng bá công thức 'Gà Nướng Mật Ong'",
-    points: -50,
-    type: "spend"
-  },
-  {
-    id: "3",
-    date: "23/11/2024",
-    reason: "Nhận quà từ @TuanAnh",
-    points: 100,
-    type: "gift"
-  },
-  {
-    id: "4",
-    date: "22/11/2024",
-    reason: "Công thức được đánh giá 5 sao",
-    points: 50,
-    type: "earn"
-  },
-  {
-    id: "5",
-    date: "21/11/2024",
-    reason: "Tặng điểm cho @LanAnh",
-    points: -30,
-    type: "gift"
-  }
-];
 
 const mockSidebarStats = {
   totalLikes: 15420,
@@ -158,6 +63,23 @@ export default function ProfilePage() {
       loading: pointsLoading 
   } = usePoints();
 
+  const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
+
+  const { 
+        passwords, 
+        setPasswords, 
+        errors, 
+        loading: isChangingPass, 
+        handleChangePassword,
+        resetFields
+  } = useChangePassword();
+
+    // Hàm mở modal khi bấm nút trong Settings
+  const openChangePasswordModal = () => {
+        resetFields();
+        setIsChangePassModalOpen(true);
+  };
+
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
     title: "",
@@ -165,6 +87,8 @@ export default function ProfilePage() {
     type: "info", // success, error, warning, info
     actions: []
   });
+
+  const navigate = useNavigate();
     // Hàm đóng modal tiện lợi
   const closeModal = () => {
     setModalConfig(prev => ({ ...prev, isOpen: false }));
@@ -308,6 +232,8 @@ export default function ProfilePage() {
     //setIsCreateModalOpen(false); 
   };
 
+
+
   const handleCheckIn = async () => {
     // 1. Gọi API điểm danh
     const result = await checkInPoint();
@@ -344,8 +270,20 @@ export default function ProfilePage() {
     console.log("Gift points modal");
   };
 
-  const handleChangePassword = () => {
-    console.log("Change password modal");
+  const handleSubmitChangePass = async () => {
+        const result = await handleChangePassword();
+        
+      if (result.success) {
+            setIsChangePassModalOpen(false);
+            setModalConfig({
+                isOpen: true,
+                type: 'success',
+                title: 'Thành công!',
+                message: 'Mật khẩu của bạn đã được cập nhật mới.',
+                actions: [{ label: 'OK', onClick: closeModal, style: 'primary' }]
+            });
+        }
+        // Nếu thất bại do validation hoặc API, lỗi đã nằm trong object `errors` của hook
   };
 
   const handleUpgradeVIP = () => {
@@ -436,7 +374,7 @@ export default function ProfilePage() {
             {activeTab === "settings" && (
               <SettingsTab
                 role={currentUser.role}
-                onChangePassword={handleChangePassword}
+                onChangePassword={openChangePasswordModal}
                 onUpgradeVIP={handleUpgradeVIP}
                 onDeleteAccount={handleDeleteAccount}
               />
@@ -454,6 +392,17 @@ export default function ProfilePage() {
 
         </div>
       </main>
+
+      <ChangePasswordModal 
+        isOpen={isChangePassModalOpen}
+        onClose={() => setIsChangePassModalOpen(false)}
+        onSubmit={handleSubmitChangePass} // Gọi logic xử lý từ hook
+        loading={isChangingPass}
+                // Truyền các state từ hook xuống UI
+        formData={passwords}
+        setFormData={setPasswords}
+        errors={errors}
+       />
 
       <Modal 
         isOpen={modalConfig.isOpen}
