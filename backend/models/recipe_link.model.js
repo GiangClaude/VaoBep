@@ -111,17 +111,98 @@ class RecipeLinkModel {
     /**
  * Lấy danh sách Recipe đã gắn vào một Post
  */
-    static async getRecipesByPost(targetId, targetType) {
-        const sql = `
-            SELECT r.recipe_id, r.title, r.cover_image, r.status, r.rating_avg_score,
-                u.user_id as author_id, u.full_name as author_name
-            FROM Recipes r
-            JOIN Recipe_Post_Links rpl ON r.recipe_id = rpl.source_recipe_id
-            JOIN Users u ON r.user_id = u.user_id
-            WHERE rpl.linked_post_id = ? AND rpl.linked_post_type = ?
-        `;
-        const [rows] = await pool.execute(sql, [targetId, targetType]);
-        return rows;
+static async getRecipesByPost(userId = null, targetId, targetType) {
+    console.log("Fetching linked recipes for post:", { targetId, targetType, userId });
+    const sql = `
+        SELECT r.recipe_id, r.title, r.cover_image, r.status, r.rating_avg_score,
+            u.user_id as author_id, u.full_name as author_name,
+            rpl.vote_count,
+            -- Thêm cột này để kiểm tra trạng thái vote của user hiện tại
+            IF((SELECT 1 FROM Recipe_Link_Votes v 
+                    WHERE v.recipe_id = r.recipe_id 
+                    AND v.post_id = rpl.linked_post_id 
+                    AND v.user_id = ?), 1, 0) as is_voted
+        FROM Recipes r
+        JOIN Recipe_Post_Links rpl ON r.recipe_id = rpl.source_recipe_id
+        JOIN Users u ON r.user_id = u.user_id
+        WHERE rpl.linked_post_id = ? AND rpl.linked_post_type = ?
+        ORDER BY rpl.vote_count DESC, r.created_at DESC
+    `;
+    // Truyền userId vào tham số đầu tiên
+    const [rows] = await pool.execute(sql, [userId, targetId, targetType]);
+    console.log("Linked recipes fetched:", rows);
+    return rows;
+}
+
+    /**
+     * Kiểm tra xem một người dùng đã vote cho link này chưa
+     */
+    static async checkUserVoted(userId, recipeId, postId) {
+        const sql = `SELECT 1 FROM Recipe_Link_Votes WHERE user_id = ? AND recipe_id = ? AND post_id = ?`;
+        const [rows] = await pool.execute(sql, [userId, recipeId, postId]);
+        return rows.length > 0;
+    }
+
+    static async toggleVote(connection, userId, recipeId, postId, postType) {
+    // 1. Kiểm tra xem đã vote chưa
+    const [voted] = await connection.execute(
+        `SELECT 1 FROM Recipe_Link_Votes WHERE user_id = ? AND recipe_id = ? AND post_id = ?`,
+        [userId, recipeId, postId]
+    );
+
+    if (voted.length > 0) {
+        // TRƯỜNG HỢP 1: ĐÃ VOTE -> THỰC HIỆN HỦY VOTE
+        // Xóa bản ghi vote
+        await connection.execute(
+            `DELETE FROM Recipe_Link_Votes WHERE user_id = ? AND recipe_id = ? AND post_id = ?`,
+            [userId, recipeId, postId]
+        );
+        // Giảm số lượng vote_count trong bảng liên kết
+        await connection.execute(
+            `UPDATE Recipe_Post_Links SET vote_count = GREATEST(0, vote_count - 1) 
+             WHERE source_recipe_id = ? AND linked_post_id = ? AND linked_post_type = ?`,
+            [recipeId, postId, postType]
+        );
+
+        await connection.execute(
+                `DELETE FROM Recipe_Post_Links 
+                 WHERE source_recipe_id = ? AND linked_post_id = ? AND linked_post_type = ? AND vote_count <= 0`,
+                [recipeId, postId, postType]
+            );
+        return { action: 'unvoted' };
+    } else {
+        // TRƯỜNG HỢP 2: CHƯA VOTE -> THỰC HIỆN VOTE (Logic cũ của bạn)
+        // Kiểm tra xem link đã tồn tại chưa để Insert hoặc Update
+        const [link] = await connection.execute(
+            `SELECT 1 FROM Recipe_Post_Links WHERE source_recipe_id = ? AND linked_post_id = ? AND linked_post_type = ?`,
+            [recipeId, postId, postType]
+        );
+
+        if (link.length === 0) {
+            await connection.execute(
+                `INSERT INTO Recipe_Post_Links (source_recipe_id, linked_post_id, linked_post_type, vote_count) VALUES (?, ?, ?, 1)`,
+                [recipeId, postId, postType]
+            );
+        } else {
+            await connection.execute(
+                `UPDATE Recipe_Post_Links SET vote_count = vote_count + 1 
+                 WHERE source_recipe_id = ? AND linked_post_id = ? AND linked_post_type = ?`,
+                [recipeId, postId, postType]
+            );
+        }
+        await connection.execute(
+            `INSERT INTO Recipe_Link_Votes (user_id, recipe_id, post_id) VALUES (?, ?, ?)`,
+            [userId, recipeId, postId]
+        );
+        return { action: 'voted' };
+    }
+}
+
+    static async removeLink(connection, recipeId, postId, postType) {
+        await connection.execute(
+            `DELETE FROM Recipe_Post_Links WHERE source_recipe_id = ? AND linked_post_id = ? AND linked_post_type = ?`,
+            [recipeId, postId, postType]
+        );
     }
 }
 

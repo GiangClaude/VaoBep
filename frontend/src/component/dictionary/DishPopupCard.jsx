@@ -1,7 +1,7 @@
 import React from 'react';
 import { getDishImageUrl } from '../../utils/imageHelper';
 import { Heart, MapPin, ChevronRight } from 'lucide-react'; // Sử dụng lucide giống project của bạn
-
+import useInteraction from '../../hooks/useInteraction';
 const DishPopupCard = ({ dish }) => {
     return (
         <div className="w-64 bg-[#fff9f0] rounded-2xl overflow-hidden shadow-2xl border border-[#d4b99a]/30 font-sans">

@@ -1,12 +1,28 @@
 import React from 'react';
+import { Heart, Share2, Flag } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useDishDetail from '../hooks/useDishDetail';
 import { getDishImageUrl } from '../utils/imageHelper';
-
+import useInteraction from '../hooks/useInteraction';
+import CommentSection from '../component/comment/CommentSection';
+import RecipeProposalSection from '../component/dictionary/RecipeProposalSection';
 const DishDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { dish, loading, error } = useDishDetail(id);
+    const { dish, loading, error, refreshData } = useDishDetail(id);
+
+    const interaction = useInteraction({
+        id: id,
+        type: 'dish',
+        initialData: {
+            likes: dish?.like_count || 0,
+            commentCount: dish?.comment_count || 0,
+            liked: dish?.interactionState?.liked,
+            saved: dish?.interactionState?.saved
+        }
+    });
+
+    const { state, handleToggleLike, handleShare, handleReport, InteractionModal, ReportModal } = interaction;
 
     if (loading) return (
         <div className="flex justify-center items-center min-h-screen text-[#7d5a3f] font-medium italic animate-pulse">
@@ -35,13 +51,27 @@ const DishDetailPage = () => {
                 
                 {/* CỘT TRÁI: THÔNG TIN CHÍNH */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
-                        <img 
-                            src={getDishImageUrl(dish.dish_id, dish.image_url)} 
-                            alt={dish.original_name}
-                            className="w-full h-[400px] md:h-[500px] object-cover"
-                        />
+                <div className="relative group rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
+                        <img src={getDishImageUrl(dish.dish_id, dish.image_url)} className="w-full h-[400px] md:h-[500px] object-cover" />
+                        
+                        {/* Nút Like & Share đè lên ảnh */}
+                        <div className="absolute top-4 right-4 flex flex-col gap-3">
+                            <button 
+                                onClick={handleToggleLike}
+                                className={`p-3 rounded-full shadow-lg transition-all ${state.liked ? 'bg-red-500 text-white' : 'bg-white text-gray-600 hover:text-red-500'}`}
+                            >
+                                <Heart size={24} fill={state.liked ? "currentColor" : "none"} />
+                            </button>
+                            <button 
+                                onClick={handleShare}
+                                className="p-3 bg-white rounded-full shadow-lg text-gray-600 hover:text-blue-500 transition-all"
+                            >
+                                <Share2 size={24} />
+                            </button>
+                        </div>
                     </div>
+
+
                     
                     <div className="bg-white p-8 rounded-3xl shadow-sm border border-[#7d5a3f]/10">
                         <div className="flex justify-between items-start mb-4">
@@ -51,8 +81,11 @@ const DishDetailPage = () => {
                                 </h1>
                                 <p className="text-xl text-[#a68b6d] italic">{dish.english_name}</p>
                             </div>
-                            <div className="bg-[#7d5a3f] text-white px-4 py-2 rounded-full text-sm font-bold">
-                                ⭐ {dish.point || 0} Points
+                            <div className="text-right">
+                                <div className="bg-[#7d5a3f] text-white px-4 py-2 rounded-full text-sm font-bold mb-2">
+                                    ⭐ {dish.point || 0} Points
+                                </div>
+                                <p className="text-xs text-[#7d5a3f]/60 font-bold">{state.likeCount} lượt thích</p>
                             </div>
                         </div>
 
@@ -67,6 +100,11 @@ const DishDetailPage = () => {
                             <p className="whitespace-pre-line">{dish.description}</p>
                         </div>
                     </div>
+                    <CommentSection 
+                        postId={id} 
+                        postType="dish" 
+                        interactionHook={interaction} 
+                    />
                 </div>
 
                 {/* CỘT PHẢI: SIDEBAR (EATERIES & RECIPES) */}
@@ -97,18 +135,11 @@ const DishDetailPage = () => {
                             <span className="mr-2">🍳</span> Công thức nấu
                         </h3>
                         <div className="space-y-4">
-                            {dish.recipes && dish.recipes.length > 0 ? (
-                                dish.recipes.map((recipe, index) => (
-                                    <div key={index} className="bg-white/10 p-3 rounded-xl hover:bg-white/20 cursor-pointer transition-all border border-white/20">
-                                        <p className="font-medium">{recipe.title || "Tên công thức"}</p>
-                                        <p className="text-[10px] uppercase tracking-widest opacity-70">Xem chi tiết →</p>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="border-2 border-dashed border-white/30 rounded-2xl p-6 text-center">
-                                    <p className="text-sm opacity-80">Chưa có công thức liên kết cho món ăn này.</p>
-                                </div>
-                            )}
+                            <RecipeProposalSection 
+                        dishId={id} 
+                        initialRecipes={dish.recipes || []}
+                        onRefresh={refreshData} // Cách đơn giản nhất để cập nhật lại số vote
+                    />
                         </div>
                     </div>
 

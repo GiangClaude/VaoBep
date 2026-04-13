@@ -1,6 +1,8 @@
 const { data } = require('autoprefixer');
 const InteractionModel = require('../models/interaction.model');
 const RecipeModel = require('../models/recipe.model');
+const DictionaryDish = require('../models/dictionaryDish.model');
+const DictionaryDishService = require( '../utils/dictionaryDish.service');
 const { validateReportInput } = require('../utils/validation');
 const {validateInteractionInput, validateCommentInput} = require('../utils/validation');
 // Helper: Kiểm tra input postType
@@ -19,7 +21,12 @@ const toggleLike = async (req, res) => {
 
         const result = await InteractionModel.toggleLike({ userId, postId, postType });
         const typeName = (postType === 'recipe') ? 'công thức' : 
-                         (postType === 'article') ? 'bài viết' : 'món ăn';
+                         (postType === 'article') ? 'bài viết' : 
+                         (postType === 'dish') ? 'món ăn' : 'null';
+        console.log("Toggle like result:",postId, result, postType, typeName);
+        if (postType === 'dish') {
+            await DictionaryDishService.recalculatePoint(postId);
+        }
                         
         res.status(200).json({
             success: true,
@@ -74,7 +81,9 @@ const postComment = async (req, res) => {
         }
 
         const newComment = await InteractionModel.createComment({ userId, postId, postType, content, parentId });
-        console.log("New comment created:", newComment);
+        if (postType === 'dish') {
+            await DictionaryDishService.recalculatePoint(postId);
+        }
 
         res.status(201).json({ 
             success: true, 
@@ -132,7 +141,11 @@ const deleteComment = async (req, res) => {
             return res.status(403).json({ success: false, message: "Bạn không có quyền xóa bình luận này" });
         }
         const success = await InteractionModel.deleteComment(commentId, userId);
-
+        const postType = comment.post_type;
+        if (postType === 'dish') {
+            await DictionaryDishService.recalculatePoint(comment.post_id);
+        }
+        
         if (!success) {
             return res.status(403).json({ 
                 success: false, 

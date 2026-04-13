@@ -1,6 +1,8 @@
+const db = require('../config/db');
 const DictionaryDish = require('../models/dictionaryDish.model');
 const DictionaryDishService = require('../utils/dictionaryDish.service');
 const RecipeLinkModel = require('../models/recipe_link.model');
+// const RecipeModel = require('../models/recipe.model');
 const InteractionModel = require('../models/interaction.model');
 const { createPagination } = require('../utils/paginationHelper');
 // const { getUserById } = require('../config/db');
@@ -36,14 +38,14 @@ const getAllDishes = async (req, res) => {
 const getDishDetail = async (req, res) => {
     try {
         const { id } = req.params;
+        const userId = getUserIdFromToken(req);
         const [dish, eateries, recipes] = await Promise.all([
             DictionaryDish.getById(id),
             DictionaryDish.getEateriesByDishId(id), // Gọi từ Model Dish
-            RecipeLinkModel.getRecipesByPost(id, 'dish') // Gọi từ Model liên kết
+            RecipeLinkModel.getRecipesByPost(userId, id, 'dish') // Gọi từ Model liên kết
         ]);
-        // console.log("Dish detail: ", req);
+        console.log("Dish detail: ", recipes);
         let interactionState = null;
-        const userId = getUserIdFromToken(req);
         console.log("User ID from token:", userId); // Debug log để kiểm tra userId
         if (userId) {
             interactionState= await InteractionModel.getUserInteractionState(userId, id, 'dish');
@@ -87,10 +89,34 @@ const getMapAllDishes = async (req, res) => {
     }
 };
 
+const voteRecipeForDish = async (req, res) => {
+    const connection = await db.pool.getConnection();
+    try {
+        const { id: dishId } = req.params; // ID của món ăn từ điển
+        const { recipeId } = req.body;     // ID của công thức được vote/đề xuất
+        const userId = req.user.user_id;;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Bạn cần đăng nhập để thực hiện chức năng này' });
+        }
+
+        const result = await RecipeLinkModel.toggleVote(connection, userId, recipeId, dishId, 'dish');
+        res.status(200).json({ success: true, message: 'Bình chọn thành công!', action: result.action });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error in voteRecipeForDish:', error);
+        res.status(500).json({ success: false, message: 'Lỗi server: ' + error.message });
+    } finally {
+        connection.release();
+    }
+};
+
 
 module.exports = {
     getAllDishes,
     getDishDetail,
     getMapSummary,
-    getMapAllDishes
+    getMapAllDishes,
+    voteRecipeForDish
 };

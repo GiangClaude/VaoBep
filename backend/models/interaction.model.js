@@ -76,6 +76,7 @@ class Interaction {
                 [userId, postId, postType]
             );
 
+
             let isLiked = false;
 
             if (exists.length > 0) {
@@ -84,10 +85,11 @@ class Interaction {
                     `DELETE FROM Likes WHERE user_id = ? AND post_id = ? AND post_type = ?`,
                     [userId, postId, postType]
                 );
-                await connection.execute(
-                    `UPDATE ${targetTable} SET like_count = GREATEST(like_count - 1, 0) WHERE ${idColumn} = ?`,
-                    [postId]
-                );
+                console.log(`User ${userId} unliked ${postType} ${postId}`);
+                // await connection.execute(
+                //     `UPDATE ${targetTable} SET like_count = GREATEST(like_count - 1, 0) WHERE ${idColumn} = ?`,
+                //     [postId]
+                // );
                 isLiked = false;
             } else {
                 // Chưa like -> Thêm (Like) -> Tăng count
@@ -95,10 +97,11 @@ class Interaction {
                     `INSERT INTO Likes (user_id, post_id, post_type) VALUES (?, ?, ?)`,
                     [userId, postId, postType]
                 );
-                await connection.execute(
-                    `UPDATE ${targetTable} SET like_count = like_count + 1 WHERE ${idColumn} = ?`,
-                    [postId]
-                );
+                console.log(`User ${userId} liked ${postType} ${postId}`);
+                // await connection.execute(
+                //     `UPDATE ${targetTable} SET like_count = like_count + 1 WHERE ${idColumn} = ?`,
+                //     [postId]
+                // );
                 isLiked = true;
             }
 
