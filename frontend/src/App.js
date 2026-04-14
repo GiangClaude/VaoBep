@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './AuthContext';
 
 import Header from './component/common/Header';
 import { Footer } from './component/common/Footer';
+import Chatbot from './component/Chatbot/Chatbot';
 
 import AdminLayout from './component/admin/AdminLayout';
 import AdminRoute from './component/admin/AdminRoute';
@@ -35,6 +36,7 @@ import AdminRecipePage from './pages/admin/AdminRecipePage';
 import AdminIngredientPage from './pages/admin/AdminIngredientPage';
 import AdminReportPage from './pages/admin/AdminReportPage';
 
+import LeaderboardPage from './pages/LeaderboardPage';
 // Layout chính
 const MainLayout = () => {
   return (
@@ -44,6 +46,7 @@ const MainLayout = () => {
         <Outlet />
       </div>
       <Footer />
+      <Chatbot />
     </div>
   );
 };
@@ -90,6 +93,7 @@ function App() {
               <Route path="/recipe/:id" element={<RecipeDetailPage />} />
               <Route path="/articles" element={<ArticlesListPage />} />
               <Route path="/search" element={<SearchPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/user/:id" element={<UserProfilePage />} />
 
               <Route path="/article/:articleId" element={<ArticleDetailPage />} />

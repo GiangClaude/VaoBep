@@ -1,7 +1,7 @@
 // models/interaction.model.js
 const db = require('../config/db');
 const pool = db.pool;
-
+const LeaderboardModel = require('./leaderboard.model');
 
 
 class Interaction {
@@ -103,6 +103,10 @@ class Interaction {
                 //     [postId]
                 // );
                 isLiked = true;
+            }
+
+            if (postType === 'recipe') {
+                await LeaderboardModel.syncRecipePoint(connection, postId);
             }
 
             await connection.commit();
@@ -217,6 +221,9 @@ class Interaction {
                 WHERE c.comment_id = ?
             `, [commentId]);
             
+            if (postType === 'recipe') {
+                await LeaderboardModel.syncRecipePoint(connection, postId);
+            }
 
             await connection.commit();
             return rows[0];
@@ -343,6 +350,12 @@ class Interaction {
 
             }
 
+            const [checkPostType] = await connection.execute(
+                `SELECT post_type, post_id FROM Comments WHERE comment_id = ?`, [commentId]
+            );
+            if (checkPostType.length > 0 && checkPostType[0].post_type === 'recipe') {
+                await LeaderboardModel.syncRecipePoint(connection, checkPostType[0].post_id);
+            }
 
             await connection.commit();
             
@@ -399,6 +412,10 @@ class Interaction {
                 );
             }
 
+            if (postType === 'recipe') {
+                await LeaderboardModel.syncRecipePoint(connection, postId);
+            }
+
             await connection.commit();
             return { avgScore, ratingCount };
         } catch (error) {
@@ -437,6 +454,9 @@ class Interaction {
                 );
                 isFollowing = true;
             }
+
+            await LeaderboardModel.syncUserPoint(connection, followingId);
+            
             return { isFollowing };
         } catch (error) {
             throw error;
@@ -503,6 +523,10 @@ class Interaction {
                 `UPDATE ${targetTable} SET report_count = report_count + 1 WHERE ${idColumn} = ?`,
                 [postId]
             );
+
+            if (postType === 'recipe') {
+                await LeaderboardModel.syncRecipePoint(connection, postId);
+            }
 
             await connection.commit();
             return { success: true };

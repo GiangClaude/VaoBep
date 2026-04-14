@@ -82,8 +82,8 @@ export default function RecipeDetailPage() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Nút Back */}
-        <button onClick={() => navigate('/recipes')} className="flex items-center gap-2 text-[#ff6b35] hover:text-[#f7931e] transition-colors mb-6 font-medium">
-          <ArrowLeft className="w-5 h-5" /> <span>Quay lại danh sách</span>
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[#ff6b35] hover:text-[#f7931e] transition-colors mb-6 font-medium">
+          <ArrowLeft className="w-5 h-5" /> <span>Quay lại</span>
         </button>
 
         {/* --- 1. HERO SECTION --- */}

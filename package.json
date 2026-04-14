@@ -21,6 +21,7 @@
     "get-caller-file": "^2.0.5",
     "has-flag": "^4.0.0",
     "is-fullwidth-code-point": "^3.0.0",
+    "langfuse": "^3.38.20",
     "motion": "^12.23.24",
     "mysql2": "^3.20.0",
     "nodemailer": "^7.0.10",

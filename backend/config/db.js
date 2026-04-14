@@ -12,6 +12,13 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
+const chatbotPool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.CHATBOT_DB_USER, // <-- Lấy đúng user bot
+    password: process.env.CHATBOT_DB_PASSWORD, // <-- Lấy đúng pass bot
+    database: process.env.DB_NAME
+});
+
 // Hàm kiểm tra kết nối
 async function testDbConnection() {
     try {

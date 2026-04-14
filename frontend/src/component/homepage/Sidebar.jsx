@@ -175,13 +175,18 @@ export default function Sidebar() {
           <div className="absolute top-0 right-0 w-20 h-20 bg-white rounded-full blur-xl animate-pulse" />
         </div>
         
-        <div className="relative z-10 text-center">
+        <div 
+          className="relative z-10 text-center"
+          
+        >
           <div className="inline-flex bg-white/30 backdrop-blur-sm p-2 rounded-xl mb-2">
             <Trophy className="w-6 h-6 text-white" />
           </div>
           <h4 className="text-white mb-1">Bảng Xếp Hạng</h4>
           <p className="text-white/80 text-xs mb-3">Xem top đầu bếp tuần này</p>
-          <button className="bg-white text-purple-600 px-4 py-1.5 rounded-full text-sm hover:bg-yellow-300 transition-all">
+          <button 
+          onClick={() => navigate('/leaderboard')}
+          className="bg-white text-purple-600 px-4 py-1.5 rounded-full text-sm hover:bg-yellow-300 transition-all">
             Xem ngay
           </button>
         </div>

@@ -26,11 +26,14 @@ const adminRoutes = require('./routes/admin.routes');
 const tagRoutes = require('./routes/tag.routes');
 const interactionRoutes = require('./routes/interaction.routes');
 const dictionaryDishRoutes = require('./routes/dictionaryDish.routes');
+const chatbotRoutes = require('./routes/chatbot.routes');
+const leaderboardRoutes = require('./routes/leaderboard.routes');
 // Kiểm tra kết nối database khi khởi động server
 db.testDbConnection();
 
 // Route Xác thực
 app.use('/api/auth', authRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/user', userRoutes);
@@ -41,6 +44,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/interaction', interactionRoutes);
 app.use('/api/dictionary-dishes', dictionaryDishRoutes);
+// Chatbot route
+app.use('/api/chat', chatbotRoutes);
 
 app.use((req, res, next) => {
     res.status(404).json({ error: 'Route not found' });

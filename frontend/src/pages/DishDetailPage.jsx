@@ -82,10 +82,10 @@ const DishDetailPage = () => {
                                 <p className="text-xl text-[#a68b6d] italic">{dish.english_name}</p>
                             </div>
                             <div className="text-right">
-                                <div className="bg-[#7d5a3f] text-white px-4 py-2 rounded-full text-sm font-bold mb-2">
+                                {/* <div className="bg-[#7d5a3f] text-white px-4 py-2 rounded-full text-sm font-bold mb-2">
                                     ⭐ {dish.point || 0} Points
-                                </div>
-                                <p className="text-xs text-[#7d5a3f]/60 font-bold">{state.likeCount} lượt thích</p>
+                                </div> */}
+                                <p className="text-xl text-[#7d5a3f]/60 font-bold">{state.likeCount} lượt thích</p>
                             </div>
                         </div>
 

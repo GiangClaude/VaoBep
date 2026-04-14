@@ -204,6 +204,7 @@ const ArticleController = {
                 
                 const keyword = req.query.q || ""; // Từ khóa tìm kiếm
                 const sort = req.query.sort || "newest"; // Mặc định là mới nhất
+                const userId = getUserIdFromToken(req); // Lấy từ token (nếu có)
                 
 
 
@@ -226,7 +227,7 @@ const ArticleController = {
                 const articlesWithDetails = await Promise.all(articles.map(async (article) => {
                     const [tags, linkedRecipes] = await Promise.all([
                         TagModel.getTagsByPostId(article.article_id),
-                        RecipeLinkModel.getRecipesByPost(article.article_id, 'article')
+                        RecipeLinkModel.getRecipesByPost(userId,article.article_id, 'article')
                     ]);
                     return { 
                         ...article, 
@@ -235,7 +236,6 @@ const ArticleController = {
                     };
                 }));
 
-                const userId = getUserIdFromToken(req); // Lấy từ token (nếu có)
                 if (userId && articlesWithDetails.length > 0) {
                     const postIds = articlesWithDetails.map(a => a.article_id);
                     const interactionStates = await InteractionModel.getBatchInteractionState(userId, postIds, 'article');
@@ -267,11 +267,11 @@ const ArticleController = {
         try {
             const limit = parseInt(req.query.limit) || 10;
             const articles = await ArticleModel.getFeaturedArticles(limit);
-
+            const userId = getUserIdFromToken(req); // Lấy từ token (nếu có)
             const articlesWithTags = await Promise.all(articles.map(async (article) => {
                 const [tags, linkedRecipes] = await Promise.all([
                     TagModel.getTagsByPostId(article.article_id),
-                    RecipeLinkModel.getRecipesByPost(article.article_id, 'article')
+                    RecipeLinkModel.getRecipesByPost(userId, article.article_id, 'article')
                 ]);
                 return { ...article, tags, linked_recipes: linkedRecipes };
             }));
@@ -291,7 +291,7 @@ const ArticleController = {
             const articlesWithTags = await Promise.all(articles.map(async (article) => {
                 const [tags, linkedRecipes] = await Promise.all([
                     TagModel.getTagsByPostId(article.article_id),
-                    RecipeLinkModel.getRecipesByPost(article.article_id, 'article')
+                    RecipeLinkModel.getRecipesByPost(userId, article.article_id, 'article')
                 ]);
                 return { ...article, tags, linked_recipes: linkedRecipes };
             })); 
@@ -327,7 +327,7 @@ const ArticleController = {
             const [tags, commentsData, linkedRecipes, interactionState] = await Promise.all([
                 TagModel.getTagsByPostId(articleId), 
                 InteractionModel.getComments(articleId, 'article', 1, 10),
-                RecipeLinkModel.getRecipesByPost(articleId, 'article'), // Lấy món ăn đã gắn
+                RecipeLinkModel.getRecipesByPost(userId,articleId, 'article'), // Lấy món ăn đã gắn
                 InteractionModel.getBatchInteractionState(userId, [articleId], 'article')   
             ]);
             const state = interactionState ? interactionState[articleId] : null;
