@@ -103,12 +103,12 @@ export function MyArticlesTab({ isPublicView = false }) {
 
         {!isPublicView && (
           <div className="flex items-center gap-3">
-            <button onClick={openCreate} className="bg-white border px-3 py-2 rounded-full flex items-center gap-2 text-sm hover:bg-gray-50">
+            <motion.button onClick={openCreate} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white px-5 py-2 rounded-full flex items-center gap-2">
               <Plus className="w-4 h-4" /> Tạo bài viết
-            </button>
-            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white px-5 py-2 rounded-full flex items-center gap-2" onClick={() => navigate('/articles') }>
-              <FileText className="w-4 h-4" /> Quản lý bài viết
             </motion.button>
+            {/* <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white px-5 py-2 rounded-full flex items-center gap-2" onClick={() => navigate('/articles') }>
+              <FileText className="w-4 h-4" /> Quản lý bài viết
+            </motion.button> */}
           </div>
         )}
       </div>

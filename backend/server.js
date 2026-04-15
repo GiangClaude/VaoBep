@@ -28,6 +28,7 @@ const interactionRoutes = require('./routes/interaction.routes');
 const dictionaryDishRoutes = require('./routes/dictionaryDish.routes');
 const chatbotRoutes = require('./routes/chatbot.routes');
 const leaderboardRoutes = require('./routes/leaderboard.routes');
+const rewardRoutes = require('./routes/reward.routes');
 // Kiểm tra kết nối database khi khởi động server
 db.testDbConnection();
 
@@ -37,6 +38,7 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/recipes', recipeRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/rewards', rewardRoutes);
 app.use('/api/ingredients', ingredientRoutes);
 app.use('/api/units', unitRoutes);
 

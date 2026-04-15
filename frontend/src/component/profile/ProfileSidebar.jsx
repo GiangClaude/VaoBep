@@ -1,9 +1,14 @@
 import { Trophy, Award, Target, TrendingUp } from "lucide-react";
 import { motion } from "motion/react";
-
-export function ProfileSidebar({ stats, badges, currentChallenge }) {
+import { SidebarReward } from "./SidebarReward";
+export function ProfileSidebar({ stats, badges, currentChallenge, pendingRewards, onOpenReward}) {
+  const pendingCount = pendingRewards?.filter(r => r.status === 'pending').length || 0;
   return (
     <div className="space-y-6">
+      <SidebarReward 
+        pendingCount={pendingCount} 
+        onClick={() => onOpenReward(pendingRewards.filter(r => r.status === 'pending')[0])} 
+      />
       {/* Stats Card */}
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <h3 className="text-xl mb-5 flex items-center gap-2">

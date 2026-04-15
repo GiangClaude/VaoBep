@@ -14,7 +14,7 @@ import { CreateRecipeModal } from "../component/recipe/CreateRecipeModal";
 import Modal from "../component/common/modal";
 import { ChangePasswordModal } from "../component/profile/ChangePasswordModal";
 import { SavedRecipeTab } from "../component/profile/SavedRecipeTab";
-
+import { ClaimRewardModal } from "../component/profile/rewards/ClaimRewardModal"; 
 
 import { useAuth } from "../AuthContext";
 import {useOwnerRecipes} from "../hooks/useOwnerRecipes";
@@ -22,7 +22,7 @@ import { useCreateRecipe } from "../hooks/useRecipeAction";
 import { useUpdateProfile } from "../hooks/useProfile";
 import { usePoints } from "../hooks/usePoints";
 import { useChangePassword } from "../hooks/useChangePassword"; 
-
+import { useRewards } from "../hooks/useRewards"; 
 
 const mockSidebarStats = {
   totalLikes: 15420,
@@ -56,6 +56,12 @@ export default function ProfilePage() {
   const { createNewRecipe, updateExistingRecipe, getRecipe, removeRecipe, loading: creating } = useCreateRecipe();
   const { updateProfile, loading: isUpdatingProfile } = useUpdateProfile();
 
+  const { rewards, openBox } = useRewards();
+  const [selectedBox, setSelectedBox] = useState(null);
+  const [receivedItems, setReceivedItems] = useState([]);
+  const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
+
   const { 
       history: pointsHistory, 
       fetchHistory, 
@@ -79,6 +85,8 @@ export default function ProfilePage() {
         resetFields();
         setIsChangePassModalOpen(true);
   };
+
+  
 
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
@@ -296,6 +304,23 @@ export default function ProfilePage() {
     }
   };
 
+  const handleOpenReward = async (reward) => {
+    if (!reward) return;
+    setSelectedBox(reward);
+    setIsRewardModalOpen(true);
+    setIsOpening(true);
+
+    const result = await openBox(reward.user_reward_id);
+    if (result.success) {
+      setReceivedItems(result.items);
+      setIsOpening(false);
+      await refreshProfile(); // Cập nhật lại số điểm trên Header nếu cần
+    } else {
+      alert(result.message);
+      setIsRewardModalOpen(false);
+    }
+  };
+
   if (!currentUser) return <div className="text-center p-10">Đang tải thông tin...</div>;
 
   return (
@@ -387,11 +412,21 @@ export default function ProfilePage() {
               stats={mockSidebarStats}
               badges={mockBadges}
               currentChallenge={mockChallenge}
+              pendingRewards={rewards} 
+              onOpenReward={handleOpenReward}
             />
           </div>
 
         </div>
       </main>
+
+      <ClaimRewardModal 
+        isOpen={isRewardModalOpen}
+        isOpening={isOpening}
+        boxName={selectedBox?.box_name}
+        items={receivedItems}
+        onClose={() => setIsRewardModalOpen(false)}
+      />
 
       <ChangePasswordModal 
         isOpen={isChangePassModalOpen}

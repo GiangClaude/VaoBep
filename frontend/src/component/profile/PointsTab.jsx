@@ -42,6 +42,11 @@ export function PointsTab({
           color: "text-blue-600" 
         };
       case "redeem": // Đổi quà/Tiêu điểm
+        return { 
+          icon: <TrendingUp className="w-5 h-5 text-orange-500" />, 
+          label: "Đổi quà", 
+          color: "text-orange-600" 
+        };
       case "spend":
         return { 
           icon: <TrendingDown className="w-5 h-5 text-orange-500" />, 

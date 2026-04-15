@@ -283,6 +283,7 @@ export default function ArticleEditorModal({ isOpen, onClose, initialData = null
                 Viết nội dung bài viết...
               </div>
             )}
+           
           </div>
 
           {/* Footer */}

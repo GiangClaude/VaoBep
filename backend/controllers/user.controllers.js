@@ -289,7 +289,7 @@ const giftPoints = async (req, res) => {
             return res.status(400).json({ success: false, message: "Người nhận đang bị khóa hoặc chưa kích hoạt." });
         }
 
-        // 4. Thực hiện TRỪ tiền người gửi
+        // 4. Thực hiện TRỪ tiền người gửi(Người gửi tặng điểm => type gift-sent)
         await UserModel.updatePoints(senderId, -pointsToSend, connection);
         await PointModel.create({
             userId: senderId,
@@ -299,11 +299,11 @@ const giftPoints = async (req, res) => {
             message: message || `Tặng điểm cho ${recipient.full_name}`
         }, connection);
 
-        // 5. Thực hiện CỘNG tiền người nhận
+        // 5. Thực hiện CỘNG tiền người nhận(Người nhận nhận tiền -> type: earn)
         await UserModel.updatePoints(recipientId, pointsToSend, connection);
         await PointModel.create({
             userId: recipientId,
-            type: 'gift_received',
+            type: 'earn',
             amount: pointsToSend,
             relatedUserId: senderId,
             message: message || `Nhận điểm từ ${sender.full_name}`

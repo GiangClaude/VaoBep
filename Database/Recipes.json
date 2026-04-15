@@ -1,0 +1,114 @@
+recipe_id,user_id,title,description,cover_image,instructions,total_calo,status,is_trusted,created_at,update_at,like_count,comment_count,report_count,rating_sum_score,rating_count,rating_avg_score,servings,cook_time
+05a1b2c3-d0a1-11f0-8b2b-0a002700000f,03821c78-c0be-11f0-8b2b-0a002700000f,"Bánh mì chay nướng","Bánh mì kẹp rau củ nướng thơm lừng",cover_1732638100001.jpg,"1. Nướng bánh mì...
+2. Xếp rau...",320.5,banned,1,"2025-03-20 09:15:00","2026-01-16 09:24:11",0,0,0,0,0,0,1,60
+082f84f4-5f3f-4369-a8f4-1b1bb27c5efa,8b7cd300-c0c1-11f0-8b2b-0a002700000f,adfasdfasdf,sfdsdsdf,NULL,"[{"id":"step-1772443608456","description":"abc","image":""},{"id":"step-1772443612317","description":"abcd","image":""}]",0,public,0,"2026-03-02 16:26:57","2026-03-02 16:26:57",2,0,2,0,0,0,1,60
+0fd39fbe-c112-4da2-ba48-a9ae91ca62c8,1cc2cd0c-dc19-11f0-9c26-0a002700000f,"gà nướng",1eeee,NULL,"Bước 1: gà",0,public,0,"2025-12-19 01:19:46","2025-12-19 01:30:39",1,0,0,4,1,4,1,60
+16b2c3d4-d0a2-11f0-8b2b-0a002700000f,1433923c-c0a9-11f0-8b2b-0a002700000f,"Phở bò tái VIP","Phở bò tái mềm, nước dùng trong",cover_1732637000123.jpg,"1. Ninh xương 8h...
+2. Tái bò mỏng...",680,public,1,"2025-03-22 11:00:00","2025-11-14 12:15:00",1,0,1,0,0,0,1,60
+18f64531-41b0-430c-a83d-4cb666b61d6e,1cc2cd0c-dc19-11f0-9c26-0a002700000f,1,2,NULL,"Bước 1: 1",0,public,0,"2025-12-19 01:08:56","2025-12-19 01:08:56",0,1,0,0,0,0,1,60
+1bf77b80-4c6d-4cd9-8a14-9bb5183e4421,000df5f7-f1de-11f0-ab43-0a002700000f,abc,abc,cover_1768496336806-401027488.png,ádfasdf,500,public,0,"2026-01-15 23:58:56","2026-01-15 23:58:56",0,0,0,0,0,0,2,30
+27c3d4e5-d0a3-11f0-8b2b-0a002700000f,24b7f3c9-c0ae-11f0-8b2b-0a002700000f,"Beef Wellington","Món Âu cao cấp cho tiệc",cover_1732638105023.jpg,"1. Ướp bò...
+2. Bọc nấm...",950,banned,1,"2025-11-15 14:20:00","2026-01-15 23:47:51",0,0,0,0,0,0,1,60
+2c54a9b7-90b0-4784-b258-5a227e4543c3,8b7cd300-c0c1-11f0-8b2b-0a002700000f,"Gà Nướng Mật Ong (Test từ Postman)","Món gà nướng mật ong thơm lừng, da giòn, thịt mềm.",cover_1732638128099.jpg,"1. Ướp gà
+
+2. Nướng 180 độ C trong 20 phút. 
+
+3. Quét mật ong và nướng thêm 5 phút.",0,hidden,0,"2025-11-16 03:51:50","2026-01-15 12:28:53",1,0,0,4,1,4,1,60
+38d4e5f6-d0a4-11f0-8b2b-0a002700000f,8b7cd300-c0c1-11f0-8b2b-0a002700000f,"Canh chua cá lóc","Canh chua miền Nam chuẩn vị",cover_1732638135112.jpg,"1. Phi thơm hành...
+2. Cho me...",280,public,0,"2025-04-10 10:10:00","2025-12-26 21:30:42",0,1,2,4,1,4,1,60
+49e5f607-d0a5-11f0-8b2b-0a002700000f,c22acad4-c0c5-11f0-8b2b-0a002700000f,"Thịt nướng Hàn Quốc","BBQ kiểu Hàn tại nhà",cover_1732638142201.jpg,"1. Ướp thịt 2h...
+2. Nướng than...",720,public,1,"2025-05-20 17:30:00","2025-11-15 20:00:00",0,0,0,0,0,0,1,60
+4ff48b2e-cafa-11f0-a5ac-0a002700000f,1b7cd300-c0c1-11f0-8b2b-0a002700000f,"Phở Bò Truyền Thống (Hà Nội & Sài Gòn)","Phở là "tôn giáo" ẩm thực tại Việt Nam, là sự giao thoa giữa văn hóa ăn thịt bò phương Tây, kỹ thuật gia vị phương Đông và văn hóa lúa gạo Việt Nam. Món ăn hội tụ nước dùng trong ngọt từ xương ninh 12-24h, hương thơm của quế hồi thảo quả và bánh phở dai mềm.",cover_1764250288.png,"**Nguyên liệu Nước dùng:** 3-4kg Xương ống & đuôi bò, 500g Nạm bò, 5-6 lít nước lạnh.
+**Gia vị Hương (Nướng):** 100g Gừng già, 3 củ hành tây, 5-7 củ hành tím (Nướng cháy vỏ).
+**Gói Thảo mộc:** Hoa hồi, Quế, Thảo quả, Hạt mùi, Đinh hương (Rang thơm).
+**Cách làm:**
+1. Xương ngâm nước muối và trụng sôi để loại bỏ tạp chất.
+2. Ninh xương cùng gừng hành nướng. Cho gói thảo mộc vào 60 phút cuối.
+3. Nêm đường phèn và nước mắm (chỉ nêm nước mắm trước khi tắt bếp).
+4. Trụng bánh phở, xếp thịt bò tái/chín, chan nước dùng sôi và ăn kèm rau thơm.",425,public,1,"2025-11-27 02:01:28","2025-11-27 02:01:28",0,0,0,0,0,0,1,60
+4ff576cc-cafa-11f0-a5ac-0a002700000f,c52acad4-c0c5-11f0-8b2b-0a002700000f,"Bún Chả Hà Nội (Chuẩn Vị Obama)","Món ăn trưa biểu tượng của Hà Nội, nổi tiếng toàn cầu qua sự kiện Tổng thống Obama thưởng thức. Bún chả là nghệ thuật của thịt nướng than hoa ám khói và nước chấm cân bằng chua-cay-mặn-ngọt.",cover_1764250289.jpg,"**Nguyên liệu:** 500g Thịt nạc vai băm (Chả viên), 500g Thịt ba chỉ thái lát (Chả miếng).
+**Gia vị ướp:** Nước mắm, đường vàng, dầu hào, tiêu, nước cốt hành tỏi, nước hàng (caramel).
+**Nước chấm:** Tỷ lệ vàng 1 mắm : 1 đường : 1 giấm : 5 nước ấm.
+**Cách làm:**
+1. Ướp thịt với nước cốt hành tỏi (tránh cháy) tối thiểu 2-3h.
+2. Nướng trên than hoa để tạo hương vị khói (Smoky flavor) từ mỡ rơi xuống than.
+3. Ăn kèm bún rối, dưa góp đu đủ xanh giòn và rau kinh giới, tía tô.",725,public,0,"2025-11-27 02:01:28","2025-11-27 02:01:28",0,0,0,0,0,0,3,120
+5af60718-d0a6-11f0-8b2b-0a002700000f,eaa4a41-c0b7-11f0-8b2b-0a002700000f,"Salad gà low-carb","Ăn kiêng nhưng vẫn ngon",cover_1732638161456.jpg,"1. Luộc gà...
+2. Trộn sốt...",210,public,0,"2025-04-01 08:45:00","2025-11-10 09:20:00",0,0,0,0,0,0,1,60
+65294a0f-c25b-11f0-b044-0a002700000f,8b7cd300-c0c1-11f0-8b2b-0a002700000f,"Thịt kho tiêu","Món ăn truyền thống thơm ngon.",cover_1732638178567.jpg,"Bước 1: Ướp thịt. Bước 2: Kho thịt...",NULL,public,0,"2025-11-16 02:43:44","2025-12-26 18:28:36",0,0,1,0,0,0,1,60
+7c18293a-d0a8-11f0-8b2b-0a002700000f,03821c78-c0be-11f0-8b2b-0a002700000f,"Chè đậu đỏ (bản nháp)","Chè ngọt mát ngày hè",cover_1732638192789.jpg,"1. Ngâm đậu...
+2. Nấu nhuyễn...",180,draft,0,"2025-06-05 15:20:00","2025-06-05 15:20:00",0,0,0,0,0,0,1,60
+8604edd4-cafa-11f0-a5ac-0a002700000f,2a9b1f3d-c0e2-11f0-8b2b-0a002700000f,"Bún Bò Huế Cung Đình","Bản giao hưởng của gia vị miền Trung. Nước dùng đậm đà kết hợp xương bò và giò heo, dậy mùi mắm ruốc và hương sả nồng nàn, tạo nên vị cay xé lưỡi đặc trưng.",cover_1764250290.jpg,"**Nguyên liệu:** 1kg Xương ống bò, 1kg Giò heo, 500g Nạm bò, Chả cua, Huyết heo.
+**Hương vị chủ đạo:** 6-8 cây sả đập dập, 3 thìa mắm ruốc Huế, Sa tế dầu điều.
+**Cách làm:**
+1. Mắm ruốc hòa tan nước lạnh, lấy nước trong nấu sôi để khử mùi tanh.
+2. Hầm xương và giò heo với bó sả lớn.
+3. Tạo màu đỏ cam bằng hạt điều màu xào sả ớt.
+4. Ăn kèm bắp chuối bào, rau muống chẻ để cân bằng vị béo.",850,public,1,"2025-11-27 02:02:58","2025-11-27 02:02:58",1,2,0,3,1,3,1,60
+8605b6bb-cafa-11f0-a5ac-0a002700000f,94b7f3c9-c0ae-11f0-8b2b-0a002700000f,"Mì Quảng Tôm Thịt & Củ Nén","Món ăn "trộn" đặc trưng của Quảng Nam - Đà Nẵng với nước lèo xâm xấp. Linh hồn của món ăn là hương vị củ nén (hành tăm) phi dầu phụng và màu vàng của nghệ.",cover_1764250291.jpg,"**Nguyên liệu:** 1kg Mì Quảng tươi, 500g Tôm đất, 500g Thịt ba chỉ, Trứng cút, Bánh tráng nướng.
+**Gia vị đặc trưng:** 50g Củ nén, 30g Nghệ tươi, Dầu phụng (dầu lạc).
+**Cách làm:**
+1. Phi thơm củ nén với dầu phụng (khử dầu).
+2. Nấu nước nhưn (nước lèo) cô đặc từ tôm thịt giã dập một phần.
+3. Chan nước xâm xấp mặt mì. Rắc đậu phộng rang và bẻ bánh tráng nướng ăn kèm. Rau sống bắt buộc phải có cải con (cải bẹ xanh non).",650,public,0,"2025-11-27 02:02:58","2025-11-27 02:02:58",1,0,0,0,0,0,2,45
+86067d9c-cafa-11f0-a5ac-0a002700000f,4433923c-c0a9-11f0-8b2b-0a002700000f,"Cơm Tấm Sườn Bì Chả (Sài Gòn)","Món ăn biểu tượng của sự sáng tạo từ gian khó, sử dụng gạo tấm vỡ nấu tơi xốp. Nổi tiếng với "bộ ba" Sườn nướng than, Bì thính và Chả trứng hấp.",cover_1764250292.jpg,"**Nguyên liệu:** Gạo tấm mễ, Sườn cốt lết, Bì heo, Thính gạo, Trứng vịt.
+**Kỹ thuật:**
+1. Sườn ướp sữa đặc, mật ong, nước tương để mềm thịt, nướng than hoa cháy cạnh (Maillard).
+2. Bì heo thái sợi trộn thính gạo rang thơm.
+3. Nước mắm kẹo: Nấu nước mắm và đường tỷ lệ 1:1 cho sánh đặc. Mỡ hành dội nóng giữ màu xanh.",800,public,0,"2025-11-27 02:02:58","2025-11-27 02:02:58",0,5,0,5,1,5,1,60
+86072559-cafa-11f0-a5ac-0a002700000f,33821c78-c0be-11f0-8b2b-0a002700000f,"Bánh Xèo Miền Tây Cốt Dừa","Bánh xèo miền Tây to, mỏng, giòn rụm với vị béo của nước cốt dừa trong bột. Ăn kèm rổ rau rừng phong phú để cân bằng vị giác.",cover_1764250293.jpg,"**Pha bột:** 500g Bột gạo, 400ml Nước cốt dừa, Bột nghệ, Hành lá, Bia (tùy chọn để tăng độ giòn).
+**Nhân:** Thịt ba chỉ, Tôm đất, Giá đỗ, Đậu xanh.
+**Cách làm:**
+1. Đổ bánh trên chảo gang lớn, lửa thật lớn để tạo tiếng "xèo" và độ giòn rìa bánh.
+2. Cuộn bánh với cải bẹ xanh (vị cay nồng) và các loại rau thơm.
+3. Chấm nước mắm chua ngọt pha loãng.",450,public,1,"2025-11-27 02:02:58","2025-11-27 02:02:58",1,0,0,3,1,3,1,60
+8607d377-cafa-11f0-a5ac-0a002700000f,eaa4a41-c0b7-11f0-8b2b-0a002700000f,"Cá Lóc Kho Tộ Miền Nam","Món mặn kinh điển trong bữa cơm gia đình, kho trong nồi đất giữ nhiệt. Cá thấm vị mắm đường keo sệt, màu nâu đỏ quyến rũ từ nước màu dừa.",cover_1764250294.jpg,"**Nguyên liệu:** 1kg Cá lóc, 200g Thịt ba chỉ (lót đáy), Nước dừa tươi.
+**Gia vị:** Nước mắm ngon, Đường, Nước màu dừa, Tiêu sọ, Ớt hiểm.
+**Cách làm:**
+1. Ướp cá 30 phút để thịt săn.
+2. Kho 2 lửa: Lửa 1 cho chín, để nguội. Lửa 2 kho liu riu với nước dừa tươi đến khi sốt keo sệt (Caramelization).
+3. Rắc tiêu và hành lá, ăn nóng với cơm trắng.",350,hidden,0,"2025-11-27 02:02:58","2026-01-15 17:45:45",0,0,0,0,0,0,1,60
+86086e1f-cafa-11f0-a5ac-0a002700000f,c22acad4-c0c5-11f0-8b2b-0a002700000f,"Gỏi Cuốn Tôm Thịt (Fresh Spring Rolls)","Món ăn lọt Top 50 thế giới, đại diện cho phong cách "ăn sạch" (clean eating) của người Việt: tươi sống, ít dầu mỡ, giàu thảo mộc.",cover_1764250295.jpg,"**Nguyên liệu:** Bánh tráng gạo mỏng, Bún tươi, Tôm sú luộc chẻ đôi, Thịt ba chỉ luộc thái mỏng.
+**Rau:** Xà lách, Giá đỗ, Hẹ, Húng quế.
+**Nước chấm:** Tương đen pha bơ đậu phộng và tỏi phi (Sài Gòn).
+**Cách làm:**
+1. Nhúng bánh tráng qua nước ấm.
+2. Xếp rau, bún, thịt, tôm (lớp ngoài cùng để đẹp mắt).
+3. Cuộn chặt tay, để cọng hẹ thò ra ngoài làm dấu ấn đặc trưng.",125,public,1,"2025-11-27 02:02:58","2025-11-27 02:02:58",0,0,0,0,0,0,1,60
+8d293a4b-d0a9-11f0-8b2b-0a002700000f,24b7f3c9-c0ae-11f0-8b2b-0a002700000f,"Tiramisu không cồn","Dành cho trẻ em và gia đình",cover_1732638201890.jpg,"1. Đánh mascarpone...
+2. Nhúng bánh...",410,public,1,"2025-11-16 16:40:00","2025-11-16 17:00:00",0,0,0,0,0,0,1,60
+9e3a4b5c-d0aa-11f0-8b2b-0a002700000f,1433923c-c0a9-11f0-8b2b-0a002700000f,"Gà hấp lá chanh","Thơm lừng, ít dầu",cover_1732638215901.jpg,"1. Ướp gà...
+2. Hấp 25 phút...",380,public,0,"2025-11-14 12:30:00","2025-11-13 13:45:00",0,0,0,0,0,0,1,60
+a80a409d-57d8-45ef-bcdf-0919af1c882f,1cc2cd0c-dc19-11f0-9c26-0a002700000f,q,đs,NULL,,0,draft,0,"2025-12-19 01:35:30","2025-12-19 01:35:30",0,0,0,0,0,0,1,60
+af4b5c6d-d0ab-11f0-8b2b-0a002700000f,1f5e8d2a-c0d1-11f0-8b2b-0a002700000f,"Bánh xèo miền Trung","Giòn rụm, nhân đầy",cover_1732638228012.jpg,"1. Pha bột...
+2. Chiên giòn...",510,public,1,"2025-01-20 10:00:00","2025-11-14 10:30:00",0,0,0,0,0,0,1,60
+b05c6d7e-d0ac-11f0-8b2b-0a002700000f,8b7cd300-c0c1-11f0-8b2b-0a002700000f,"Sữa chua nếp cẩm","Tráng miệng healthy",cover_1732638230123.jpg,"1. Nấu nếp cẩm...
+2. Đổ sữa chua...",230,public,0,"2025-05-01 14:15:00","2025-12-26 18:32:11",1,0,12,3,1,3,1,60
+c16d7e8f-d0ad-11f0-8b2b-0a002700000f,c22acad4-c0c5-11f0-8b2b-0a002700000f,"Cá hồi áp chảo sốt bơ chanh","Sang trọng, nhanh gọn",cover_1732638247234.jpg,"1. Áp chảo cá...
+2. Làm sốt bơ...",480,hidden,1,"2025-11-11 18:00:00","2026-01-15 19:14:19",0,0,0,0,0,0,1,60
+c52fb091-f248-11f0-bb4f-0a002700000f,000df5f7-f1de-11f0-ab43-0a002700000f,"Phở Bò Hà Nội","Món phở truyền thống với nước dùng thơm ngon",pho_bo.jpg,"1. Nấu nước dùng từ xương bò. 2. Thái thịt bò mỏng. 3. Chan nước dùng lên bánh phở.",450,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",12,15,0,52,12,4.3333,1,60
+c52fb95a-f248-11f0-bb4f-0a002700000f,03821c78-c0be-11f0-8b2b-0a002700000f,"Bún Chả Obama","Bún chả kiểu Hà Nội với thịt nướng",bun_cha.jpg,"1. Ướp thịt với gia vị. 2. Nướng thịt. 3. Pha nước chấm.",550,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",5,8,0,26,6,4.3333,1,60
+c52fba6d-f248-11f0-bb4f-0a002700000f,0468854d-c8a9-43de-a1b1-19f7c3281827,"Cơm Tấm Sài Gòn","Cơm tấm với sườn nướng và bì",com_tam.jpg,"1. Nấu cơm tấm. 2. Nướng sườn. 3. Làm bì heo.",650,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",3,2,1,9,2,4.5,1,60
+c52fbb5e-f248-11f0-bb4f-0a002700000f,1433923c-c0a9-11f0-8b2b-0a002700000f,"Bánh Mì Kẹp Thịt","Bánh mì Việt Nam với pate và thịt nguội",banh_mi.jpg,"1. Cắt bánh mì. 2. Phết pate. 3. Kẹp thịt và rau.",350,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,60
+c52fbc39-f248-11f0-bb4f-0a002700000f,188393e0-f204-11f0-bb4f-0a002700000f,"Gỏi Cuốn Tôm Thịt","Gỏi cuốn tươi mát với tôm và thịt",goi_cuon.jpg,"1. Luộc tôm và thịt. 2. Cuốn với bánh tráng và rau.",250,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",4,4,0,17,4,4.25,1,60
+c52fbd0b-f248-11f0-bb4f-0a002700000f,1b7cd300-c0c1-11f0-8b2b-0a002700000f,"Canh Chua Cá Lóc","Canh chua miền Nam với cá và rau thơm",canh_chua.jpg,"1. Nấu nước dùng. 2. Thêm cá và rau. 3. Nêm chua cay.",400,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,6,70
+c52ff221-f248-11f0-bb4f-0a002700000f,1cc2cd0c-dc19-11f0-9c26-0a002700000f,"Bò Kho Bánh Mì","Bò kho thơm ngon ăn kèm bánh mì",bo_kho.jpg,"1. Hầm bò với gia vị. 2. Thêm cà rốt. 3. Ăn nóng.",500,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",3,3,1,14,3,4.6667,1,30
+c53015e8-f248-11f0-bb4f-0a002700000f,1f5e8d2a-c0d1-11f0-8b2b-0a002700000f,"Chả Giò Rán Giòn","Chả giò với nhân thịt và rau củ",cha_gio.jpg,"1. Trộn nhân. 2. Cuốn và chiên giòn.",300,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",3,3,0,13,3,4.3333,1,60
+c5301752-f248-11f0-bb4f-0a002700000f,24b7f3c9-c0ae-11f0-8b2b-0a002700000f,"Hủ Tiếu Nam Vang","Hủ tiếu với topping đa dạng",hu_tieu.jpg,"1. Nấu nước dùng. 2. Thêm mì và topping.",450,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",7,9,0,31,7,4.4286,1,60
+c530182a-f248-11f0-bb4f-0a002700000f,26916877-c3d3-11f0-af9d-0a002700000f,"Bánh Xèo Miền Trung","Bánh xèo giòn tan với tôm thịt",banh_xeo.jpg,"1. Pha bột. 2. Đổ bánh và chiên.",550,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,60
+c530196d-f248-11f0-bb4f-0a002700000f,2a9b1f3d-c0e2-11f0-8b2b-0a002700000f,"Cá Kho Tộ Miền Tây","Cá kho đậm đà với nước mắm",ca_kho.jpg,"1. Ướp cá. 2. Kho lửa nhỏ.",350,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",3,3,0,15,4,3.75,1,60
+c5301a54-f248-11f0-bb4f-0a002700000f,2ad50f9b-f204-11f0-bb4f-0a002700000f,"Bún Bò Huế Cay Nồng","Bún bò với nước dùng đậm đà",bun_bo_hue.jpg,"1. Nấu nước dùng bò. 2. Thêm bún và topping.",500,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",3,3,0,13,3,4.3333,4,180
+c5301b46-f248-11f0-bb4f-0a002700000f,2dbdfb12-c768-11f0-bf48-0a002700000f,"Mì Quảng Gà Xé","Mì Quảng với gà và rau thơm",mi_quang.jpg,"1. Nấu nước dùng. 2. Trộn mì với gà.",400,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,60
+c5301c53-f248-11f0-bb4f-0a002700000f,33821c78-c0be-11f0-8b2b-0a002700000f,"Gà Xào Sả Ớt","Gà xào cay thơm lừng",ga_xao.jpg,"1. Xào sả ớt. 2. Thêm gà và nêm gia vị.",450,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,120
+c5301dcc-f248-11f0-bb4f-0a002700000f,3c4d7e6f-c0f1-11f0-8b2b-0a002700000f,"Thịt Kho Tàu Trứng","Thịt kho đậm đà với trứng",thit_kho.jpg,"1. Ướp thịt. 2. Kho với trứng.",550,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,2,60
+c5301eed-f248-11f0-bb4f-0a002700000f,4433923c-c0a9-11f0-8b2b-0a002700000f,"Salad Rau Củ Tươi","Salad healthy với rau củ",salad.jpg,"1. Cắt rau củ. 2. Trộn với sốt.",200,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,60
+c5301fd0-f248-11f0-bb4f-0a002700000f,4d8e9f0a-c0g2-11f0-8b2b-0a002700000f,"Súp Gà Ngô Non","Súp dinh dưỡng với gà và ngô",sup_ga.jpg,"1. Nấu gà. 2. Thêm ngô và khuấy.",300,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,60
+c53020a1-f248-11f0-bb4f-0a002700000f,5c1eda4a-cb94-11f0-a4e9-0a002700000f,"Bánh Cuốn Nhân Thịt","Bánh cuốn mềm mịn",banh_cuon.jpg,"1. Tráng bánh. 2. Thêm nhân thịt.",350,public,0,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,60
+c530216a-f248-11f0-bb4f-0a002700000f,6b09b618-c766-11f0-bf48-0a002700000f,"Cơm Chiên Dương Châu","Cơm chiên thập cẩm",com_chien.jpg,"1. Chiên trứng. 2. Thêm cơm và rau củ.",450,public,1,"2026-01-16 02:31:20","2026-01-16 02:31:20",0,0,0,0,0,0,1,60
+c5302237-f248-11f0-bb4f-0a002700000f,8b7cd300-c0c1-11f0-8b2b-0a002700000f,"Trà Sữa Trân Châu Đường Đen","Trà sữa ngon miệng",tra_sua.jpg,"1. Pha trà. 2. Thêm trân châu.",400,public,0,"2026-01-16 02:31:20","2026-03-02 00:34:00",1,0,1,4,1,4,1,60
+d27e8f90-d0ae-11f0-8b2b-0a002700000f,eaa4a41-c0b7-11f0-8b2b-0a002700000f,"Smoothie bơ chuối yến mạch","Bữa sáng 5 phút",cover_1732638259345.jpg,"1. Xay bơ...
+2. Thêm yến mạch...",290,public,0,"2025-04-15 07:00:00","2025-11-10 07:30:00",0,0,0,0,0,0,1,60
+d95f2624-3cea-41c5-8650-822208c18d6d,000df5f7-f1de-11f0-ab43-0a002700000f,abc1,asdads,default.png,"1: dasfasdf
+2: asdfasdf",500,public,1,"2026-01-16 00:12:26","2026-01-16 00:17:10",0,0,0,0,0,0,2,30
+e38f90a1-d0af-11f0-8b2b-0a002700000f,3c4d7e6f-c0f1-11f0-8b2b-0a002700000f,"Mì xào bò (bị báo cáo)","Mì xào kiểu Trung",cover_1732638261456.jpg,"1. Xào thịt...
+2. Trộn mì...",620,hidden,0,"2025-07-10 11:11:11","2025-11-01 12:00:00",0,0,0,0,0,0,1,60
