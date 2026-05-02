@@ -21,17 +21,28 @@ class InventoryModel {
         return result.affectedRows > 0;
     }
 
-    /**
-     * Lấy toàn bộ kho đồ của User kèm thông tin chi tiết vật phẩm
+ /**
+     * Lấy kho đồ của User kèm thông tin chi tiết vật phẩm
+     * @param {string} userId
+     * @param {string|null} itemType - Lọc theo loại vật phẩm (badge, ticket, consumable,...)
      */
-    static async getUserInventory(userId) {
-        const sql = `
+    static async getUserInventory(userId, itemType = null) {
+        let sql = `
             SELECT i.item_id, i.name, i.description, i.icon_url, i.item_type, ui.quantity
             FROM user_inventory ui
             JOIN items i ON ui.item_id = i.item_id
             WHERE ui.user_id = ?
         `;
-        const [rows] = await pool.execute(sql, [userId]);
+        const params = [userId];
+
+        // Nếu có truyền itemType thì thêm điều kiện lọc vào SQL
+        if (itemType) {
+            sql += ` AND i.item_type = ?`;
+            params.push(itemType);
+        }
+
+        const [rows] = await pool.execute(sql, params);
+        console.log(`Lấy inventory cho user ${userId} với itemType ${itemType}:`, rows);
         return rows;
     }
     
