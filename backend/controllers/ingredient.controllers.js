@@ -15,6 +15,8 @@ const getAllIngredients = async (req, res) => {
     }
 }
 
+
+
 module.exports = {
     getAllIngredients
 };

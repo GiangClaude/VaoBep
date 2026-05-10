@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 // [MỚI] Import icons và animation
-import { LayoutDashboard, Users, UtensilsCrossed, Carrot, Flag, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, UtensilsCrossed, Carrot, Flag, LogOut, ChevronLeft, ChevronRight, BookOpen, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const AdminSidebar = () => {
@@ -30,6 +30,16 @@ const AdminSidebar = () => {
         { path: '/admin/users', label: 'Quản lý User', icon: Users },
         { path: '/admin/recipes', label: 'Quản lý Recipe', icon: UtensilsCrossed },
         { path: '/admin/ingredients', label: 'Duyệt Nguyên liệu', icon: Carrot },
+        { 
+            path: '/admin/dictionary', 
+            label: 'Từ điển món ăn', 
+            icon: BookOpen // (Hoặc icon nào bạn đang dùng)
+        },
+        { 
+            path: '/admin/articles', 
+            label: 'Bài viết học thuật', 
+            icon: FileText 
+        }
     ];
 
 

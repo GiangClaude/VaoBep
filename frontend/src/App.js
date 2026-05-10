@@ -35,7 +35,8 @@ import AdminUserPage from './pages/admin/AdminUserPage';
 import AdminRecipePage from './pages/admin/AdminRecipePage';
 import AdminIngredientPage from './pages/admin/AdminIngredientPage';
 import AdminReportPage from './pages/admin/AdminReportPage';
-
+import AdminDictionaryPage from './pages/admin/AdminDictionaryPage';
+import AdminArticlePage from './pages/admin/AdminArticlePage';
 import LeaderboardPage from './pages/LeaderboardPage';
 // Layout chính
 const MainLayout = () => {
@@ -116,6 +117,8 @@ function App() {
                     <Route path="recipes" element={<AdminRecipePage />} />
                     <Route path="ingredients" element={<AdminIngredientPage />} />
                     <Route path="reports" element={<AdminReportPage />} />
+                    <Route path = "dictionary" element={<AdminDictionaryPage />} />
+                    <Route path = "articles" element={<AdminArticlePage />} />
                 </Route>
             </Route>
 

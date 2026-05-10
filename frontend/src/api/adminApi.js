@@ -60,6 +60,57 @@ const adminApi = {
         return apiClient.put(`/admin/ingredients/${ingredientId}/process`, data);
     },
 
+    // --- CÁC HÀM CŨ GIỮ NGUYÊN ---
+  // getPendingIngredients: ...
+  // processIngredient: ...
+
+  // --- THÊM MỚI TỪ ĐÂY: API QUẢN LÝ TẤT CẢ NGUYÊN LIỆU ---
+  
+  // Lấy danh sách tất cả nguyên liệu (có phân trang)
+  getAllIngredients: async (page = 1, limit = 10, search = '', sortKey = 'name', sortOrder = 'ASC') => {
+    try {
+        const response = await apiClient.get('/admin/ingredients/all', {
+            params: { page, limit, search, sortKey, sortOrder }
+        });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  // Tạo nguyên liệu mới
+  createIngredient: async (data) => {
+    try {
+        // data: { name, calo_per_100g, status }
+        const response = await apiClient.post('/admin/ingredients', data);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  // Cập nhật nguyên liệu
+  updateIngredient: async (id, data) => {
+    try {
+        // data: { name, calo_per_100g, status }
+        const response = await apiClient.put(`/admin/ingredients/${id}`, data);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  // Xóa nguyên liệu
+  deleteIngredient: async (id) => {
+    try {
+        const response = await apiClient.delete(`/admin/ingredients/${id}`);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+  // --- KẾT THÚC PHẦN THÊM MỚI ---
+
     // 5. Quản lý Báo cáo
     getReports: () => {
         return apiClient.get('/admin/reports');
@@ -79,6 +130,95 @@ const adminApi = {
         // data: { role, account_status }
         return apiClient.put(`/admin/users/${userId}`, data);
     },
+
+    // --- THÊM MỚI TỪ ĐÂY: API QUẢN LÝ TỪ ĐIỂN MÓN ĂN ---
+  
+  getDictionaryDishes: async (page = 1, limit = 10, search = '', sortKey = 'created_at', sortOrder = 'DESC') => {
+    try {
+        const response = await apiClient.get('/admin/dictionary', {
+            params: { page, limit, search, sortKey, sortOrder }
+        });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  createDictionaryDish: async (formData) => {
+    try {
+        // formData: Dùng FormData vì có upload file ảnh
+        const response = await apiClient.post('/admin/dictionary', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  updateDictionaryDish: async (id, formData) => {
+    try {
+        // formData: Dùng FormData
+        const response = await apiClient.put(`/admin/dictionary/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  deleteDictionaryDish: async (id) => {
+    try {
+        const response = await apiClient.delete(`/admin/dictionary/${id}`);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  // --- THÊM MỚI TỪ ĐÂY: API QUẢN LÝ BÀI VIẾT TỪ ĐIỂN ---
+  
+  getArticles: async (page = 1, limit = 10, search = '', status = 'all', sortKey = 'created_at', sortOrder = 'DESC') => {
+    try {
+        const response = await apiClient.get('/admin/articles', {
+            params: { page, limit, search, status, sortKey, sortOrder }
+        });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  getArticleDetail: async (id) => {
+    try {
+        const response = await apiClient.get(`/admin/articles/${id}`);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  updateArticleStatus: async (id, status) => {
+    try {
+        // status: 'public', 'draft', 'hidden', 'banned'
+        const response = await apiClient.put(`/admin/articles/${id}/status`, { status });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+
+  deleteArticle: async (id) => {
+    try {
+        const response = await apiClient.delete(`/admin/articles/${id}`);
+        return response;
+    } catch (error) {
+        throw error;
+    }
+  },
+  // --- KẾT THÚC PHẦN THÊM MỚI ---
+  // --- KẾT THÚC PHẦN THÊM MỚI ---
 };
 
 export default adminApi;

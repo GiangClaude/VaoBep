@@ -118,7 +118,8 @@ const protect = async (req, res, next) => {
             if (!req.user) {
                 return res.status(401).json({ message: 'User không còn tồn tại.' });
             }
-            next();
+
+            return next();
         } catch (error) {
             console.error('Error in protect middleware:', error);
             res.status(401).json({ message: 'Not authorized, token failed' });

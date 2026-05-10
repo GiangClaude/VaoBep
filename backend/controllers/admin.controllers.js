@@ -3,6 +3,7 @@ const UserModel = require('../models/user.model');
 const RecipeModel = require('../models/recipe.model');
 const IngredientModel = require('../models/ingredient.model');
 const ReportModel = require('../models/report.model');
+const DictionaryDishModel = require('../models/dictionaryDish.model');
 const ArticleModel = require('../models/article.model'); // Đảm bảo file này đã tạo ở bước trước
 const path = require('path');
 const fs = require('fs');
@@ -16,7 +17,7 @@ const getDashboardStats = async (req, res) => {
         const totalUsers = await UserModel.countUsers('');
         const totalRecipes = await RecipeModel.countAllRecipes('');
         const totalArticles = await ArticleModel.countAllArticles('');
-        
+        const totalDishes = await DictionaryDishModel.countAllDishes('');
         // 2. Tính chỉ số trung bình
         // Tránh chia cho 0
         const avgRecipePerUser = totalUsers > 0 ? (totalRecipes / totalUsers).toFixed(2) : 0;
@@ -227,6 +228,104 @@ const processIngredient = async (req, res) => {
     }
 };
 
+// --- THÊM MỚI TỪ ĐÂY: CONTROLLER CHO INGREDIENT CRUD ---
+
+const getAllIngredients = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        const offset = (page - 1) * limit;
+
+        const ingredients = await IngredientModel.getAllAdmin(limit, offset, search);
+        const total = await IngredientModel.countAllAdmin(search);
+
+        res.status(200).json({
+            data: ingredients,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const createIngredient = async (req, res) => {
+    try {
+        const { name, calo_per_100g, status } = req.body;
+        if (!name) {
+            return res.status(400).json({ message: "Tên nguyên liệu không được để trống" });
+        }
+
+        const ingredientId = uuidv4();
+        const ingStatus = status || 'approved'; // Mặc định là approved nếu Admin tạo
+
+        // Tạo nguyên liệu
+        await IngredientModel.create(ingredientId, name.trim(), ingStatus);
+
+        // Cập nhật calo nếu có
+        if (calo_per_100g !== undefined && calo_per_100g !== null && calo_per_100g !== "") {
+            await IngredientModel.updateCalo(ingredientId, calo_per_100g);
+        }
+
+        res.status(201).json({ message: "Thêm nguyên liệu thành công", ingredientId });
+    } catch (error) {
+        // Bắt lỗi trùng tên (MySQL error code 1062 - ER_DUP_ENTRY)
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ message: "Tên nguyên liệu đã tồn tại" });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateIngredient = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, calo_per_100g, status } = req.body;
+
+        if (name) {
+            await IngredientModel.updateName(id, name.trim());
+        }
+        
+        if (calo_per_100g !== undefined && calo_per_100g !== null && calo_per_100g !== "") {
+            await IngredientModel.updateCalo(id, calo_per_100g);
+        }
+
+        if (status) {
+            await IngredientModel.updateStatus(id, status);
+        }
+
+        res.status(200).json({ message: "Cập nhật nguyên liệu thành công" });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ message: "Tên nguyên liệu đã tồn tại" });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const deleteIngredient = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await IngredientModel.delete(id);
+        res.status(200).json({ message: "Xóa nguyên liệu thành công" });
+    } catch (error) {
+        // Bắt lỗi khóa ngoại: Lỗi 1451 (ER_ROW_IS_REFERENCED_2)
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(400).json({ 
+                message: "Không thể xóa nguyên liệu này vì đang được sử dụng trong công thức." 
+            });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// --- KẾT THÚC PHẦN THÊM MỚI ---
+
 // --- D. REPORT MANAGEMENT ---
 const getReports = async (req, res) => {
     try {
@@ -428,6 +527,239 @@ const updateRecipe = async (req, res) => {
     }
 };
 
+// --- THÊM MỚI TỪ ĐÂY: CONTROLLER CHO DICTIONARY DISH CRUD ---
+
+const getDictionaryDishes = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        const offset = (page - 1) * limit;
+
+        const dishes = await DictionaryDishModel.getAll(limit, offset, search);
+        const total = await DictionaryDishModel.countAll(search);
+
+        res.status(200).json({
+            data: dishes,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const createDictionaryDish = async (req, res) => {
+    try {
+        const adminId = req.user.id; // Lấy ID của Admin từ token
+        const dishId = uuidv4();     // Sinh ID trước cho món ăn
+        
+        const { original_name, english_name, description, history, country, latitude, longitude, eateries } = req.body;
+
+        if (!original_name) {
+            return res.status(400).json({ message: "Tên món ăn không được để trống" });
+        }
+
+        // 1. Xử lý Ảnh (Giống hệt cách bạn làm với Recipe)
+        let image_url = null;
+        if (req.file) {
+            image_url = req.file.filename;
+            const tempPath = req.file.path;
+            const targetDir = path.join(__dirname, '../../public/dictionarydish', dishId);
+            const targetPath = path.join(targetDir, image_url);
+
+            try {
+                if (!fs.existsSync(targetDir)) {
+                    fs.mkdirSync(targetDir, { recursive: true });
+                }
+                fs.renameSync(tempPath, targetPath); // Di chuyển ảnh từ temp sang folder chính thức
+            } catch (moveError) {
+                console.error("Lỗi di chuyển ảnh từ điển:", moveError);
+            }
+        }
+
+        // 2. Lưu vào bảng Dictionary_Dishes
+        await DictionaryDishModel.createDish({
+            dish_id: dishId,
+            admin_id: adminId,
+            original_name, english_name, description, history, country, image_url,
+            latitude: latitude ? parseFloat(latitude) : null,
+            longitude: longitude ? parseFloat(longitude) : null
+        });
+
+        // 3. Xử lý danh sách địa điểm ăn uống (Eateries) - frontend gửi lên dưới dạng JSON string trong FormData
+        if (eateries) {
+            try {
+                const parsedEateries = JSON.parse(eateries);
+                if (parsedEateries.length > 0) {
+                    const eateriesData = parsedEateries.map(e => ({
+                        eatery_id: uuidv4(), // Sinh ID cho từng quán ăn
+                        name: e.name,
+                        address: e.address
+                    }));
+                    await DictionaryDishModel.addEateries(dishId, eateriesData);
+                }
+            } catch (err) {
+                console.error("Lỗi parse eateries:", err);
+            }
+        }
+
+        res.status(201).json({ message: "Tạo món ăn thành công", dishId });
+    } catch (error) {
+        console.error("Create Dish Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateDictionaryDish = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { original_name, english_name, description, history, country, latitude, longitude, eateries } = req.body;
+
+        let updateData = {
+            original_name, english_name, description, history, country,
+            latitude: latitude ? parseFloat(latitude) : null,
+            longitude: longitude ? parseFloat(longitude) : null
+        };
+
+        // Nếu có file mới, Multer đã tự lưu vào public/dictionarydish/{id} do ta config route có params.id
+        if (req.file) {
+            updateData.image_url = req.file.filename;
+        }
+
+        // Xóa các trường undefined khỏi updateData
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+        // 1. Cập nhật bảng Dictionary_Dishes
+        await DictionaryDishModel.updateDish(id, updateData);
+
+        // 2. Cập nhật Eateries (Chiến lược: Xóa hết cũ, thêm lại mới cho đơn giản)
+        if (eateries) {
+            try {
+                const parsedEateries = JSON.parse(eateries);
+                await DictionaryDishModel.deleteEateriesByDishId(id);
+                
+                if (parsedEateries.length > 0) {
+                    const eateriesData = parsedEateries.map(e => ({
+                        eatery_id: uuidv4(),
+                        name: e.name,
+                        address: e.address
+                    }));
+                    await DictionaryDishModel.addEateries(id, eateriesData);
+                }
+            } catch (err) {
+                console.error("Lỗi parse eateries update:", err);
+            }
+        }
+
+        res.status(200).json({ message: "Cập nhật món ăn thành công" });
+    } catch (error) {
+        console.error("Update Dish Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const deleteDictionaryDish = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // 1. Xóa trong DB (Do có khóa ngoại CASCADE, dữ liệu ở bảng Dish_Eateries sẽ tự bay màu)
+        await DictionaryDishModel.deleteDish(id);
+
+        // 2. Xóa folder ảnh vật lý để đỡ tốn dung lượng ổ cứng
+        const targetDir = path.join(__dirname, '../../public/dictionarydish', id);
+        if (fs.existsSync(targetDir)) {
+            fs.rmSync(targetDir, { recursive: true, force: true });
+        }
+
+        res.status(200).json({ message: "Xóa món ăn thành công" });
+    } catch (error) {
+        console.error("Delete Dish Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// --- KẾT THÚC PHẦN THÊM MỚI ---
+
+// --- THÊM MỚI TỪ ĐÂY: CONTROLLER CHO ARTICLE CRUD ---
+
+const getArticles = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const search = req.query.search || '';
+        const statusFilter = req.query.status || 'all'; // 'all', 'public', 'draft', 'hidden', 'banned'
+
+        const offset = (page - 1) * limit;
+
+        const articles = await ArticleModel.getArticlesByAdmin(limit, offset, search, statusFilter);
+        const total = await ArticleModel.countArticlesByAdmin(search, statusFilter);
+
+        res.status(200).json({
+            data: articles,
+            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getAdminArticleDetail = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const article = await ArticleModel.findById(id); // Dùng lại hàm public đã có
+        if (!article) {
+            return res.status(404).json({ message: "Không tìm thấy bài viết" });
+        }
+        res.status(200).json({ data: article });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateArticleStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ['public', 'draft', 'hidden', 'banned'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ message: "Trạng thái không hợp lệ" });
+        }
+
+        await ArticleModel.updateStatus(id, status);
+        res.status(200).json({ message: `Đã cập nhật trạng thái bài viết thành: ${status}` });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const deleteArticle = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 1. Xóa trong DB
+        await ArticleModel.deleteById(id);
+
+        // 2. Xóa folder ảnh vật lý để giải phóng ổ cứng (public/articles/{id})
+        const targetDir = path.join(__dirname, '../../public/articles', id);
+        if (fs.existsSync(targetDir)) {
+            fs.rmSync(targetDir, { recursive: true, force: true });
+        }
+
+        res.status(200).json({ message: "Xóa bài viết thành công" });
+    } catch (error) {
+        // Bắt lỗi khóa ngoại nếu bài viết đang có tương tác (Bình luận, Lưu, Like) chưa xóa
+        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(400).json({ 
+                message: "Không thể xóa bài viết này vì đang có dữ liệu tương tác (Bình luận, Lưu, ...). Vui lòng ẩn thay vì xóa." 
+            });
+        }
+        console.error("Lỗi xóa bài viết:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// --- KẾT THÚC PHẦN THÊM MỚI ---
 
 module.exports = {
     getDashboardStats,
@@ -438,11 +770,23 @@ module.exports = {
     hideRecipe,
     getPendingIngredients,
     processIngredient,
+    getAllIngredients,
+    createIngredient,
+    updateIngredient,
+    deleteIngredient,
     getReports,
     processReport, 
     updateUser,
     getUserDetail,
     createAdminRecipe,
     getRecipeDetail,
-    updateRecipe
+    updateRecipe,
+    getDictionaryDishes,
+    createDictionaryDish,
+    updateDictionaryDish,
+    deleteDictionaryDish,
+    getArticles,
+    getAdminArticleDetail,
+    updateArticleStatus,
+    deleteArticle
 };

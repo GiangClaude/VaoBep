@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import apiClient from './api'; // Import apiClient để gọi API
+import apiClient from './api/index'; // Import apiClient để gọi API
 
 // Tạo Context
 export const AuthContext = createContext(null);

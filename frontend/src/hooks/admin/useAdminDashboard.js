@@ -8,6 +8,8 @@ const useAdminDashboard = () => {
             users: 0, 
             recipes: 0, 
             articles: 0, 
+            ingredients: 0,
+            dishes: 0,
             avgRecipePerUser: 0 
         },
         charts: {

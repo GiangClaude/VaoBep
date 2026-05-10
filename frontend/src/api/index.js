@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-    baseURL: 'http://localhost:5000/api', 
+    baseURL: 'http://127.0.0.1:5000/api', 
     // Do not set a fixed Content-Type here so axios can
     // correctly set multipart boundaries when sending FormData.
 });

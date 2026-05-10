@@ -16,7 +16,7 @@ const chatbotPool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.CHATBOT_DB_USER, // <-- Lấy đúng user bot
     password: process.env.CHATBOT_DB_PASSWORD, // <-- Lấy đúng pass bot
-    database: process.env.DB_NAME
+    database: process.env.CHATBOT_DB_NAME
 });
 
 // Hàm kiểm tra kết nối
@@ -65,5 +65,6 @@ module.exports = {
     updateUser,
     deleteUser,
     // Bạn có thể export pool trực tiếp nếu muốn thực hiện các query phức tạp hơn
-    pool
+    pool,
+    chatbotPool
 };

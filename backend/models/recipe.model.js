@@ -715,11 +715,12 @@ class Recipe{
         let params = [];
 
         if (search) {
-            query += ` WHERE r.title LIKE ? `;
-            params.push(`%${search}%`);
+            query += ` WHERE r.title LIKE ? OR u.full_name LIKE ?`;
+            params.push(`%${search}%`, `%${search}%`);
         }
 
         query += ` ORDER BY ${orderBy} ${orderDir} LIMIT ? OFFSET ?`;
+        console.log("Admin Query:", query);
         params.push(limit.toString(), offset.toString());
 
         const [rows] = await pool.execute(query, params);

@@ -27,7 +27,12 @@ const storage = multer.diskStorage({
         // Ưu tiên ID mới tạo (Create), nếu không có thì lấy từ params (Update)
         const articleId = req.savedArticleId || req.params.articleId;
         uploadPath = path.join(__dirname, '../public/articles', articleId);
-    } 
+    } else if (req.savedDishId || req.params.id) {
+        // Form gửi lên update thường dùng req.params.id (dựa theo route /dictionary/:id)
+        const dishId = req.savedDishId || req.params.id;
+        uploadPath = path.join(__dirname, '../public/dictionarydish', dishId);
+    }
+    // --- KẾT THÚC PHẦN THÊM MỚI ---
     else {
         // Fallback nếu không xác định được (tránh lỗi crash)
         uploadPath = path.join(__dirname, '../public/temp');
@@ -54,7 +59,7 @@ const storage = multer.diskStorage({
     else if (file.fieldname === 'result') prefix = 'result';
     else if (file.fieldname === 'avatar') prefix = 'avatar'; // Thêm case cho avatar
     else if (file.fieldname === 'article_images') prefix = 'article';
-    
+    else if (file.fieldname === 'image_url') prefix = 'dish'; // [THÊM MỚI]
     // --- SỬA ĐỔI KẾT THÚC ---
 
     // 3. Tạo chuỗi ngẫu nhiên nhỏ để tránh trùng lặp nếu up nhiều ảnh cùng lúc

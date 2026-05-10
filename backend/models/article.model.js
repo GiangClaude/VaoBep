@@ -3,46 +3,72 @@ const pool = db.pool;
 const { v4: uuidv4 } = require('uuid');
 
 const ArticleModel = {
-    // --- CÁC HÀM ADMIN CŨ CỦA BẠN (GIỮ NGUYÊN) ---
-    getAllArticlesForAdmin: async (limit, offset, search) => {
+// --- THÊM MỚI TỪ ĐÂY: CHO ADMIN QUẢN LÝ BÀI VIẾT TỪ ĐIỂN ---
+
+    // Lấy danh sách có lọc Status
+    getArticlesByAdmin: async (limit, offset, search, statusFilter, sortKey = 'created_at', sortOrder = 'DESC') => {
+        // Map allowed sort keys to DB columns
+        const sortMapping = {
+            name: 'a.title',
+            author: 'u.full_name',
+            status: 'a.status',
+            created_at: 'a.created_at'
+        };
+
+        const key = sortMapping[sortKey] || sortMapping['created_at'];
+        const order = (String(sortOrder).toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
         let query = `
-            SELECT a.*, u.full_name as author_name 
+            SELECT a.article_id, a.title, a.status, a.created_at, a.read_time, a.report_count,
+                   u.full_name as author_name, u.role as author_role
             FROM Article_Posts a
             JOIN Users u ON a.user_id = u.user_id
+            WHERE 1=1
         `;
         let params = [];
 
         if (search) {
-            query += ` WHERE a.title LIKE ? `;
+            query += ` AND (a.title LIKE ? OR a.description LIKE ?) `;
             params.push(`%${search}%`);
         }
 
-        query += ` ORDER BY a.created_at DESC LIMIT ? OFFSET ?`;
+        if (statusFilter && statusFilter !== 'all') {
+            query += ` AND a.status = ? `;
+            params.push(statusFilter);
+        }
+
+        query += ` ORDER BY ${key} ${order} LIMIT ? OFFSET ?`;
         params.push(limit.toString(), offset.toString());
 
         const [rows] = await pool.execute(query, params);
         return rows;
     },
 
-    countAllArticles: async (search) => {
-        let query = `SELECT COUNT(*) as total FROM Article_Posts`;
+    // Đếm tổng số để phân trang có lọc Status
+    countArticlesByAdmin: async (search, statusFilter) => {
+        let query = `
+            SELECT COUNT(*) as total 
+            FROM Article_Posts a
+            JOIN Users u ON a.user_id = u.user_id
+            WHERE 1=1
+        `;
         let params = [];
         
         if (search) {
-            query += ` WHERE title LIKE ?`;
+            query += ` AND a.title LIKE ?`;
             params.push(`%${search}%`);
+        }
+
+        if (statusFilter && statusFilter !== 'all') {
+            query += ` AND a.status = ? `;
+            params.push(statusFilter);
         }
 
         const [rows] = await pool.execute(query, params);
         return rows[0].total;
     },
 
-    updateStatus: async (articleId, status) => {
-        const query = `UPDATE Article_Posts SET status = ?, update_at = NOW() WHERE article_id = ?`;
-        const [result] = await pool.execute(query, [status, articleId]);
-        return result;
-    },
-
+    // --- KẾT THÚC PHẦN THÊM MỚI ---
     // --- CÁC HÀM MỚI CHO USECASE CHUYÊN GIA ---
 
     // 1. Tạo bài viết
@@ -267,6 +293,30 @@ const ArticleModel = {
         const query = `DELETE FROM Article_Posts WHERE article_id = ?`;
         const [result] = await pool.execute(query, [articleId]);
         return result;
+    }
+
+    ,
+    // 7. Cập nhật status và update_at (dùng bởi admin controller)
+    updateStatus: async (articleId, status) => {
+        const query = `
+            UPDATE Article_Posts 
+            SET status = ?, update_at = NOW() 
+            WHERE article_id = ?
+        `;
+        const [result] = await pool.execute(query, [status, articleId]);
+        return result.affectedRows > 0;
+    },
+
+    // 8. Đếm tổng số bài viết (dùng bởi dashboard)
+    countAllArticles: async (search = '') => {
+        let query = `SELECT COUNT(*) as total FROM Article_Posts`;
+        const params = [];
+        if (search) {
+            query += ` WHERE title LIKE ? OR description LIKE ?`;
+            params.push(`%${search}%`, `%${search}%`);
+        }
+        const [rows] = await pool.execute(query, params);
+        return rows[0].total;
     }
 };
 

@@ -111,6 +111,22 @@ const AdminDashboardPage = () => {
             iconColor: 'text-purple-600',
             borderColor: 'border-purple-100'
         },
+        {
+            title: 'Tổng Nguyên liệu',
+            value: summary.ingredients,
+            icon: TrendingUp,
+            bg: 'bg-yellow-50',
+            iconColor: 'text-yellow-600',
+            borderColor: 'border-yellow-100'
+        },
+        {
+            title: 'Tổng Từ điển món ăn',
+            value: summary.dishes,
+            icon: PieChartIcon,
+            bg: 'bg-teal-50',
+            iconColor: 'text-teal-600',
+            borderColor: 'border-teal-100'
+        }
     ];
 
     // Animation variants cho container
