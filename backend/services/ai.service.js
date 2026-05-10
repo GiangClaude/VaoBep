@@ -9,11 +9,15 @@ async function logToLangfuse(payload) {
   try {
     if (!LANGFUSE_BASE || !LANGFUSE_KEY) return;
     const url = `${LANGFUSE_BASE.replace(/\/$/, '')}/v1/events`;
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${LANGFUSE_KEY}` },
       body: JSON.stringify(payload)
     });
+    if (!res.ok) {
+      const t = await res.text();
+      console.error('Langfuse log failed:', res.status, t);
+    }
   } catch (err) {
     console.error('Langfuse log failed:', err.message);
   }
@@ -115,27 +119,45 @@ async function callGemini(prompt) {
 }
 
 // Detect SQL block in model output (simple heuristic)
+// Thay thế hàm extractSQL cũ bằng hàm này:
 function extractSQL(text) {
   const sqlBlock = /```sql\s*([\s\S]*?)```/i.exec(text);
-  if (sqlBlock) return sqlBlock[1].trim();
-  const selectMatch = /(^|\n)(select[\s\S]*?)(\n|$)/i.exec(text);
-  if (selectMatch) {
-    const candidate = selectMatch[2].trim();
-    if (/\bfrom\b/i.test(candidate)) return candidate;
+  let rawSql = null;
+  
+  if (sqlBlock) {
+    rawSql = sqlBlock[1].trim();
+  } else {
+    const selectMatch = /(^|\n)(select[\s\S]*?)(\n|$)/i.exec(text);
+    if (selectMatch) {
+      const candidate = selectMatch[2].trim();
+      if (/\bfrom\b/i.test(candidate)) rawSql = candidate;
+    }
   }
-  return null;
+
+  // Xóa bỏ dấu chấm phẩy ở cuối câu nếu có để vượt qua Validator
+  if (rawSql && rawSql.endsWith(';')) {
+    rawSql = rawSql.slice(0, -1);
+  }
+  
+  return rawSql;
 }
 
 async function generateResponse({ userId, message, sessionId, rules, clientIp, userAgent }) {
   const rulesText = rules || '';
   let schemaSnippet = '';
   try {
-    const schemaPath = require('path').join(__dirname, '..', 'config', '..', 'Database', 'table.sql');
+    // Đường dẫn chuẩn: từ thư mục services lùi ra 1 cấp (..) rồi vào Database
+    const schemaPath = require('path').join(__dirname, '..', '../Database/table.sql');
     if (fs.existsSync(schemaPath)) {
       const full = fs.readFileSync(schemaPath, 'utf8');
-      schemaSnippet = full.split('\n').slice(0, 400).join('\n');
+      schemaSnippet = full.split('\n').slice(0, 1500).join('\n');
+      console.log("✅ Đã load thành công DB Schema vào Prompt!");
+    } else {
+      console.log("❌ KHÔNG TÌM THẤY FILE table.sql tại:", schemaPath);
     }
-  } catch (e) { }
+  } catch (e) { 
+    console.error("Lỗi đọc schema:", e.message);
+  }
 
   // Optionally perform vector retrieval to enrich prompt
   let retrievalContext = '';
@@ -174,24 +196,47 @@ async function generateResponse({ userId, message, sessionId, rules, clientIp, u
   const sql = extractSQL(modelText);
   const executeSql = false;
 
+  console.log("=== AI GENERATED SQL ===", sql);
+
   return { text: modelText, sql, executeSql, retrievalCount };
 }
 
 // Get embedding from Google or other provider
+// Hàm gọi API của Google để lấy vector embedding (tọa độ không gian) cho một đoạn văn bản
+// Đã được cập nhật chuẩn cấu trúc body và endpoint (embedContent) của Gemini API
 async function getEmbedding(text) {
-  const model = process.env.EMBEDDING_MODEL; // e.g., 'textembedding-gecko-001'
+  // Nên dùng model 'text-embedding-004' (hoặc model mới nhất bạn set trong file .env)
+  const model = process.env.EMBEDDING_MODEL; 
   if (!model || !process.env.GOOGLE_API_KEY) throw new Error('Missing embedding model or API key');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:embedText?key=${process.env.GOOGLE_API_KEY}`;
+  
+  // Sửa endpoint thành embedContent thay vì embedText
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:embedContent?key=${process.env.GOOGLE_API_KEY}`;
+  
+  // Sửa cấu trúc payload đúng chuẩn của Gemini API
+  const body = {
+    content: {
+      parts: [{ text: text }]
+    }
+  };
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ input: text })
+    body: JSON.stringify(body)
   });
-  if (!res.ok) { const t = await res.text(); throw new Error('Embedding call failed: ' + t); }
+  
+  if (!res.ok) { 
+    const t = await res.text(); 
+    throw new Error('Embedding call failed: ' + t); 
+  }
+  
   const j = await res.json();
-  // Expect embedding in j.embeddings[0].value or similar
-  if (j.embeddings && j.embeddings[0] && j.embeddings[0].embedding) return j.embeddings[0].embedding;
-  if (j["data"] && j.data[0] && j.data[0].embedding) return j.data[0].embedding;
+  
+  // Cập nhật lại đường dẫn lấy mảng dữ liệu vector từ response của Google
+  if (j.embedding && j.embedding.values) {
+    return j.embedding.values;
+  }
+  
   throw new Error('Unknown embedding response format: ' + JSON.stringify(j));
 }
 

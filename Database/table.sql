@@ -236,6 +236,45 @@ CREATE TABLE `ingredients` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `items`
+--
+
+DROP TABLE IF EXISTS `items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `items` (
+  `item_id` varchar(255) NOT NULL DEFAULT (uuid()),
+  `name` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `icon_url` varchar(255) NOT NULL,
+  `item_type` enum('badge','ticket','consumable') DEFAULT 'consumable',
+  PRIMARY KEY (`item_id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `leaderboards_history`
+--
+
+DROP TABLE IF EXISTS `leaderboards_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `leaderboards_history` (
+  `history_id` varchar(255) NOT NULL DEFAULT (uuid()),
+  `entity_id` varchar(255) NOT NULL,
+  `entity_type` enum('recipe','user') NOT NULL,
+  `rank_month` int NOT NULL,
+  `rank_year` int NOT NULL,
+  `rank_position` int NOT NULL,
+  `score` float NOT NULL,
+  `snapshot_data` json NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`history_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `likes`
 --
 
@@ -290,6 +329,30 @@ CREATE TABLE `menus` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `monthly_snapshots`
+--
+
+DROP TABLE IF EXISTS `monthly_snapshots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `monthly_snapshots` (
+  `snapshot_id` varchar(255) NOT NULL DEFAULT (uuid()),
+  `entity_id` varchar(255) NOT NULL,
+  `entity_type` enum('recipe','user') NOT NULL,
+  `snapshot_month` int NOT NULL,
+  `snapshot_year` int NOT NULL,
+  `likes` int DEFAULT '0',
+  `comments` int DEFAULT '0',
+  `followers` int DEFAULT '0',
+  `trusted_recipes` int DEFAULT '0',
+  `badges` int DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`snapshot_id`),
+  UNIQUE KEY `idx_entity_date` (`entity_id`,`snapshot_month`,`snapshot_year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `password_reset_tokens`
 --
 
@@ -335,7 +398,7 @@ DROP TABLE IF EXISTS `point_transactions`;
 CREATE TABLE `point_transactions` (
   `transaction_id` varchar(255) NOT NULL DEFAULT (uuid()),
   `user_id` varchar(255) NOT NULL COMMENT 'Người thực hiện hành động hoặc người bị trừ/cộng điểm',
-  `type` enum('checkin','gift_sent','gift_received','redeem') NOT NULL,
+  `type` enum('checkin','earn','spent','gift_sent','redeem') NOT NULL,
   `amount` int NOT NULL COMMENT 'Số điểm thay đổi (+ hoặc -)',
   `related_user_id` varchar(255) DEFAULT NULL COMMENT 'Người nhận/gửi trong trường hợp tặng điểm',
   `message` text COMMENT 'Lời nhắn giao dịch',
@@ -465,6 +528,7 @@ CREATE TABLE `recipes` (
   `rating_avg_score` float NOT NULL DEFAULT '0',
   `servings` int DEFAULT '1',
   `cook_time` int DEFAULT '60',
+  `point` float DEFAULT '0',
   PRIMARY KEY (`recipe_id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `recipes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
@@ -496,20 +560,39 @@ CREATE TABLE `reports` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `rewards`
+-- Table structure for table `reward_boxes`
 --
 
-DROP TABLE IF EXISTS `rewards`;
+DROP TABLE IF EXISTS `reward_boxes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `rewards` (
-  `reward_id` varchar(255) NOT NULL,
-  `challenge_id` varchar(255) NOT NULL,
+CREATE TABLE `reward_boxes` (
+  `box_id` varchar(255) NOT NULL DEFAULT (uuid()),
+  `challenge_id` varchar(255) DEFAULT NULL COMMENT 'NULL nếu là hộp quà tự do không thuộc thử thách',
   `name` varchar(255) NOT NULL,
-  `description` text,
-  `type` enum('points','badge','promotion') NOT NULL,
-  `value` varchar(255) DEFAULT NULL COMMENT 'e.g., "1000" for points, badge_id for a badge',
-  PRIMARY KEY (`reward_id`,`challenge_id`)
+  `type` enum('fixed','gacha') NOT NULL DEFAULT 'fixed',
+  PRIMARY KEY (`box_id`),
+  KEY `fk_reward_boxes_challenge` (`challenge_id`),
+  CONSTRAINT `fk_reward_boxes_challenge` FOREIGN KEY (`challenge_id`) REFERENCES `challenges` (`challenge_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `reward_items`
+--
+
+DROP TABLE IF EXISTS `reward_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `reward_items` (
+  `item_id` varchar(255) NOT NULL DEFAULT (uuid()),
+  `box_id` varchar(255) NOT NULL,
+  `type` enum('points','item') NOT NULL,
+  `value` varchar(255) DEFAULT NULL COMMENT 'Ví dụ: "100" cho points, badge_id cho badge',
+  `probability` float DEFAULT '1' COMMENT 'Tỉ lệ trúng từ 0 đến 1. Mặc định 1 (100%)',
+  PRIMARY KEY (`item_id`),
+  KEY `fk_reward_items_box` (`box_id`),
+  CONSTRAINT `fk_reward_items_box` FOREIGN KEY (`box_id`) REFERENCES `reward_boxes` (`box_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -638,6 +721,25 @@ CREATE TABLE `user_challenges` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `user_inventory`
+--
+
+DROP TABLE IF EXISTS `user_inventory`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_inventory` (
+  `user_id` varchar(255) NOT NULL,
+  `item_id` varchar(255) NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`,`item_id`),
+  KEY `fk_inv_item` (`item_id`),
+  CONSTRAINT `fk_inv_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_inv_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `user_rewards`
 --
 
@@ -645,13 +747,16 @@ DROP TABLE IF EXISTS `user_rewards`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user_rewards` (
+  `user_reward_id` varchar(255) NOT NULL DEFAULT (uuid()),
   `user_id` varchar(255) NOT NULL,
-  `reward_id` varchar(255) NOT NULL,
-  `claimed_at` timestamp NULL DEFAULT (now()),
-  PRIMARY KEY (`user_id`,`reward_id`),
-  KEY `reward_id` (`reward_id`),
-  CONSTRAINT `user_rewards_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`),
-  CONSTRAINT `user_rewards_ibfk_2` FOREIGN KEY (`reward_id`) REFERENCES `rewards` (`reward_id`)
+  `box_id` varchar(255) NOT NULL,
+  `status` enum('pending','claimed') NOT NULL DEFAULT 'pending',
+  `claimed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`user_reward_id`),
+  KEY `idx_user_reward` (`user_id`,`box_id`),
+  KEY `fk_user_rewards_box` (`box_id`),
+  CONSTRAINT `fk_user_rewards_box` FOREIGN KEY (`box_id`) REFERENCES `reward_boxes` (`box_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_user_rewards_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -676,6 +781,7 @@ CREATE TABLE `users` (
   `update_at` timestamp NULL DEFAULT (now()),
   `verification_otp` varchar(6) DEFAULT NULL,
   `otp_expires_at` timestamp NULL DEFAULT NULL,
+  `rank_point` float DEFAULT '0',
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -690,4 +796,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-14  2:44:07
+-- Dump completed on 2026-05-02 18:42:49
