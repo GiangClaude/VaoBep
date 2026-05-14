@@ -10,11 +10,13 @@ Chỉ sử dụng các bảng và cột dưới đây để tạo câu lệnh SQ
 - cover_image (Ảnh minh họa)
 - cook_time (Thời gian nấu - phút)
 - total_calo (Tổng calo)
-- is_trusted (Đã kiểm duyệt: 1=Có, 0=Không)
-
+- is_trusted (Huy hiệu đáng tin cậy: 1=Có, 0=Không)
+- status (Trạng thái. CHỈ LẤY: 'public')
+- rating_avg_score (Đánh giá trung bình )
 2. Bảng `ingredients` (Nguyên liệu)
 - ingredient_id (PK)
 - name (Tên nguyên liệu, VD: 'tôm', 'hành lá', 'thịt heo')
+
 
 3. Bảng `recipe_ingredients` (Nguyên liệu của công thức)
 - recipe_id (FK to recipes)
@@ -29,7 +31,7 @@ Chỉ sử dụng các bảng và cột dưới đây để tạo câu lệnh SQ
 5. Bảng `tags` (Nhãn phân loại món ăn)
 - tag_id (PK)
 - name (Tên tag, VD: 'Ăn kiêng', 'Ăn sáng')
-- tag_type (Loại tag: 'cuisine', 'meal', 'ingredient', 'diet'...)
+- tag_type (Loại tag: 'meal_time', 'occasion', 'other', 'ingredient', 'method', 'cuisine', 'taste', 'appliance', 'dish_type')
 
 6. Bảng `tag_post` (Gắn tag cho bài viết/công thức)
 - tag_id (FK to tags)
@@ -47,7 +49,8 @@ Chỉ sử dụng các bảng và cột dưới đây để tạo câu lệnh SQ
 - article_id (PK)
 - title (Tiêu đề)
 - description (Mô tả)
-
+- status (Trạng thái. CHỈ LẤY: 'public')
+- cover_image(ảnh)
 9. Bảng `recipe_post_links` (Liên kết công thức và bài viết)
 - source_recipe_id
 - linked_post_id

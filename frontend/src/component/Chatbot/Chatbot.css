@@ -108,12 +108,31 @@
 }
 
 /* Thanh tiêu đề màu đỏ phía trên cùng */
+/* Thanh tiêu đề màu đỏ phía trên cùng */
 .vaobep-header {
   background-color: #ff4757;
   color: white;
   padding: 15px;
   font-weight: bold;
-  text-align: center;
+  display: flex; /* Dùng flex để dàn ngang ngang */
+  justify-content: space-between; /* Đẩy chữ và nút ra 2 góc */
+  align-items: center;
+}
+
+/* Nút xóa lịch sử (Thùng rác) */
+.vaobep-clear-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: transform 0.2s;
+}
+
+.vaobep-clear-btn:hover {
+  transform: scale(1.1);
+  color: #ffcccc;
 }
 
 /* Khu vực hiển thị đoạn hội thoại, cho phép cuộn nội dung */

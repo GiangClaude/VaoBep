@@ -1,7 +1,13 @@
 import { BookOpenCheck, Search, Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
 
 export default function DictionaryBanner() {
+  const navigate = useNavigate();
+  const handleClick = () => {
+      {/* Animated Background Patterns */}
+      navigate('/dish-map');
+  }
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -58,7 +64,6 @@ export default function DictionaryBanner() {
               "Tìm kiếm nhanh",
               "Phân loại chi tiết", 
               "Lịch sử món ăn",
-              "Video hướng dẫn"
             ].map((feature, index) => (
               <div
                 key={index}
@@ -71,7 +76,7 @@ export default function DictionaryBanner() {
           </div>
 
           {/* CTA Button */}
-          <button className="bg-white text-purple-700 px-8 py-3 rounded-full flex items-center gap-2 hover:bg-yellow-300 hover:text-purple-900 transition-all shadow-lg hover:shadow-xl group-hover:gap-4">
+          <button onClick={handleClick} className="bg-white text-purple-700 px-8 py-3 rounded-full flex items-center gap-2 hover:bg-yellow-300 hover:text-purple-900 transition-all shadow-lg hover:shadow-xl group-hover:gap-4">
             <span className="font-semibold">Khám phá ngay</span>
             <ArrowRight className="w-5 h-5" />
           </button>

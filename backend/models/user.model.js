@@ -27,7 +27,7 @@ class User {
     static async findByEmail(email) {
         try {
             const [rows] = await pool.execute(
-                    'SELECT user_id, full_name, email, password, account_status FROM users WHERE email = ?',
+                    'SELECT user_id, full_name, email, password, account_status FROM users u WHERE email = ?',
                     [email]
                 );
                 return rows[0];
@@ -59,7 +59,7 @@ class User {
                 (SELECT COUNT(*) FROM Saved_Posts s WHERE s.user_id = u.user_id) as saved_count, -- Placeholder tạm thời
                 (SELECT COUNT(*) FROM Point_Transactions pt WHERE pt.user_id = u.user_id AND pt.type = 'checkin' AND DATE(pt.created_at) = CURRENT_DATE()) as is_checked_in
             FROM users u 
-            WHERE u.user_id = ?
+             WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'
             `;
         const [rows] = await pool.execute(sql, [id]);
         
@@ -110,7 +110,7 @@ class User {
                     (SELECT COUNT(*) FROM Follows f2 WHERE f2.follower_id = ? AND f2.following_id = u.user_id) > 0 as is_following
 
                 FROM Users u 
-                WHERE u.user_id = ? AND u.account_status = 'active'
+                WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'
             `;
             
             // Params: [currentUserId (cho subquery), id (cho where clause)]
@@ -141,7 +141,7 @@ class User {
     }
 
     static async findAuth (userId){
-        const sql = "SELECT user_id, email, role, account_status FROM users WHERE user_id = ?";
+        const sql = "SELECT user_id, email, role, account_status FROM users u WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'";
         const [rows] = await pool.execute(sql, [userId]);
         return rows[0];        
     }
@@ -149,7 +149,7 @@ class User {
     static async findByEmailAndOTP(email, otp) {
         try {
             const [rows] = await pool.execute(
-                'SELECT * FROM users WHERE email = ? AND verification_otp = ?',
+                'SELECT * FROM users u WHERE u.email = ? AND u.verification_otp = ?',
                 [email, otp]
             );
             return rows[0];
@@ -161,7 +161,7 @@ class User {
 
     static async findByIdForUpdate(userId, connection) {
         // FOR UPDATE sẽ khóa dòng này lại, các transaction khác phải chờ
-        const sql = `SELECT user_id, full_name, email, points, account_status FROM Users WHERE user_id = ? FOR UPDATE`;
+        const sql = `SELECT user_id, full_name, email, points, account_status FROM Users u WHERE u.user_id = ? FOR UPDATE`;
         const [rows] = await connection.execute(sql, [userId]);
         return rows[0];
     }
@@ -169,13 +169,13 @@ class User {
     static async updatePoints(userId, amount, connection) {
         // Sử dụng connection truyền vào (nếu có) hoặc dùng pool mặc định
         const dbExec = connection || pool;
-        const sql = `UPDATE Users SET points = points + ? WHERE user_id = ?`;
+        const sql = `UPDATE Users u SET u.points = u.points + ?  WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'`;
         const [result] = await dbExec.execute(sql, [amount, userId]);
         return result.affectedRows > 0;
     }
 
     static async isUserActive(userId) {
-        const sql = `SELECT user_id FROM Users WHERE user_id = ? AND account_status = 'active'`;
+        const sql = `SELECT user_id FROM Users u WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'`;
         const [rows] = await pool.execute(sql, [userId]);
         return rows.length > 0;
     }
@@ -184,7 +184,7 @@ class User {
     static async activateUser(userId) {
         try {
             const [result] = await pool.execute(
-                'UPDATE users SET account_status = ?, verification_otp = ?, otp_expires_at = ? WHERE user_id = ?',
+                'UPDATE users u SET u.account_status = ?, u.verification_otp = ?, u.otp_expires_at = ? WHERE u.user_id = ?',
                 ['active', null, null, userId] // Set active, xóa OTP
             );
             return result.affectedRows > 0;
@@ -198,7 +198,7 @@ class User {
         try{
             console.log(userId, otp, otpExpires)
             const [result] = await pool.execute(
-                'UPDATE users SET verification_otp = ?, otp_expires_at = ? WHERE user_id = ?',
+                'UPDATE users u SET u.verification_otp = ?, u.otp_expires_at = ? WHERE u.user_id = ?',
                 [otp, otpExpires, userId]
             );
             return result.affectedRows > 0;
@@ -235,12 +235,12 @@ class User {
     static async clearOTP(userId) {
         try {
             const sql = `
-                UPDATE users
+                UPDATE users u
                 SET
-                    verification_otp = NULL,
-                    otp_expires_at = NULL
+                    u.verification_otp = NULL,
+                    u.otp_expires_at = NULL
                 WHERE
-                    user_id = ?;
+                    u.user_id = ?;
             `
 
             await pool.execute(sql, [userId]);
@@ -261,8 +261,8 @@ class User {
             // Query đếm tổng
             const countSql = `
                 SELECT COUNT(*) as total 
-                FROM Users 
-                WHERE (full_name LIKE ?) AND account_status = 'active'
+                FROM Users u
+                WHERE (full_name LIKE ?) AND account_status = 'active'  AND role != 'admin'
             `;
             const [countRows] = await pool.execute(countSql, [kw]);
             const totalItems = countRows[0].total;
@@ -288,6 +288,7 @@ class User {
                 LEFT JOIN Follows f ON u.user_id = f.following_id
                 WHERE (u.full_name LIKE ? OR u.email LIKE ?) 
                   AND u.account_status = 'active'
+                  AND u.role != 'admin'
                 GROUP BY u.user_id
                 ORDER BY ${orderBy}
                 LIMIT ? OFFSET ?
@@ -362,7 +363,7 @@ class User {
         }
     }
 
-    //Admin
+    //Admin--------------------------------------------------------------------------
     static async getAllUsers(limit, offset, search, sortKey = 'created_at', sortOrder = 'DESC') {
         // Whitelist các cột được phép sort để tránh SQL Injection
         const allowedSorts = ['full_name', 'email', 'created_at', 'role', 'points'];

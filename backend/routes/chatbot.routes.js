@@ -7,4 +7,7 @@ const safety = require('../middlewares/safety.middleware');
 // Main chat endpoint
 router.post('/', rateLimit.perUserLimit, safety.loadRules, chatbotController.handleChat);
 
+
+router.delete('/history', chatbotController.clearHistory);
+
 module.exports = router;
