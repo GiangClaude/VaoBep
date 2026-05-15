@@ -24,6 +24,7 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.10",
     "nodemon": "^3.1.11",
+    "readability": "^0.1.0",
     "recharts": "^3.6.0",
     "redis": "^5.11.0",
     "uuid": "^13.0.0"

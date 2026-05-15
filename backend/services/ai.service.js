@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { createClient } = require('redis');
 const { buildSystemInstruction } = require('../utils/promptTemplates');
-
+const { getAvailableKey } = require('./apiKey.service');
 const LANGFUSE_BASE = process.env.LANGFUSE_BASE_URL;
 const LANGFUSE_KEY = process.env.LANGFUSE_SECRET_KEY;
 
@@ -37,7 +37,7 @@ async function logSqlExecution({ userId, sessionId, sql, rowCount, clientIp, use
 
 // 2. GỌI GEMINI API VỚI SYSTEM INSTRUCTION & HISTORY
 async function callGemini(systemInstructionText, chatHistory) {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const apiKey = await getAvailableKey();
   const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash'; 
   if (!apiKey) throw new Error('Missing GOOGLE_API_KEY');
 

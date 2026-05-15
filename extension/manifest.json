@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Trợ Lý Vào Bếp AI",
+  "version": "1.0",
+  "description": "Trợ lý AI giúp tìm công thức món ăn, quét ảnh và hỏi đáp nhanh từ trang web.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Mở Trợ Lý Vào Bếp"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://localhost:5000/*" 
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [ "content_script.js"],
+      "css": ["popup.css"]
+    }
+  ]
+}

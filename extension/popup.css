@@ -1,0 +1,80 @@
+body {
+  width: 350px;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f9fafb;
+  color: #333;
+}
+.header {
+  background-color: #ff6b6b;
+  color: white;
+  padding: 15px;
+  text-align: center;
+}
+.header h2 { margin: 0; font-size: 18px; }
+.action-buttons {
+  padding: 15px;
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid #eee;
+}
+button {
+  flex: 1;
+  padding: 10px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover { background: #ff5252; }
+.section-title {
+  padding: 15px 15px 5px 15px;
+  font-weight: bold;
+  font-size: 14px;
+}
+.recipe-list { padding: 10px 15px; display: flex; flex-direction: column; gap: 10px;}
+.recipe-card {
+  display: flex;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.recipe-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.recipe-img {
+  width: 60px; height: 60px;
+  border-radius: 6px; object-fit: cover; margin-right: 12px;
+}
+.recipe-info h4 { margin: 0 0 5px 0; font-size: 14px; color: #111; }
+.recipe-info p { margin: 0; font-size: 12px; color: #666; }
+.loading { text-align: center; padding: 20px; color: #888; font-size: 12px;}
+
+/* CSS cho Khung Chat AI */
+.chat-section {
+  background: #fff;
+  border-top: 1px solid #eee;
+  padding: 10px 15px;
+  margin-top: 10px;
+}
+.chat-input-wrapper {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+#aiQuestionInput {
+  flex: 1; padding: 8px 12px;
+  border: 1px solid #ccc; border-radius: 6px;
+  font-size: 13px; outline: none;
+}
+#aiQuestionInput:focus { border-color: #ff6b6b; }
+#btnAskAi {
+  flex: unset; padding: 8px 15px; font-size: 13px;
+}
+.ai-response {
+  background: #fdf5f5; border-left: 3px solid #ff6b6b;
+  padding: 10px; margin-top: 10px;
+  font-size: 13px; color: #333; line-height: 1.4;
+  border-radius: 4px; display: none;
+}

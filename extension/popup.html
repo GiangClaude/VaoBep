@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Vào Bếp AI</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <h2>🍳 Trợ Lý Vào Bếp</h2>
+  </div>
+
+  <!-- Nút tiện ích (Sẽ làm chức năng ở bước sau) -->
+  <div class="action-buttons">
+    <button id="btnCropImage">📸 Quét Ảnh Tìm Món</button>
+  </div>
+
+  <!-- Khu vực hiển thị Gợi ý món ăn -->
+  <div class="section-title">✨ Món ngon gợi ý cho bạn</div>
+  <div id="loadingSuggest" class="loading">Đang tải gợi ý...</div>
+  <div id="suggestList" class="recipe-list">
+    <!-- Danh sách món ăn sẽ được JavaScript render vào đây -->
+  </div>
+<!-- 
+  
+  <div class="chat-section">
+    <div class="section-title" style="padding-top: 5px;">🤖 AI Hỏi Đáp Nhanh</div>
+    <div id="aiResponseBox" class="ai-response" style="display: none;"></div>
+    <div class="chat-input-wrapper">
+      <input type="text" id="aiQuestionInput" placeholder="Hỏi AI về trang web này..." autocomplete="off">
+      <button id="btnAskAi">Hỏi</button>
+    </div>
+  </div> -->
+
+  <script src="popup.js"></script>
+</body>
+</html>
