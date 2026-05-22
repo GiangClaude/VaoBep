@@ -30,6 +30,9 @@ import ArticlesListPage from './pages/ArticlesListPage';
 import DishMap from './pages/DishMap';
 import DishDetailPage from './pages/DishDetailPage';
 
+import MenuListPage from './pages/MenuListPage';
+import MenuPlannerPage from './pages/MenuPlannerPage';
+
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUserPage from './pages/admin/AdminUserPage';
 import AdminRecipePage from './pages/admin/AdminRecipePage';
@@ -104,6 +107,8 @@ function App() {
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                  <Route path="/profile" element={<ProfilePage />} />
+                 <Route path="/menus" element={<MenuListPage />} />
+                <Route path="/menus/planner/:menuId" element={<MenuPlannerPage />} />
               </Route>
             </Route>
 

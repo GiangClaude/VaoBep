@@ -5,6 +5,7 @@ const path = require('path');
 const { createClient } = require('redis');
 const { buildSystemInstruction } = require('../utils/promptTemplates');
 const { getAvailableKey } = require('./apiKey.service');
+const vs = require('./vectorstore.service');
 const LANGFUSE_BASE = process.env.LANGFUSE_BASE_URL;
 const LANGFUSE_KEY = process.env.LANGFUSE_SECRET_KEY;
 
@@ -50,7 +51,7 @@ async function callGemini(systemInstructionText, chatHistory) {
     },
     contents: chatHistory, // Toàn bộ mảng lịch sử trò chuyện nằm ở đây
     generationConfig: {
-      maxOutputTokens: 1024,
+      maxOutputTokens: 8192,
       temperature: 0.2
     }
   };
@@ -92,7 +93,7 @@ function extractSQL(text) {
 }
 
 // 3. HÀM XỬ LÝ CHÍNH
-async function generateResponse({ userId, message, sessionId, rules, clientIp, userAgent }) {
+async function generateResponse({ userId, message, sessionId, rules, clientIp, userAgent, currentContext }) {
   const rulesText = rules || '';
   let schemaSnippet = '';
   
@@ -124,7 +125,7 @@ async function generateResponse({ userId, message, sessionId, rules, clientIp, u
   if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
 
   // Tạo System Instruction
-  const systemInstructionText = buildSystemInstruction({ rulesText, schemaSnippet, examples: null });
+  const systemInstructionText = buildSystemInstruction({ rulesText, schemaSnippet, examples: null, currentContext });
 
   console.log(`💬 Đang gửi lên AI... Session: ${sessionId || userId} | Độ dài lịch sử: ${chatHistory.length}`);
   
@@ -192,5 +193,209 @@ async function clearChatHistory(sessionId, userId) {
   }
 }
 
-// Cập nhật lại dòng module.exports cuối cùng:
-module.exports = { generateResponse, logSqlExecution, getEmbedding, clearChatHistory };
+// ==========================================
+// TÍNH NĂNG AI DÀNH RIÊNG CHO MENU PLANNER
+// ==========================================
+async function analyzeMenuWithAI(menuData) {
+    const apiKey = await require('./apiKey.service').getAvailableKey();
+    const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'; 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+  
+    // Đóng gói Prompt (Vai trò chuyên gia)
+    const systemInstruction = `Bạn là một Chuyên gia Dinh dưỡng hàng đầu của ứng dụng Vào Bếp. 
+    Nhiệm vụ của bạn là nhận xét thực đơn của người dùng, đánh giá lượng Calo, sự cân bằng dinh dưỡng, và đưa ra lời khuyên ngắn gọn, thân thiện (dùng icon emoji). 
+    Lưu ý: Chỉ trả về Text thuần hoặc định dạng Markdown cơ bản (in đậm, gạch đầu dòng). KHÔNG sinh ra mã code. Viết ngắn gọn khoảng 150-200 chữ.`;
+
+    const body = {
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents: [{
+            role: "user",
+            parts: [{ text: `Hãy nhận xét cấu trúc thực đơn sau của tôi:\n${JSON.stringify(menuData)}` }]
+        }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 800 }
+    };
+  
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+  
+    if (!res.ok) throw new Error('Gemini API error');
+    const json = await res.json();
+    return json.candidates[0].content.parts[0].text;
+}
+
+// ==========================================
+// TÍNH NĂNG AI: TỰ ĐỘNG SINH THỰC ĐƠN (RAG)
+// ==========================================
+// async function generateMenuWithRAG(prompt) {
+//     try {
+//         // 1. Tạo Vector Embedding từ câu lệnh của User
+//         const emb = await getEmbedding(prompt);
+        
+//         // 2. Tìm kiếm 30 món ăn phù hợp nhất trong Pinecone Vector DB
+//         const matches = await vs.retrieve(emb, 30);
+        
+//         if (!matches || matches.length === 0) {
+//             throw new Error("Không tìm thấy món ăn nào phù hợp trong kho dữ liệu.");
+//         }
+
+//         // 3. Đóng gói dữ liệu Context cho AI
+//         const recipeContext = matches.map(m => {
+//             // Rút gọn text để tiết kiệm token
+//             const shortText = m.metadata?.text ? m.metadata.text.substring(0, 80).replace(/\n/g, ' ') : '';
+//             return `ID: ${m.id} | Tên món: ${m.metadata?.title}`;
+//         }).join('\n');
+
+//         // 4. Gọi Gemini API với Prompt ép định dạng JSON cứng
+//         const apiKey = await require('./apiKey.service').getAvailableKey();
+//         const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'; 
+//         const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+
+//         const systemInstruction = `Bạn là một hệ thống AI tự động lên thực đơn chuyên nghiệp.
+//         NHIỆM VỤ CỦA BẠN: Lên thực đơn theo yêu cầu của người dùng, CHỈ ĐƯỢC PHÉP CHỌN CÁC MÓN ĂN TỪ DANH SÁCH BÊN DƯỚI.
+        
+//         [DANH SÁCH MÓN ĂN TRONG DATABASE CỦA HỆ THỐNG]
+//         ${recipeContext}
+        
+//         QUY TẮC BẮT BUỘC:
+//         1. Phân bổ hợp lý các món vào các bữa: breakfast (Sáng), lunch (Trưa), dinner (Tối), snack (Phụ).
+//         2. BẮT BUỘC TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON SAU ĐÂY. KHÔNG BỔ SUNG TEXT. KHÔNG BỔ SUNG MARKDOWN (như \`\`\`json).
+        
+//         [ĐỊNH DẠNG JSON YÊU CẦU]
+//         [
+//             {
+//                 "day_id": "random-uuid-1",
+//                 "title": "Ngày 1",
+//                 "meals": [
+//                     {
+//                         "meal_id": "random-uuid-2",
+//                         "meal_type": "lunch",
+//                         "title": "Bữa trưa",
+//                         "recipes": [
+//                             {
+//                                 "recipe_id": "<ID CỦA MÓN TRONG DANH SÁCH>",
+//                                 "title": "<TÊN MÓN TRONG DANH SÁCH>",
+//                                 "servings_multiplier": 1,
+//                                 "total_calo": 0
+//                             }
+//                         ]
+//                     }
+//                 ]
+//             }
+//         ]`;
+
+//         const body = {
+//             systemInstruction: { parts: [{ text: systemInstruction }] },
+//             contents: [{ role: "user", parts: [{ text: `Yêu cầu lên thực đơn: ${prompt}` }] }],
+//             generationConfig: { temperature: 0.2, maxOutputTokens: 2000 } // Temperature thấp để tránh AI bị ảo giác
+//         };
+      
+//         const res = await fetch(url, {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify(body)
+//         });
+
+//         if (!res.ok) {
+//             const errText = await res.text(); // ✅ Thêm dòng này
+//             console.error('❌ Gemini API error:', res.status, errText); // ✅ Log chi tiết
+//             throw new Error(`Gemini API error: ${res.status} - ${errText}`);
+//         }
+      
+//         const jsonRes = await res.json();
+//         let aiText = jsonRes.candidates[0].content.parts[0].text;
+
+//         // 5. Làm sạch JSON (Phòng trường hợp AI vẫn cố tình nhét ```json vào)
+//         aiText = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+//         if (!aiText.endsWith(']')) {
+//             console.error('⚠️ AI trả về JSON bị cắt, độ dài:', aiText.length);
+//             console.error('⚠️ 200 ký tự cuối:', aiText.slice(-200));
+//             throw new Error('AI response bị cắt giữa chừng (maxOutputTokens quá nhỏ). Vui lòng thử lại.');
+//         }
+
+//         const daysData = JSON.parse(aiText);
+//         return daysData;
+
+//     } catch (error) {
+//         console.error("Lỗi generateMenuWithRAG:", error);
+//         throw error;
+//     }
+// }
+
+async function generateMenuWithRAG(prompt) {
+    try {
+        const emb = await getEmbedding(prompt);
+        const matches = await vs.retrieve(emb, 20); // ✅ Giảm từ 30 xuống 20
+        
+        if (!matches || matches.length === 0) {
+            throw new Error("Không tìm thấy món ăn nào phù hợp trong kho dữ liệu.");
+        }
+
+        // ✅ Chỉ lấy ID + Tên, bỏ hoàn toàn phần "text" dài
+        const recipeContext = matches.map(m =>
+            `- ID: ${m.id} | Tên: ${m.metadata?.title}`
+        ).join('\n');
+
+
+        console.log("🔍 Món ăn được tìm thấy cho RAG:\n", recipeContext);
+        const apiKey = await require('./apiKey.service').getAvailableKey();
+        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+
+        // ✅ Tách system instruction ngắn gọn, đẩy context vào user message
+        const systemInstruction = `Bạn là hệ thống lên thực đơn tự động. 
+Chỉ được chọn món từ danh sách được cung cấp.
+Trả về JSON thuần, không markdown, không giải thích.
+Định dạng JSON:
+[{"day_id":"uuid","title":"Ngày 1","meals":[{"meal_id":"uuid","meal_type":"breakfast|lunch|dinner|snack","title":"Tên bữa","recipes":[{"recipe_id":"ID_MON","title":"TÊN_MÓN","servings_multiplier":1,"total_calo":0}]}]}]`;
+
+        const userMessage = `Danh sách món ăn:
+${recipeContext}
+
+Yêu cầu: ${prompt}
+Trả về JSON theo đúng định dạng, không thêm gì khác.`;
+
+        const body = {
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: "user", parts: [{ text: userMessage }] }],
+            generationConfig: { 
+                temperature: 0.2, 
+                maxOutputTokens: 8192
+            }
+        };
+      
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+      
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error('❌ Gemini error:', res.status, errText);
+            throw new Error(`Gemini API error: ${res.status}`);
+        }
+
+        const jsonRes = await res.json();
+        let aiText = jsonRes.candidates[0].content.parts[0].text;
+
+        aiText = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        
+        if (!aiText.endsWith(']')) {
+            console.error('⚠️ JSON vẫn bị cắt, độ dài:', aiText.length);
+            console.error('⚠️ 300 ký tự cuối:', aiText.slice(-300));
+            throw new Error('AI response bị cắt. Hãy thử yêu cầu ít ngày hơn.');
+        }
+        
+        return JSON.parse(aiText);
+
+    } catch (error) {
+        console.error("Lỗi generateMenuWithRAG:", error);
+        throw error;
+    }
+}
+
+// Cập nhật module.exports cuối file:
+module.exports = { generateResponse, logSqlExecution, getEmbedding, clearChatHistory, analyzeMenuWithAI, generateMenuWithRAG };

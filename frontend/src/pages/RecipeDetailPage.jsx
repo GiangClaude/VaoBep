@@ -2,14 +2,14 @@ import Header from "../component/common/Header";
 import { Footer } from "../component/common/Footer"; 
 import { motion } from "motion/react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Send, ArrowLeft, Bookmark, TrendingUp, AlertCircle
+import {Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Send, ArrowLeft, Bookmark, TrendingUp, AlertCircle
 } from "lucide-react";
 import ImageWithFallBack from "../component/figma/ImageWithFallBack";
 import useRecipeDetail from '../hooks/useRecipeDetail';
 import Modal from "../component/common/modal"; // [THÊM IMPORT MODAL]
 import useInteraction from '../hooks/useInteraction';
 import {useAuth} from '../AuthContext';
+import AiSummaryBanner from "../component/common/AiSummaryBanner";
 //Sửa hàm này
 const getAvatarUrl = (user) => {
     if (user.avatar && user.avatar.startsWith('http')) return user.avatar;
@@ -143,6 +143,8 @@ export default function RecipeDetailPage() {
         {/* --- 2. MAIN CONTENT --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
+
+            
             {/* Ingredients */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-[25px] shadow-lg p-8">
               <h2 className="text-2xl mb-6 flex items-center gap-3 font-bold text-gray-800"><ChefHat className="w-8 h-8 text-[#ff6b35]" /> Nguyên Liệu</h2>
@@ -242,6 +244,17 @@ export default function RecipeDetailPage() {
                     </div>
                     {userRating > 0 && <p className="text-center text-[#ff6b35] font-bold mt-3">Bạn đã chấm {userRating} sao!</p>}
                 </div>
+
+                            {/* THÊM AI BANNER VÀO ĐÂY */}
+                {recipeState && (
+                    <AiSummaryBanner 
+                        title="✨ Nhờ AI tóm tắt mẹo nấu & lưu ý cho công thức này"
+                        contextText={`Tên món: ${recipeState.title}. 
+                                      Mô tả: ${recipeState.detailedDescription}. 
+                                      Nguyên liệu: ${recipeState.detailedIngredients.map(i => i.name + ' ' + i.amount).join(', ')}. 
+                                      Các bước: ${recipeState.detailedSteps.map(s => s.description).join(' ')}`} 
+                    />
+                )}
             </div>
           </div>
         </div>

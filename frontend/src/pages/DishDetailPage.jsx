@@ -6,6 +6,8 @@ import { getDishImageUrl } from '../utils/imageHelper';
 import useInteraction from '../hooks/useInteraction';
 import CommentSection from '../component/comment/CommentSection';
 import RecipeProposalSection from '../component/dictionary/RecipeProposalSection';
+import AiSummaryBanner from "../component/common/AiSummaryBanner";
+
 const DishDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -99,6 +101,13 @@ const DishDetailPage = () => {
                             <h3 className="text-[#7d5a3f] font-bold text-lg mb-2 italic">Câu chuyện & Hương vị</h3>
                             <p className="whitespace-pre-line">{dish.description}</p>
                         </div>
+
+                        <div className="prose max-w-none text-gray-700 leading-relaxed">
+                            <h3 className="text-[#7d5a3f] font-bold text-lg mb-2 italic">Câu chuyện & Hương vị</h3>
+                            <p className="whitespace-pre-line">{dish.description}</p>
+                        </div>
+                        
+
                     </div>
                     <CommentSection 
                         postId={id} 
@@ -143,6 +152,13 @@ const DishDetailPage = () => {
                         </div>
                     </div>
 
+                                            {/* THÊM AI BANNER VÀO ĐÂY */}
+                        <div className="mt-6">
+                            <AiSummaryBanner 
+                                title="✨ Nhờ AI phân tích thêm về hương vị và cách ăn món này"
+                                contextText={`Tên món ăn: ${dish.original_name} (${dish.english_name}). Đến từ: ${dish.country}. Mô tả: ${dish.description}`} 
+                            />
+                        </div>
                 </div>
             </div>
         </div>

@@ -24,6 +24,7 @@ const recipeRoutes = require('./routes/recipe.routes');
 const articleRoutes = require('./routes/article.routes');
 const userRoutes = require('./routes/user.routes');
 const ingredientRoutes = require('./routes/ingredients.routes');
+const menuRoutes = require('./routes/menu.routes');
 const unitRoutes = require('./routes/unit.routes');
 const adminRoutes = require('./routes/admin.routes');
 const tagRoutes = require('./routes/tag.routes');
@@ -34,6 +35,8 @@ const leaderboardRoutes = require('./routes/leaderboard.routes');
 const rewardRoutes = require('./routes/reward.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 
+
+const recipeAiRoutes = require('./routes/recipeAi.routes');
 const extensionRoutes = require('./routes/extension.routes');
 // Kiểm tra kết nối database khi khởi động server
 db.testDbConnection();
@@ -49,14 +52,14 @@ app.use('/api/rewards', rewardRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/ingredients', ingredientRoutes);
 app.use('/api/units', unitRoutes);
-
+app.use('/api/menus', menuRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/interaction', interactionRoutes);
 app.use('/api/dictionary-dishes', dictionaryDishRoutes);
 // Chatbot route
 app.use('/api/chat', chatbotRoutes);
-
+app.use('/api/recipe-ai', recipeAiRoutes);
 app.use((req, res, next) => {
     res.status(404).json({ error: 'Route not found' });
 })

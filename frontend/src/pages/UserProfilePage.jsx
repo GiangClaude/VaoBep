@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -8,21 +8,24 @@ import { Footer } from "../component/common/Footer";
 import { ProfileHeader } from "../component/profile/ProfileHeader";
 import { MyRecipesTab } from "../component/profile/MyRecipeTab";
 import { GiftPointsModal } from "../component/profile/GiftPointsModal";
+import MenuCard from '../component/menu/MenuCard';
 
 // Hooks & Context
 import { useUserProfile } from "../hooks/useUserProfile";
 import { useAuth } from "../AuthContext";
 import { usePoints } from "../hooks/usePoints";
+import { useMenu } from '../hooks/useMenu';
 
 export default function UserProfilePage() {
   const { id } = useParams(); // Lấy ID từ URL
   const { currentUser } = useAuth(); // Lấy thông tin người đang đăng nhập (để biết số dư ví khi tặng)
-  
-  const { user, recipes, loading, error, handleFollow } = useUserProfile(id);
+
+
+  const { user, recipes, menus, loading, error, handleFollow } = useUserProfile(id);
   const { sendGift } = usePoints(); // Hook xử lý tặng điểm
   // console.log("UserProfilePage - recipes:", recipes);
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
-
+  console.log("UserProfilePage - menus:", menus);
   // Xử lý Loading
   if (loading) {
     return (
@@ -78,6 +81,19 @@ export default function UserProfilePage() {
                     onPromote={() => {}} // Không làm gì
                     onToggleVisibility={() => {}} // Không làm gì
                 />
+
+                {/* HIỂN THỊ THỰC ĐƠN CỦA USER */}
+                
+                    <div className="mt-12">
+                        <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-4">
+                            Thực đơn của {user.fullName}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {menus.map(menu => (
+                                <MenuCard key={menu.menu_id} menu={menu} />
+                            ))}
+                        </div>
+                    </div>
             </div>
           </div>
         </div>

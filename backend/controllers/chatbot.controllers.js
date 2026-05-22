@@ -18,7 +18,7 @@ async function fetchAllTagsFromDB() {
 
 const handleChat = async (req, res) => {
   try {
-    let { userId, message, sessionId, executeSql } = req.body;
+    let { userId, message, sessionId, executeSql, currentContext } = req.body;
     
     if (!cachedTags) {
       try {
@@ -50,7 +50,7 @@ const handleChat = async (req, res) => {
 
 // Gửi finalRules thay vì req.rules ban đầu xuống aiService
 
-    const aiResult = await aiService.generateResponse({ userId, message, sessionId, rules: finalRules, clientIp, userAgent });
+    const aiResult = await aiService.generateResponse({ userId, message, sessionId, rules: finalRules, clientIp, userAgent, currentContext });
 
     if (aiResult && aiResult.sql) {
       const sqlToRun = (req.body.sql) ? req.body.sql : aiResult.sql;

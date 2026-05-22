@@ -17,7 +17,7 @@ import ImageWithFallBack from '../component/figma/ImageWithFallBack';
 import { Footer } from '../component/common/Footer';
 import Toast from '../component/common/Toast';
 import CommentSection from '../component/comment/CommentSection';
-
+import AiSummaryBanner from "../component/common/AiSummaryBanner";
 export default function ArticleDetailPage() {
   const { articleId } = useParams();
   const navigate = useNavigate();
@@ -223,17 +223,15 @@ export default function ArticleDetailPage() {
                 )}
               </div>
 
+                {article && (
+                    <AiSummaryBanner 
+                        title="✨ Nhờ AI tóm tắt nội dung chính của bài viết này"
+                        contextText={`Tên bài viết: ${article.title}. Nội dung chính: ${article.content || article.excerpt}`} 
+                    />
+                )}
+                <div className="prose prose-lg max-w-none text-[#3b3b3b] leading-relaxed"></div>
               {/* Box quảng cáo hoặc thông tin thêm (Tùy chọn) */}
-              <div className="mt-8 p-5 bg-gradient-to-br from-[#ff6b35] to-[#f7931e] rounded-2xl text-white">
-                <h4 className="font-bold mb-2">Yêu thích bài viết này?</h4>
-                <p className="text-sm opacity-90 mb-4">Lưu lại ngay để không bỏ lỡ những kiến thức ẩm thực bổ ích nhé!</p>
-                <button 
-                  onClick={interactionHook.handleToggleSave}
-                  className="w-full py-2.5 bg-white text-[#ff6b35] rounded-full font-bold text-sm hover:shadow-lg transition-shadow"
-                >
-                  {interactionHook.state.saved ? 'Đã lưu trong bộ sưu tập' : 'Lưu vào sổ tay'}
-                </button>
-              </div>
+
             </div>
           </aside>
 

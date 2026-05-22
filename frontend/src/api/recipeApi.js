@@ -53,7 +53,6 @@ const recipeApi = {
     },
 
     getAllRecipes: async (params) => {
-        console.log("Calling API Recipes with params:", params); // Log để check params trước khi gửi
         const response = await apiClient.get('/recipes', {params});
         return response;
     },

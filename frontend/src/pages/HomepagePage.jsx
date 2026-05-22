@@ -1,4 +1,4 @@
-import {React, useState} from 'react';
+import {React, useEffect, useState} from 'react';
 import {useNavigate, Link} from 'react-router-dom';
 import {Eye, EyeOff, Mail, Lock} from 'lucide-react';
 import apiClient from '../api';
@@ -10,6 +10,8 @@ import { RecipeSection } from "../component/homepage/RecipeSection";
 import { Footer } from "../component/common/Footer";
 import {useRecentlyRecipes} from "../hooks/useRecentlyRecipes";
 import {useOwnerRecipes} from "../hooks/useOwnerRecipes";
+import { useMenu } from '../hooks/useMenu';
+import { MenuSection } from '../component/homepage/MenuSection';
 
 import { forYouRecipes, challengeRecipes } from "../data/recipe";
 
@@ -23,6 +25,10 @@ export default function HomePage() {
   const { recipes: latestRecipes, loading: latestLoading } = useRecentlyRecipes();
   const { recipes: ownerRecipes, loading: ownerLoading} = useOwnerRecipes();
   const { articles: featuredArticles, loading: featuredLoading } = useFeaturedArticles(3);
+
+  const { fetchPublicMenus } = useMenu();
+  const [latestMenus, setLatestMenus] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(true);
   const navigate = useNavigate();
   const handleNavigateToDetail = (id) => {
     const recipe = (latestRecipes || []).find(r => String(r.id) === String(id)) || (ownerRecipes || []).find(r => String(r.id) === String(id)) || (forYouRecipes || []).find(r => String(r.id) === String(id));
@@ -33,6 +39,16 @@ export default function HomePage() {
     // Chuyển hướng sang trang danh sách công thức (RecipesListPage)
     navigate('/recipes');
   };
+
+  useEffect(() => {
+    const loadMenus = async () => {
+        const data = await fetchPublicMenus();
+        // Cắt lấy 5 menu mới nhất
+        setLatestMenus(data ? data.slice(0, 5) : []);
+        setMenuLoading(false);
+    };
+    loadMenus();
+  }, [fetchPublicMenus]);
 
   return (
 
@@ -61,7 +77,14 @@ export default function HomePage() {
             </div>
           ) : (
             <RecipeSection title="Latest Recipes" recipes={latestRecipes} onRecipeClick={handleNavigateToDetail} onViewMoreClick={handleViewMoreRecipes}/>
-          )}  
+          )} 
+
+          {/* Menu Section Mới */}
+          <MenuSection 
+              title="Thực đơn mới nhất" 
+              menus={latestMenus} 
+              isLoading={menuLoading} 
+          /> 
 
           {/* Dictionary Banner */}
           <DictionaryBanner />

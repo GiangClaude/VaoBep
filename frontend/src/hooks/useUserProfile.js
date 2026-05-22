@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import userApi from '../api/userApi';
 import interactionApi from '../api/interactionApi';
 import recipeApi from '../api/recipeApi';
+import menuApi from '../api/menuApi';
 import { normalizeRecipeList } from '../utils/normalizeRecipe';
 export const useUserProfile = (userId) => {
     const [user, setUser] = useState(null);
     const [recipes, setRecipes] = useState([]);
+    const [menus, setMenus] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -18,6 +20,14 @@ export const useUserProfile = (userId) => {
             // 1. Lấy thông tin User
             const response = await userApi.getUserProfile(userId);
             const recipe = await recipeApi.getUserRecipes(userId);
+           let userMenusData = [];
+            try {
+                const menuResponse = await menuApi.getPublicMenusByUser(userId);
+                userMenusData = menuResponse.data || [];
+            } catch (menuErr) {
+                console.error("❌ Lỗi fetch menus trong profile:", menuErr);
+                // Không gán
+            }
             // [DEBUG] Xem response thực tế là gì
             // console.log("👉 API Response for User:", response);
             // console.log("👉 API Response for Recipes:", recipe);
@@ -28,6 +38,7 @@ export const useUserProfile = (userId) => {
 
             if (actualData.success) {
                 setUser(actualData.data);
+                setMenus(userMenusData);
             } else {
                 setError(actualData.message || "Lỗi không xác định từ server");
             }
@@ -105,6 +116,7 @@ export const useUserProfile = (userId) => {
     return {
         user,
         recipes,
+        menus,
         loading,
         error,
         handleFollow,
