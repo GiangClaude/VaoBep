@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const RecipeModel = require('../../models/recipe.model');
 const path = require('path');
 const fs = require('fs');
+const { addVectorSyncJob } = require('../../services/vectorQueue.service');
 
 const getRecipes = async (req, res) => {
     try {
@@ -31,7 +32,13 @@ const hideRecipe = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
         const targetStatus = status || 'banned';
+
         await RecipeModel.updateStatus(id, targetStatus);
+        if (targetStatus === 'public' || targetStatus === 'hidden') {
+            addVectorSyncJob(id, 'recipe', 'upsert');
+        } else {
+            addVectorSyncJob(id, 'recipe', 'delete');
+        }
         res.status(200).json({ message: `Recipe status updated to ${targetStatus}` });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -108,6 +115,8 @@ const createAdminRecipe = async (req, res) => {
             tags: tagsData
         });
 
+        addVectorSyncJob(recipeId, 'recipe', 'upsert');
+
         res.status(201).json({ message: 'Tạo công thức thành công', recipeId });
     } catch (error) {
         console.error('Create Admin Recipe Error:', error);
@@ -120,6 +129,16 @@ const updateRecipe = async (req, res) => {
         const { id } = req.params;
         const { status, is_trust } = req.body;
         await RecipeModel.adminUpdate(id, { status, is_trust });
+        if (status) {
+            if (status === 'public' || status === 'hidden') {
+                addVectorSyncJob(id, 'recipe', 'upsert');
+            } else {
+                addVectorSyncJob(id, 'recipe', 'delete');
+            }
+        } else {
+            // Nếu chỉ update is_trust mà không đổi status, vẫn gọi upsert để AI cập nhật metadata
+            addVectorSyncJob(id, 'recipe', 'upsert');
+        }
         res.status(200).json({ message: 'Cập nhật công thức thành công' });
     } catch (error) {
         res.status(500).json({ message: error.message });

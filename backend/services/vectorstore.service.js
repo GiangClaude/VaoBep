@@ -98,4 +98,34 @@ async function upsert(vectors, namespace) {
   return await res.json();
 }
 
-module.exports = { retrieve, upsert };
+// VỊ TRÍ: Thêm vào gần cuối file backend/services/vectorstore.service.js (trước module.exports)
+
+async function deleteVector(id, namespace) {
+  if (!PINECONE_API_KEY || !PINECONE_ENV || !PINECONE_INDEX) throw new Error('Missing Pinecone config');
+  const host = process.env.PINECONE_HOST; 
+  if(!host) throw new Error("Chưa có PINECONE_HOST");
+  
+  // URL chuẩn của Pinecone REST API để xóa 1 vector theo ID
+  const url = `${host}/vectors/delete`;
+  const body = { 
+    ids: [id], 
+    namespace: namespace || process.env.PINECONE_NAMESPACE || 'default' 
+  };
+  
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Api-Key': PINECONE_API_KEY },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Pinecone delete failed (${res.status}): ${errorText}`);
+  }
+  return await res.json();
+}
+
+// Sửa lại module.exports để export thêm hàm này:
+// module.exports = { retrieve, upsert, deleteVector };
+
+module.exports = { retrieve, upsert, deleteVector };

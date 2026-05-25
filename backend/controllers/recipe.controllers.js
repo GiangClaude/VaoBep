@@ -6,6 +6,7 @@ const paginationHelper = require('../utils/paginationHelper');
 const { checkRecipeOwner } = require('../utils/recipe.utils');
 const { getUserIdFromToken } = require('../utils/auth.utils');
 // const paginationHelper;//Thêm vào utils
+const { addVectorSyncJob } = require('../services/vectorQueue.service');
 
 const createRecipe = async (req, res) => {
     try {
@@ -94,6 +95,10 @@ const createRecipe = async (req, res) => {
             resultImages: resultImagesList,
             tags: finalTags
         });
+
+        if (newRecipe.status === 'public' || newRecipe.status === 'hidden') {
+            addVectorSyncJob(recipeId, 'recipe', 'upsert');
+        }
 
         res.status(201).json({
             message: "Tạo công thức thành công!",
@@ -195,6 +200,12 @@ const updateRecipe = async(req, res) => {
 
         const result = await RecipeModel.update(recipeId, recipeData, mappedIngredients, finalTags);
 
+        if (recipeData.status === 'public' || recipeData.status === 'hidden') {
+            addVectorSyncJob(recipeId, 'recipe', 'upsert');
+        } else {
+            addVectorSyncJob(recipeId, 'recipe', 'delete');
+        }
+
         return res.status(200).json({
             success: true,
             message: result.message,
@@ -221,6 +232,8 @@ const deleteRecipe = async(req, res) => {
         }
 
         const result = await RecipeModel.deleteById(recipeId);
+
+        addVectorSyncJob(recipeId, 'recipe', 'delete');
 
         return res.status(200).json({
             success: true,
@@ -428,6 +441,14 @@ const changeRecipeStatus = async (req, res) => {
         const success = await RecipeModel.updateStatus(recipeId, status);
 
         if (success) {
+            
+             if (status === 'public' || status === 'hidden') {
+                addVectorSyncJob(recipeId, 'recipe', 'upsert');
+            } else {
+                addVectorSyncJob(recipeId, 'recipe', 'delete');
+            }
+
+
             return res.status(200).json({ 
                 success: true, 
                 message: `Đã chuyển trạng thái sang "${status}" thành công!`,

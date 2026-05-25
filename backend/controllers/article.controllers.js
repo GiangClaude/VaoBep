@@ -1,5 +1,6 @@
 const paginationHelper = require('../utils/paginationHelper');
 const { getUserIdFromToken } = require('../utils/auth.utils');
+const { addVectorSyncJob } = require('../services/vectorQueue.service');
 const db = require('../config/db');
 const fs = require('fs');
 const path = require('path');
@@ -7,6 +8,7 @@ const ArticleModel = require('../models/article.model');
 const TagModel = require('../models/tag.model');
 const InteractionModel = require('../models/interaction.model');
 const RecipeLinkModel = require('../models/recipe_link.model');
+
 // Hàm hỗ trợ kiểm tra quyền sở hữu bài viết
 const checkArticleOwner = async (articleId, userId) => {
     try {
@@ -71,6 +73,11 @@ const ArticleController = {
             }
 
             await connection.commit();
+
+            const finalStatus = status || 'draft';
+            if (finalStatus === 'public' || finalStatus === 'hidden') {
+                addVectorSyncJob(articleId, 'article', 'upsert');
+            }
 
             res.status(201).json({
                 success: true,
@@ -152,6 +159,16 @@ const ArticleController = {
 
             await connection.commit();
 
+            if (updateData.status === 'public' || updateData.status === 'hidden') {
+                addVectorSyncJob(articleId, 'article', 'upsert');
+            } else if (updateData.status) {
+                // Đổi thành draft
+                addVectorSyncJob(articleId, 'article', 'delete');
+            } else {
+                // Không đổi status, chỉ update nội dung (mặc định vẫn upsert)
+                addVectorSyncJob(articleId, 'article', 'upsert');
+            }
+
             res.status(200).json({
                 success: true,
                 message: "Cập nhật bài viết thành công!"
@@ -187,6 +204,8 @@ const ArticleController = {
 
             await ArticleModel.deleteById(articleId);
 
+            addVectorSyncJob(articleId, 'article', 'delete');
+            
             res.status(200).json({
                 success: true,
                 message: "Đã xóa bài viết và dữ liệu hình ảnh thành công!"

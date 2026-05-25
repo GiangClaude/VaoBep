@@ -7,7 +7,7 @@ const InteractionModel = require('../models/interaction.model');
 const { createPagination } = require('../utils/paginationHelper');
 // const { getUserById } = require('../config/db');
 const { getUserIdFromToken } = require('../utils/auth.utils');
-
+const { addVectorSyncJob } = require('../services/vectorQueue.service');
 const getAllDishes = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -101,6 +101,7 @@ const voteRecipeForDish = async (req, res) => {
         }
 
         const result = await RecipeLinkModel.toggleVote(connection, userId, recipeId, dishId, 'dish');
+        addVectorSyncJob(dishId, 'dish', 'upsert');
         res.status(200).json({ success: true, message: 'Bình chọn thành công!', action: result.action });
 
     } catch (error) {

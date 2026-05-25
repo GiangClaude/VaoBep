@@ -1,6 +1,7 @@
 const ArticleModel = require('../../models/article.model');
 const path = require('path');
 const fs = require('fs');
+const { addVectorSyncJob } = require('../../services/vectorQueue.service');
 
 const getArticles = async (req, res) => {
     try {
@@ -39,6 +40,11 @@ const updateArticleStatus = async (req, res) => {
         const validStatuses = ['public', 'draft', 'hidden', 'banned'];
         if (!validStatuses.includes(status)) return res.status(400).json({ message: 'Trạng thái không hợp lệ' });
         await ArticleModel.updateStatus(id, status);
+        if (status === 'public' || status === 'hidden') {
+            addVectorSyncJob(id, 'article', 'upsert');
+        } else {
+            addVectorSyncJob(id, 'article', 'delete');
+        }
         res.status(200).json({ message: `Đã cập nhật trạng thái bài viết thành: ${status}` });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -51,6 +57,7 @@ const deleteArticle = async (req, res) => {
         await ArticleModel.deleteById(id);
         const targetDir = path.join(__dirname, '../../public/articles', id);
         if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true, force: true });
+        addVectorSyncJob(id, 'article', 'delete');
         res.status(200).json({ message: 'Xóa bài viết thành công' });
     } catch (error) {
         if (error.code === 'ER_ROW_IS_REFERENCED_2') return res.status(400).json({ message: 'Không thể xóa bài viết này vì đang có dữ liệu tương tác (Bình luận, Lưu, ...). Vui lòng ẩn thay vì xóa.' });

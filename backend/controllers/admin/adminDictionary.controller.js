@@ -2,6 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const DictionaryDishModel = require('../../models/dictionaryDish.model');
 const path = require('path');
 const fs = require('fs');
+const { addVectorSyncJob } = require('../../services/vectorQueue.service');
 
 const getDictionaryDishes = async (req, res) => {
     try {
@@ -66,6 +67,8 @@ const createDictionaryDish = async (req, res) => {
             }
         }
 
+        addVectorSyncJob(dishId, 'dish', 'upsert');
+
         res.status(201).json({ message: 'Tạo món ăn thành công', dishId });
     } catch (error) {
         console.error('Create Dish Error:', error);
@@ -102,6 +105,8 @@ const updateDictionaryDish = async (req, res) => {
             }
         }
 
+        addVectorSyncJob(id, 'dish', 'upsert');
+
         res.status(200).json({ message: 'Cập nhật món ăn thành công' });
     } catch (error) {
         console.error('Update Dish Error:', error);
@@ -115,6 +120,7 @@ const deleteDictionaryDish = async (req, res) => {
         await DictionaryDishModel.deleteDish(id);
         const targetDir = path.join(__dirname, '../../public/dictionarydish', id);
         if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true, force: true });
+        addVectorSyncJob(id, 'dish', 'delete');
         res.status(200).json({ message: 'Xóa món ăn thành công' });
     } catch (error) {
         console.error('Delete Dish Error:', error);
