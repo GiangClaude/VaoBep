@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import interactionApi from "../api/interactionApi";
-import Modal from "../component/common/modal"; 
-import ReportModalComponent from "../component/common/ReportModal";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
-// Tên sự kiện chung cho việc đồng bộ tương tác
+
 const INTERACTION_EVENT = 'interaction-sync-event';
 
 export default function useInteraction({ 
@@ -16,27 +14,21 @@ export default function useInteraction({
     const navigate = useNavigate();
     const [toast, setToast] = useState({ show: false, message: "" });
 
-    // State hiển thị trên UI
     const [state, setState] = useState({
         liked: Boolean(initialData.liked),
-        saved: Boolean(initialData.saved),// Nhận giá trị saved
+        saved: Boolean(initialData.saved),
         likeCount: initialData.likes || 0,
         rating: initialData.rating || 0,
         commentCount: initialData.commentCount || 0,
         userRating: 0 
     });
 
-
-
-    // [FIX LỖI] Đồng bộ State khi Props (initialData) thay đổi từ bên ngoài
     useEffect(() => {
-        // Chỉ cập nhật nếu dữ liệu từ cha KHÁC với state hiện tại
         setState(prev => {
             const isLikedChanged = initialData.liked !== undefined && initialData.liked !== prev.liked;
             const isSavedChanged = initialData.saved !== undefined && initialData.saved !== prev.saved;
             const isLikeCountChanged = initialData.likes !== undefined && initialData.likes !== prev.likeCount;
             
-            // Nếu không có gì thay đổi so với state hiện tại thì giữ nguyên (tránh re-render)
             if (!isLikedChanged && !isSavedChanged && !isLikeCountChanged) {
                 return prev;
             }
@@ -58,8 +50,7 @@ export default function useInteraction({
         initialData.commentCount
     ]);
 
-
-
+    // --- SỬA Ở ĐÂY: Export modalConfig ra ngoài thay vì render Modal trong hook ---
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
         title: "",
@@ -70,14 +61,12 @@ export default function useInteraction({
 
     const [loading, setLoading] = useState(false);
 
-    // --- 1. Helper: Dispatch sự kiện đồng bộ ---
-    // Hàm này giúp bắn tin hiệu cho các component khác biết
     const broadcastUpdate = (updates) => {
         const event = new CustomEvent(INTERACTION_EVENT, {
             detail: {
-                targetId: id,      // ID của bài viết bị thay đổi
-                targetType: type,  // Loại bài viết (recipe/article)
-                updates: updates   // Dữ liệu mới (ví dụ: { saved: true } hoặc { liked: true, likeCount: 10 })
+                targetId: id,
+                targetType: type,
+                updates: updates
             }
         });
         window.dispatchEvent(event);
@@ -87,19 +76,15 @@ export default function useInteraction({
         let mounted = true;
         const shouldFetch = initialData.liked === undefined || initialData.saved === undefined;
         
-        // Kiểm tra: Nếu đã có dữ liệu từ cha truyền xuống thì KHÔNG gọi API nữa
         const hasInitialState = (initialData.liked !== undefined && initialData.saved !== undefined);
-        // Chỉ gọi API nếu: Có ID, chưa có state ban đầu, và User đã đăng nhập
         if (id && currentUser && shouldFetch) { 
             interactionApi.getInteractionState(id, type)
                 .then(res => {
                     if (mounted && res.data && res.data.success) {
-                        // [FIX] Dữ liệu thực sự nằm trong res.data.data
                         const apiData = res.data.data; 
-                        
                         setState(prev => ({
                             ...prev,
-                            liked: !!apiData.liked, // Ép kiểu boolean cho chắc
+                            liked: !!apiData.liked,
                             saved: !!apiData.saved,
                             userRating: apiData.rated || 0
                         }));
@@ -110,16 +95,10 @@ export default function useInteraction({
         return () => { mounted = false; };
     }, [id, type, currentUser, initialData.liked, initialData.saved]);
 
-    // --- 2. Effect: Lắng nghe sự kiện đồng bộ ---
     useEffect(() => {
         let mounted = true;
-        const token = localStorage.getItem("token");
-
-        
         const handleSync = (e) => {
             const { targetId, targetType, updates } = e.detail;
-            
-            // Chỉ cập nhật nếu đúng ID và đúng Type
             if (targetId === id && targetType === type) {
                 setState(prev => ({
                     ...prev,
@@ -128,18 +107,13 @@ export default function useInteraction({
             }
         };
 
-        // Đăng ký lắng nghe
         window.addEventListener(INTERACTION_EVENT, handleSync);
-
-        // Hủy đăng ký khi component unmount
         return () => {
             window.removeEventListener(INTERACTION_EVENT, handleSync);
         };
     }, [id, type]);
 
-    // --- 3. Kiểm tra Auth ---
     const checkAuth = () => {
-        // Thay vì check localStorage, ta check currentUser từ Context
         if (!currentUser) {
             setModalConfig({
                 isOpen: true,
@@ -164,22 +138,15 @@ export default function useInteraction({
         return true;
     };
 
-
-    // --- 5. Xử lý Like (Có đồng bộ) ---
     const handleToggleLike = async (e) => {
         e && e.stopPropagation();
         if (!checkAuth()) return;
         if (loading) return;
 
-        // Tính toán trạng thái mới
         const newLikedState = !state.liked;
         const newLikeCount = newLikedState ? state.likeCount + 1 : state.likeCount - 1;
-
-        // Lưu trạng thái cũ để revert nếu lỗi API
         const oldState = { ...state };
 
-        // 1. Cập nhật UI ngay lập tức (Optimistic) & Bắn sự kiện đồng bộ
-        // Thay vì setState cục bộ, ta bắn sự kiện để TẤT CẢ (bao gồm chính nó) đều cập nhật
         broadcastUpdate({
             liked: newLikedState,
             likeCount: newLikeCount
@@ -188,10 +155,8 @@ export default function useInteraction({
         setLoading(true);
         try {
             await interactionApi.toggleLike(id, type);
-            // API thành công -> Không cần làm gì thêm vì UI đã update rồi
         } catch (error) {
             console.error("Lỗi like:", error);
-            // API lỗi -> Revert lại trạng thái cũ cho tất cả các nơi
             broadcastUpdate({
                 liked: oldState.liked,
                 likeCount: oldState.likeCount
@@ -201,7 +166,6 @@ export default function useInteraction({
         }
     };
 
-    // --- 6. Xử lý Save (Có đồng bộ) ---
     const handleToggleSave = async (e) => {
         e && e.stopPropagation();
 
@@ -214,36 +178,24 @@ export default function useInteraction({
         const newSavedState = !state.saved;
         const oldState = { ...state };
 
-        // 1. Bắn sự kiện đồng bộ Save
-        broadcastUpdate({
-            saved: newSavedState
-        });
-
-        
+        broadcastUpdate({ saved: newSavedState });
 
         try {
             const res = await interactionApi.toggleSave(id, type);
             setToast({ show: true, message: res.data.message });
         } catch (error) {
             console.error("Lỗi save:", error);
-            // Revert nếu lỗi
-            broadcastUpdate({
-                saved: oldState.saved
-            });
+            broadcastUpdate({ saved: oldState.saved });
         }
     };
 
-    // --- 6.1. Xử lý Gửi Bình luận (Có đồng bộ số lượng) ---
     const handlePostComment = async (content, parentId = null) => {
         if (!checkAuth()) return null;
         try {
             const res = await interactionApi.postComment(id, content, type, parentId);
             if (res.data.success) {
-                // Đồng bộ tăng commentCount lên 1 cho toàn hệ thống
-                broadcastUpdate({
-                    commentCount: state.commentCount + 1
-                });
-                return res.data.newComment; // Trả về để UI biết đường hiển thị comment mới
+                broadcastUpdate({ commentCount: state.commentCount + 1 });
+                return res.data.newComment;
             }
         } catch (error) {
             console.error("Lỗi gửi bình luận:", error);
@@ -252,13 +204,11 @@ export default function useInteraction({
         }
     };
 
-    // --- 6.2. Xử lý Xóa Bình luận (Quan trọng: Trừ đúng số lượng Cascade) ---
     const handleDeleteComment = async (commentId, replyCount = 0) => {
         if (!checkAuth()) return false;
         try {
             const res = await interactionApi.deleteComment(commentId);
             if (res.data.success) {
-                // Tính toán số lượng cần trừ: bản thân nó + các reply con bị mất do cascade
                 const totalToRemove = 1 + Number(replyCount);
                 broadcastUpdate({
                     commentCount: Math.max(0, state.commentCount - totalToRemove)
@@ -273,14 +223,13 @@ export default function useInteraction({
         }
     };
 
-    // --- 6.3. Xử lý Sửa Bình luận ---
     const handleEditComment = async (commentId, content) => {
         if (!checkAuth()) return null;
         try {
             const res = await interactionApi.updateComment(commentId, content);
             if (res.data.success) {
                 setToast({ show: true, message: "Đã cập nhật bình luận" });
-                return res.data.data; // Trả về thông tin update_at mới
+                return res.data.data;
             }
         } catch (error) {
             console.error("Lỗi sửa bình luận:", error);
@@ -289,22 +238,27 @@ export default function useInteraction({
         }
     };
 
-    // --- 7. Xử lý Share ---
     const handleShare = (e) => {
         e && e.stopPropagation();
-        const url = `${window.location.origin}/recipe/${id}`;
+        
+        // 1. Phân biệt route dựa trên type (giả sử route bài viết của bạn là /article)
+        const routeName = type === 'article' ? 'article' : 'recipe';
+        const url = `${window.location.origin}/${routeName}/${id}`;
+        
         navigator.clipboard.writeText(url);
+        
+        // 2. Thay đổi chữ hiển thị cho phù hợp
+        const typeText = type === 'article' ? 'bài viết' : 'công thức';
         
         setModalConfig({
             isOpen: true,
             title: "Đã sao chép liên kết",
-            message: "Link công thức đã được lưu vào bộ nhớ tạm!",
+            message: `Link ${typeText} đã được lưu vào bộ nhớ tạm!`,
             type: "success",
             actions: [] 
         });
     };
-
-    // --- 8. Xử lý Báo cáo (Report) ---
+    // --- SỬA Ở ĐÂY: Trả về trạng thái của Report thay vì Component ---
     const [reportModal, setReportModal] = useState({ isOpen: false, loading: false, serverError: '' });
 
     const openReportModal = (e) => {
@@ -327,36 +281,14 @@ export default function useInteraction({
             await interactionApi.reportPost(String(id), reason, type);
             setReportModal({ isOpen: false, loading: false, serverError: '' });
             setModalConfig({ isOpen: true, title: 'Báo cáo thành công', message: 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.', type: 'success', actions: [] });
-            // Optionally broadcast update for report_count if needed
         } catch (err) {
             handleCancelReport();
-            //setReportModal(prev => ({ ...prev, loading: false, serverError: err?.response?.data?.message || 'Có lỗi xảy ra' }));
             setModalConfig({ isOpen: true, title: 'Báo cáo thất bại', message: err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.', type: 'error', actions: [] });
         }
     };
 
     const closeToast = () => setToast({ ...toast, show: false });
-
-    const InteractionModal = () => (
-        <Modal 
-            isOpen={modalConfig.isOpen}
-            onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
-            title={modalConfig.title}
-            message={modalConfig.message}
-            type={modalConfig.type}
-            actions={modalConfig.actions}
-        />
-    );
-
-    const ReportModal = () => (
-        <ReportModalComponent
-            isOpen={reportModal.isOpen}
-            onClose={handleCancelReport}
-            onSubmit={handleSubmitReport}
-            loading={reportModal.loading}
-            serverError={reportModal.serverError}
-        />
-    );
+    const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
 
     return {
         state,
@@ -368,8 +300,15 @@ export default function useInteraction({
         handleDeleteComment,
         handleEditComment,
         handleShare,
+        
+        // Trả về data cho Modal
+        modalConfig,
+        closeModal,
+        
+        // Trả về data cho Report
         handleReport: openReportModal,
-        InteractionModal,
-        ReportModal
+        reportModal,
+        handleCancelReport,
+        handleSubmitReport
     };
 }

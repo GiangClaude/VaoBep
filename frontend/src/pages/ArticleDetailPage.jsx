@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, 
-  Clock, 
-  MessageCircle, 
-  Heart, 
-  Share2, 
-  MoreHorizontal, 
-  Bookmark, 
-  Flag,
-  ChevronRight
+  ArrowLeft, Clock, MessageCircle, Heart, Share2, 
+  MoreHorizontal, Bookmark, Flag, ChevronRight
 } from 'lucide-react';
 import useArticleDetail from '../hooks/useArticleDetail';
 import useInteraction from '../hooks/useInteraction';
@@ -18,32 +11,17 @@ import { Footer } from '../component/common/Footer';
 import Toast from '../component/common/Toast';
 import CommentSection from '../component/comment/CommentSection';
 import AiSummaryBanner from "../component/common/AiSummaryBanner";
+
+// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
+import Modal from '../component/common/modal';
+import ReportModalComponent from '../component/common/ReportModal';
+
 export default function ArticleDetailPage() {
   const { articleId } = useParams();
   const navigate = useNavigate();
   const { article, loading, error } = useArticleDetail(articleId);
   const [showMenu, setShowMenu] = useState(false);
 
-  // const {
-  //   state,
-  //   toast,
-  //   closeToast,
-  //   handleToggleLike,
-  //   handleToggleSave,
-  //   handleShare,
-  //   handleReport,
-  //   InteractionModal,
-  //   ReportModal
-  // } = useInteraction({
-  //   id: articleId,
-  //   type: 'article',
-  //   initialData: {
-  //     liked: article?.is_liked,
-  //     saved: article?.is_saved,
-  //     likes: article?.likeCount || 0,
-  //     commentCount: article?.totalComments || 0
-  //   }
-  // });
   const interactionHook = useInteraction({
     id: articleId,
     type: 'article',
@@ -54,9 +32,6 @@ export default function ArticleDetailPage() {
       commentCount: article?.totalComments || 0
     }
   });
-
-  const { InteractionModal, ReportModal } = interactionHook;
-
 
   if (loading && !article) return <div className="min-h-screen bg-[#fff9f0] flex items-center justify-center text-[#7d5a3f]">Đang tải...</div>;
   if (error) return (
@@ -70,7 +45,6 @@ export default function ArticleDetailPage() {
   return (
     <div className="min-h-screen bg-[#fff9f0]">
       <main className="container mx-auto px-4 py-8">
-        {/* Nút quay lại & Action Bar phía trên */}
         <div className="flex items-center justify-between mb-6">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[#ff6b35] hover:text-[#f7931e] transition-colors font-medium">
             <ArrowLeft className="w-5 h-5" /> <span>Quay lại</span>
@@ -98,10 +72,7 @@ export default function ArticleDetailPage() {
           </div>
         </div>
 
-        {/* Layout Grid chính */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* CỘT TRÁI: Nội dung chi tiết bài viết (8/12) */}
           <div className="lg:col-span-8">
             <div className="bg-white rounded-[24px] shadow-sm overflow-hidden border border-orange-100/50">
               <div className="relative h-[300px] md:h-[450px]">
@@ -123,7 +94,6 @@ export default function ArticleDetailPage() {
               </div>
 
               <div className="p-8 md:p-10">
-                {/* Interaction Row */}
                 <div className="flex items-center gap-6 mb-8 py-4 px-6 bg-[#fff9f0] rounded-2xl border border-[#ffc857]/20">
                   <button onClick={interactionHook.handleToggleLike} className={`flex items-center gap-2 font-bold transition-colors ${interactionHook.state.liked ? 'text-[#ff6b35]' : 'text-gray-600 hover:text-[#ff6b35]'}`}>
                     <Heart className={`w-6 h-6 ${interactionHook.state.liked ? 'fill-current' : ''}`} />
@@ -144,7 +114,6 @@ export default function ArticleDetailPage() {
                   )}
                 </div>
 
-                {/* Tags */}
                 <div className="flex items-center gap-2 flex-wrap pt-6 border-t border-gray-100">
                   {article.tags && article.tags.map((t) => (
                     <span key={t.id} className="text-sm bg-gray-50 text-gray-600 px-4 py-1.5 rounded-full hover:bg-orange-50 hover:text-[#ff6b35] transition-colors cursor-default">
@@ -153,36 +122,11 @@ export default function ArticleDetailPage() {
                   ))}
                 </div>
 
-                {/* Comments Section */}
-                {/* <div className="mt-12">
-                  <h3 className="text-xl font-bold text-gray-800 mb-8 flex items-center gap-2">
-                    <MessageCircle className="w-6 h-6 text-[#ff6b35]" /> Thảo luận
-                  </h3>
-                  <div className="space-y-6">
-                    {article.comments && article.comments.length > 0 ? (
-                      article.comments.map((c, i) => (
-                        <div key={i} className="flex gap-4 p-4 rounded-2xl hover:bg-gray-50 transition-colors">
-                          <img src={c.avatar || '/avatar_default.png'} alt="user" className="w-12 h-12 rounded-full object-cover shadow-sm" />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold text-gray-800">{c.full_name || 'Người dùng'}</span>
-                              <span className="text-xs text-gray-400">{new Date(c.created_at).toLocaleDateString('vi-VN')}</span>
-                            </div>
-                            <p className="text-gray-700 text-[15px]">{c.content}</p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-center py-10 text-gray-400 italic bg-gray-50 rounded-2xl">Hãy là người đầu tiên để lại bình luận!</p>
-                    )}
-                  </div>
-                </div> */}
                 <CommentSection postId={articleId} postType="article" interactionHook={interactionHook} />
               </div>
             </div>
           </div>
 
-          {/* CỘT PHẢI: Sidebar (4/12) */}
           <aside className="lg:col-span-4 space-y-6">
             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-orange-100/50 sticky top-24">
               <h3 className="text-lg font-bold text-gray-800 mb-5 flex items-center justify-between">
@@ -193,33 +137,18 @@ export default function ArticleDetailPage() {
               <div className="space-y-4">
                 {article.recipes && article.recipes.length > 0 ? (
                   article.recipes.map((recipe) => (
-                    <div 
-                      key={recipe.id} 
-                      onClick={() => navigate(`/recipe/${recipe.id}`)}
-                      className="group flex items-center gap-4 p-3 rounded-xl hover:bg-orange-50 transition-all cursor-pointer border border-transparent hover:border-orange-100"
-                    >
+                    <div key={recipe.id} onClick={() => navigate(`/recipe/${recipe.id}`)} className="group flex items-center gap-4 p-3 rounded-xl hover:bg-orange-50 transition-all cursor-pointer border border-transparent hover:border-orange-100">
                       <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-lg">
-                        <ImageWithFallBack 
-                          src={recipe.image} 
-                          alt={recipe.title} 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                        />
+                        <ImageWithFallBack src={recipe.image} alt={recipe.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-[#ff6b35] transition-colors mb-1">
-                          {recipe.title}
-                        </h4>
-                        <div className="flex items-center text-xs text-gray-500 gap-1">
-                          <span className="line-clamp-1">Bởi {recipe.authorName || 'Đầu bếp'}</span>
-                          <ChevronRight className="w-3 h-3 text-[#ff6b35]" />
-                        </div>
+                        <h4 className="font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-[#ff6b35] transition-colors mb-1">{recipe.title}</h4>
+                        <div className="flex items-center text-xs text-gray-500 gap-1"><span className="line-clamp-1">Bởi {recipe.authorName || 'Đầu bếp'}</span><ChevronRight className="w-3 h-3 text-[#ff6b35]" /></div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-400 text-sm italic">
-                    Không có công thức liên kết
-                  </div>
+                  <div className="text-center py-8 text-gray-400 text-sm italic">Không có công thức liên kết</div>
                 )}
               </div>
 
@@ -229,18 +158,30 @@ export default function ArticleDetailPage() {
                         contextText={`Tên bài viết: ${article.title}. Nội dung chính: ${article.content || article.excerpt}`} 
                     />
                 )}
-                <div className="prose prose-lg max-w-none text-[#3b3b3b] leading-relaxed"></div>
-              {/* Box quảng cáo hoặc thông tin thêm (Tùy chọn) */}
-
             </div>
           </aside>
-
         </div>
       </main>
       
       <Footer />
-      <InteractionModal />
-      <ReportModal />
+      
+      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI --- */}
+      <Modal 
+          isOpen={interactionHook.modalConfig.isOpen}
+          onClose={interactionHook.closeModal}
+          title={interactionHook.modalConfig.title}
+          message={interactionHook.modalConfig.message}
+          type={interactionHook.modalConfig.type}
+          actions={interactionHook.modalConfig.actions}
+      />
+      <ReportModalComponent
+          isOpen={interactionHook.reportModal.isOpen}
+          onClose={interactionHook.handleCancelReport}
+          onSubmit={interactionHook.handleSubmitReport}
+          loading={interactionHook.reportModal.loading}
+          serverError={interactionHook.reportModal.serverError}
+      />
+      
       <Toast message={interactionHook.toast.message} isVisible={interactionHook.toast.show} onClose={interactionHook.closeToast} />
     </div>
   );

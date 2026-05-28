@@ -2,15 +2,19 @@ import Header from "../component/common/Header";
 import { Footer } from "../component/common/Footer"; 
 import { motion } from "motion/react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Send, ArrowLeft, Bookmark, TrendingUp, AlertCircle
+import {
+  Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Send, ArrowLeft, Bookmark, TrendingUp, AlertCircle
 } from "lucide-react";
 import ImageWithFallBack from "../component/figma/ImageWithFallBack";
 import useRecipeDetail from '../hooks/useRecipeDetail';
-import Modal from "../component/common/modal"; // [THÊM IMPORT MODAL]
 import useInteraction from '../hooks/useInteraction';
 import {useAuth} from '../AuthContext';
 import AiSummaryBanner from "../component/common/AiSummaryBanner";
-//Sửa hàm này
+
+// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
+import Modal from "../component/common/modal"; 
+import ReportModalComponent from '../component/common/ReportModal';
+
 const getAvatarUrl = (user) => {
     if (user.avatar && user.avatar.startsWith('http')) return user.avatar;
     return user.avatar 
@@ -26,40 +30,25 @@ export default function RecipeDetailPage() {
   const recipeFromState = location.state?.recipe;
   
   const {
-    recipeState,
-    loading,
-    isLiked,
-    isSaved,
-    userRating,
-    comments,
-    commentInput,
-    setCommentInput,
-    handleLike,
-    handleSave,
-    handleRating,
-    handleCommentSubmit,
-    loadingComments,
-    requireLogin,   
-    setRequireLogin 
+    recipeState, loading, isLiked, isSaved, userRating, comments,
+    commentInput, setCommentInput, handleLike, handleSave, handleRating,
+    handleCommentSubmit, loadingComments, requireLogin, setRequireLogin 
   } = useRecipeDetail({ id, initialRecipe: recipeFromState });
 
-  // --- Interaction hook cho report ---
-  const {
-    InteractionModal,
-    handleReport,
-    ReportModal
-  } = useInteraction({ id, type: 'recipe', initialData: {} });
+  // Hook tương tác cho chức năng Báo cáo (Report)
+  const interactionHook = useInteraction({ id, type: 'recipe', initialData: {} });
+  const { handleReport } = interactionHook;
 
-  // --- LOADING / ERROR STATES ---
   if (loading && !recipeState) return <div className="min-h-screen bg-[#fff9f0] flex items-center justify-center text-[#7d5a3f]">Đang tải...</div>;
   if (!recipeState) return <div className="min-h-screen bg-[#fff9f0] text-center pt-20">Không tìm thấy công thức</div>;
+  
   const { detailedDescription, detailedIngredients, detailedSteps } = recipeState;
-  const isAuthor = currentUser? currentUser.id === recipeState?.userId : false;
+  const isAuthor = currentUser ? currentUser.id === recipeState?.userId : false;
+  
   return (
     <div className="min-h-screen bg-[#fff9f0]">
-      <InteractionModal />
-      <ReportModal />
-      {/* [THÊM MODAL VÀO ĐÂY] */}
+      
+      {/* Modal báo lỗi đăng nhập (đến từ useRecipeDetail) */}
       <Modal 
         isOpen={requireLogin}
         onClose={() => setRequireLogin(false)}
@@ -67,26 +56,16 @@ export default function RecipeDetailPage() {
         message="Bạn cần đăng nhập để thực hiện hành động này."
         type="warning"
         actions={[
-            { 
-                label: "Hủy bỏ", 
-                onClick: () => setRequireLogin(false),
-                style: "secondary"
-            },
-            { 
-                label: "Đăng nhập ngay", 
-                onClick: () => navigate('/login'),
-                style: "primary"
-            }
+            { label: "Hủy bỏ", onClick: () => setRequireLogin(false), style: "secondary" },
+            { label: "Đăng nhập ngay", onClick: () => navigate('/login'), style: "primary" }
         ]}
       />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Nút Back */}
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[#ff6b35] hover:text-[#f7931e] transition-colors mb-6 font-medium">
           <ArrowLeft className="w-5 h-5" /> <span>Quay lại</span>
         </button>
 
-        {/* --- 1. HERO SECTION --- */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[30px] shadow-xl overflow-hidden mb-8">
             <div className="grid grid-cols-1 lg:grid-cols-2">
             <div className="relative h-[400px] lg:h-[500px]">
@@ -100,15 +79,13 @@ export default function RecipeDetailPage() {
                 <motion.button onClick={handleSave} whileTap={{ scale: 0.9 }} className={`p-3 rounded-full backdrop-blur-md shadow-lg ${isSaved ? "bg-[#ffc857] text-white" : "bg-white/90 text-[#7d5a3f]"}`}>
                   <Bookmark className="w-6 h-6" fill={isSaved ? "currentColor" : "none"} />
                 </motion.button>
-                {/* Nút báo cáo: Luôn hiển thị nhưng thay đổi trạng thái và giao diện dựa trên isAuthor */}
+              
               <motion.button 
                 onClick={isAuthor ? undefined : handleReport} 
                 whileTap={isAuthor ? {} : { scale: 0.9 }} 
                 disabled={isAuthor}
                 className={`p-3 rounded-full backdrop-blur-md shadow-lg transition-all ${
-                  isAuthor 
-                    ? 'bg-gray-200/80 text-gray-400 cursor-not-allowed opacity-60' 
-                    : 'bg-white/90 text-red-500 hover:bg-red-50'
+                  isAuthor ? 'bg-gray-200/80 text-gray-400 cursor-not-allowed opacity-60' : 'bg-white/90 text-red-500 hover:bg-red-50'
                 }`}                
                 title={isAuthor ? "Đây là công thức của bạn, không thể báo cáo" : "Báo cáo bài viết"}
               >
@@ -140,12 +117,8 @@ export default function RecipeDetailPage() {
           </div>
         </motion.div>
 
-        {/* --- 2. MAIN CONTENT --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-
-            
-            {/* Ingredients */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-[25px] shadow-lg p-8">
               <h2 className="text-2xl mb-6 flex items-center gap-3 font-bold text-gray-800"><ChefHat className="w-8 h-8 text-[#ff6b35]" /> Nguyên Liệu</h2>
               {detailedIngredients && detailedIngredients.length > 0 ? (
@@ -160,7 +133,6 @@ export default function RecipeDetailPage() {
               ) : ( <p className="text-[#7d5a3f] italic">Chưa cập nhật nguyên liệu.</p> )}
             </motion.div>
 
-            {/* Steps */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-[25px] shadow-lg p-8">
               <h2 className="text-2xl mb-6 flex items-center gap-3 font-bold text-gray-800"><TrendingUp className="w-8 h-8 text-[#ff6b35]" /> Hướng Dẫn Thực Hiện</h2>
               <div className="space-y-8">
@@ -180,7 +152,6 @@ export default function RecipeDetailPage() {
               </div>
             </motion.div>
             
-            {/* Comment Section */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-[25px] shadow-lg p-8">
                 <h2 className="text-2xl mb-6 flex items-center gap-3 font-bold text-gray-800"><MessageCircle className="w-8 h-8 text-[#ff6b35]" /> Bình Luận ({comments.length})</h2>
                 <div className="flex gap-3 mb-8">
@@ -214,10 +185,8 @@ export default function RecipeDetailPage() {
             </motion.div>
           </div>
 
-          {/* --- 3. SIDEBAR --- */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
-                {/* Nutrition */}
                 <div className="bg-white rounded-[25px] shadow-lg p-6">
                     <h3 className="text-xl mb-4 flex items-center gap-2 font-bold text-gray-800"><Flame className="w-6 h-6 text-[#ff6b35]" /> Dinh Dưỡng</h3>
                     <div>
@@ -232,7 +201,6 @@ export default function RecipeDetailPage() {
                     </div>
                 </div>
 
-                {/* Rating */}
                 <div className="bg-white rounded-[25px] shadow-lg p-6">
                     <h3 className="text-xl mb-4 flex items-center gap-2 font-bold text-gray-800"><Star className="w-6 h-6 text-[#ffc857] fill-[#ffc857]" /> Đánh Giá</h3>
                     <div className="flex justify-center gap-2">
@@ -245,7 +213,6 @@ export default function RecipeDetailPage() {
                     {userRating > 0 && <p className="text-center text-[#ff6b35] font-bold mt-3">Bạn đã chấm {userRating} sao!</p>}
                 </div>
 
-                            {/* THÊM AI BANNER VÀO ĐÂY */}
                 {recipeState && (
                     <AiSummaryBanner 
                         title="✨ Nhờ AI tóm tắt mẹo nấu & lưu ý cho công thức này"
@@ -260,6 +227,23 @@ export default function RecipeDetailPage() {
         </div>
       </main>
       <Footer />
+      
+      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI HOOK REPORT --- */}
+      <Modal 
+          isOpen={interactionHook.modalConfig.isOpen}
+          onClose={interactionHook.closeModal}
+          title={interactionHook.modalConfig.title}
+          message={interactionHook.modalConfig.message}
+          type={interactionHook.modalConfig.type}
+          actions={interactionHook.modalConfig.actions}
+      />
+      <ReportModalComponent
+          isOpen={interactionHook.reportModal.isOpen}
+          onClose={interactionHook.handleCancelReport}
+          onSubmit={interactionHook.handleSubmitReport}
+          loading={interactionHook.reportModal.loading}
+          serverError={interactionHook.reportModal.serverError}
+      />
     </div>
   );
 }

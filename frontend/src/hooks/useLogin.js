@@ -64,7 +64,7 @@ export const useLogin = () => {
         if (finalUser && finalUser.role === 'admin') {
             navigate('/admin/dashboard'); // Chuyển sang Admin nếu là admin
         } else {
-            navigate('/homepage');        // Chuyển sang Homepage nếu là user thường
+            navigate('-1');        // Chuyển sang Homepage nếu là user thường
         }
 
       } catch (error) {
