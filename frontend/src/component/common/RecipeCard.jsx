@@ -1,123 +1,65 @@
 import { useState } from "react";
-import { 
-  Clock, Users, Heart, Star, ArrowRight, ChefHat, 
-  Flame, MessageCircle, Share2, Bookmark, AlertCircle 
-} from "lucide-react"; 
+import { Clock, Users, Heart, Star, ArrowRight, ChefHat, Flame, MessageCircle, Share2, Bookmark, AlertCircle } from "lucide-react"; 
 import { motion } from "motion/react";
 import ImageWithFallBack from "../figma/ImageWithFallBack";
 import useInteraction from "../../hooks/useInteraction"; 
-import {getAvatarUrl, getRecipeImageUrl} from "../../utils/imageHelper"
+import { getAvatarUrl, getRecipeImageUrl } from "../../utils/imageHelper";
+
+// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
+import Modal from './modal';
+import ReportModalComponent from './ReportModal'; 
 
 export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) {
-
-  // Recipe object is assumed to be normalized already
   const {
-    id,
-    image,
-    title,
-    userName,
-    userAvatar,
-    cookTime,
-    servings,
-    likes,
-    rating,
-    isLiked,
-    isSaved,
-    description,
-    ingredientNames,
-    stepsCount,    // <-- THÊM: Lấy stepsCount từ data
-    detailedSteps, // <-- THÊM: Lấy detailedSteps để fallback
-    calories,
-    createdAt,
-    commentCount
+    id, image, title, userName, userAvatar, cookTime, servings, likes, rating,
+    isLiked, isSaved, description, ingredientNames, stepsCount, detailedSteps,
+    calories, createdAt, commentCount
   } = recipe;
 
   const displaySteps = stepsCount || (detailedSteps ? detailedSteps.length : 0);
-
   const [isHovered, setIsHovered] = useState(false);
 
-  // 1. Khởi tạo hook interaction với dữ liệu ban đầu đầy đủ
-  const {
-    state: interactionState,
-    handleToggleLike,
-    handleToggleSave,
-    handleShare,
-    InteractionModal,
-    handleReport,
-    ReportModal
-  } = useInteraction({
+  const interactionHook = useInteraction({
     id,
     type: 'recipe',
     initialData: {
-      likes,
-      rating,
-      commentCount,
-      liked: isLiked,
-      saved: isSaved
+      likes, rating, commentCount, liked: isLiked, saved: isSaved
     }
   });
 
-  // console.log("RecipeCard Interaction State:", interactionState);
+  const { state: interactionState, handleToggleLike, handleToggleSave, handleShare, handleReport } = interactionHook;
   
   return (
     <>
       <motion.div
         initial={false}
-        animate={{
-          width: isHovered ? "640px" : "320px",
-          y: isHovered ? -8 : 0
-        }}
+        animate={{ width: isHovered ? "640px" : "320px", y: isHovered ? -8 : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="cursor-pointer flex-shrink-0 relative mb-4"
-        style={{ 
-          minWidth: isHovered ? "640px" : "320px", 
-          zIndex: isHovered ? 50 : 1,
-          position: 'relative'
-        }}
+        style={{ minWidth: isHovered ? "640px" : "320px", zIndex: isHovered ? 50 : 1, position: 'relative' }}
         onClick={() => onClick && onClick()}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className="bg-white rounded-[25px] overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-[330px] relative">
           <div className="flex h-full">
-            {/* Left Side - Original Card */}
+            {/* Left Side */}
             <div className="w-80 flex-shrink-0">
-              {/* Image Container */}
               <div className="relative h-48 overflow-hidden">
-                <div
-                  className="absolute inset-0 transform transition-transform duration-500"
-                  style={{
-                    transform: isHovered ? "scale(1.1)" : "scale(1)"
-                  }}
-                >
-                  <ImageWithFallBack
-                    src={getRecipeImageUrl(id, image)}
-                    alt={title}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="absolute inset-0 transform transition-transform duration-500" style={{ transform: isHovered ? "scale(1.1)" : "scale(1)" }}>
+                  <ImageWithFallBack src={getRecipeImageUrl(id, image)} alt={title} className="w-full h-full object-cover" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 
-                {/* --- ACTION BUTTONS GROUP (Top Right) --- */}
+                {/* ACTION BUTTONS GROUP */}
                 <div className="absolute top-3 right-3 flex gap-2">
-                  <button 
-                    onClick={handleShare}
-                    className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md"
-                    title="Chia sẻ"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); handleShare(e); }} className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md" title="Chia sẻ">
                      <Share2 className="w-4 h-4 text-[#7d5a3f]" />
                   </button>
 
-                  <button 
-                    onClick={handleToggleLike}
-                    className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-1 shadow-md hover:scale-105 transition-transform"
-                  >
-                    <Heart 
-                      className={`w-4 h-4 transition-colors ${interactionState.liked ? "text-[#ff6b35] fill-[#ff6b35]" : "text-[#ff6b35]"}`} 
-                    />
-                    <span className="text-sm font-medium text-[#7d5a3f]">
-                      {interactionState.likeCount}
-                    </span>
+                  <button onClick={(e) => { e.stopPropagation(); handleToggleLike(e); }} className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-1 shadow-md hover:scale-105 transition-transform">
+                    <Heart className={`w-4 h-4 transition-colors ${interactionState.liked ? "text-[#ff6b35] fill-[#ff6b35]" : "text-[#ff6b35]"}`} />
+                    <span className="text-sm font-medium text-[#7d5a3f]">{interactionState.likeCount}</span>
                   </button>
 
                   <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-1 shadow-md">
@@ -125,32 +67,19 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
                     <span className="text-sm font-medium text-[#7d5a3f]">{Math.round(rating*100)/100}</span>
                   </div>
 
-                  {/* Nút Báo cáo */}
-                  <button 
-                    onClick={handleReport}
-                    className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md"
-                    title="Báo cáo bài viết"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); handleReport(e); }} className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md" title="Báo cáo bài viết">
                     <AlertCircle className="w-4 h-4 text-red-500" />
                   </button>
                 </div>
 
-                {/* --- SAVE BUTTON (Top Left) --- */}
-                <button 
-                   onClick={handleToggleSave}
-                   className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md z-10"
-                   title="Lưu công thức"
-                >
+                {/* SAVE BUTTON */}
+                <button onClick={(e) => { e.stopPropagation(); handleToggleSave(e); }} className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md z-10" title="Lưu công thức">
                     <Bookmark className={`w-4 h-4 ${interactionState.saved ? "text-[#ff6b35] fill-[#ff6b35]" : "text-[#7d5a3f]"}`} />
                 </button>
 
                 {/* User Badge */}
                 <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-full shadow-md">
-                  <ImageWithFallBack
-                    src={userAvatar}
-                    alt={userName}
-                    className="w-6 h-6 rounded-full object-cover"
-                  />
+                  <ImageWithFallBack src={userAvatar} alt={userName} className="w-6 h-6 rounded-full object-cover" />
                   <span className="text-sm text-[#7d5a3f] font-medium">{userName}</span>
                 </div>
               </div>
@@ -158,16 +87,9 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
               {/* Content */}
               <div className="p-4 flex-grow flex flex-col justify-start">
                 <h3 className="text-lg font-semibold mb-1 line-clamp-2 min-h-[1.5rem] text-[#2d2d2d] leading-snug">{title}</h3>
-                
                 <div className="flex items-center gap-3 text-sm text-[#7d5a3f]">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-[#ff6b35]" />
-                    <span>{cookTime}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4 text-[#ff6b35]" />
-                    <span>{servings}</span>
-                  </div>
+                  <div className="flex items-center gap-1"><Clock className="w-4 h-4 text-[#ff6b35]" /><span>{cookTime}</span></div>
+                  <div className="flex items-center gap-1"><Users className="w-4 h-4 text-[#ff6b35]" /><span>{servings}</span></div>
                 </div>
               </div>
             </div>
@@ -175,73 +97,36 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
             {/* Right Side - Expanded Content */}
             <motion.div
               initial={false}
-              animate={{
-                width: isHovered ? "320px" : "0px",
-                opacity: isHovered ? 1 : 0
-              }}
+              animate={{ width: isHovered ? "320px" : "0px", opacity: isHovered ? 1 : 0 }}
               transition={{ duration: 0.3 }}
-              className={`overflow-hidden border-l border-[#ffc857]/30 bg-white flex-shrink-0 
-                ${expandDirection === 'left' ? 'order-first border-r border-l-0' : ''}`}
+              className={`overflow-hidden border-l border-[#ffc857]/30 bg-white flex-shrink-0 ${expandDirection === 'left' ? 'order-first border-r border-l-0' : ''}`}
             >
               <div className="p-4 h-full flex flex-col w-80">
                 <div className="mb-2">
-                  <p className="text-sm text-[#7d5a3f] line-clamp-2 leading-relaxed">
-                    {description}
-                  </p>
+                  <p className="text-sm text-[#7d5a3f] line-clamp-2 leading-relaxed">{description}</p>
                 </div>
-
                 <div className="mb-2">
-                  <h4 className="text-sm mb-2 text-[#ff6b35] flex items-center gap-1 font-semibold">
-                    <ChefHat className="w-4 h-4" />
-                    Nguyên liệu chính:
-                  </h4>
+                  <h4 className="text-sm mb-2 text-[#ff6b35] flex items-center gap-1 font-semibold"><ChefHat className="w-4 h-4" /> Nguyên liệu chính:</h4>
                   <ul className="text-sm text-[#7d5a3f] space-y-1">
                     {ingredientNames && ingredientNames.length > 0
                       ? ingredientNames.slice(0, 3).map((ingredient, index) => (
-                          <li key={index} className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#ffc857]"></span>
-                            {ingredient}
-                          </li>
+                          <li key={index} className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#ffc857]"></span>{ingredient}</li>
                         ))
-                      : (
-                          <li className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#ffc857]"></span>
-                            Chưa có nguyên liệu
-                          </li>
-                        )}
+                      : <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#ffc857]"></span>Chưa có nguyên liệu</li>}
                   </ul>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-2">
-                  <div className="bg-[#fff9f0] p-3 rounded-xl">
-                    <div className="text-xs text-[#7d5a3f] mb-1">Số bước</div>
-                    <div className="text-base font-semibold text-[#ff6b35]">{displaySteps} bước</div>
-                  </div>
-                  <div className="bg-[#fff9f0] p-3 rounded-xl">
-                    <div className="text-xs text-[#7d5a3f] mb-1 flex items-center gap-1">
-                      <Flame className="w-3 h-3" />
-                      Calories
-                    </div>
-                    <div className="text-base font-semibold text-[#ff6b35]">{calories}</div>
-                  </div>
+                  <div className="bg-[#fff9f0] p-3 rounded-xl"><div className="text-xs text-[#7d5a3f] mb-1">Số bước</div><div className="text-base font-semibold text-[#ff6b35]">{displaySteps} bước</div></div>
+                  <div className="bg-[#fff9f0] p-3 rounded-xl"><div className="text-xs text-[#7d5a3f] mb-1 flex items-center gap-1"><Flame className="w-3 h-3" /> Calories</div><div className="text-base font-semibold text-[#ff6b35]">{calories}</div></div>
                 </div>
 
                 <div className="flex-grow min-h-0">
-                  <h4 className="text-xs mb-2 text-[#ff6b35] flex items-center gap-1 font-semibold">
-                    <MessageCircle className="w-4 h-4" />
-                    ({interactionState.commentCount}) Bình luận 
-                  </h4>
+                  <h4 className="text-xs mb-2 text-[#ff6b35] flex items-center gap-1 font-semibold"><MessageCircle className="w-4 h-4" /> ({interactionState.commentCount}) Bình luận</h4>
                 </div>
 
-                <button 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    onClick && onClick(); 
-                  }} 
-                  className="w-full bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white py-2.5 rounded-full flex items-center justify-center gap-2 hover:shadow-lg transition-all mt-auto font-medium"
-                >
-                  <span>Xem chi tiết</span>
-                  <ArrowRight className="w-4 h-4" />
+                <button onClick={(e) => { e.stopPropagation(); onClick && onClick(); }} className="w-full bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white py-2.5 rounded-full flex items-center justify-center gap-2 hover:shadow-lg transition-all mt-auto font-medium">
+                  <span>Xem chi tiết</span><ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </motion.div>
@@ -249,18 +134,29 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
 
           <motion.div
             initial={false}
-            animate={{
-              rotate: isHovered ? 6 : 3,
-              scale: isHovered ? 1 : 0.98
-            }}
+            animate={{ rotate: isHovered ? 6 : 3, scale: isHovered ? 1 : 0.98 }}
             className="absolute inset-0 bg-gradient-to-br from-[#ffc857] to-[#ff6b35] rounded-[25px] mt-2 mb-2 -z-10"
             style={{ transform: "translate(6px, 6px)" }}
           />
         </div>
       </motion.div>
       
-      <InteractionModal />
-      <ReportModal />
+      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI --- */}
+      <Modal 
+          isOpen={interactionHook.modalConfig.isOpen}
+          onClose={interactionHook.closeModal}
+          title={interactionHook.modalConfig.title}
+          message={interactionHook.modalConfig.message}
+          type={interactionHook.modalConfig.type}
+          actions={interactionHook.modalConfig.actions}
+      />
+      <ReportModalComponent
+          isOpen={interactionHook.reportModal.isOpen}
+          onClose={interactionHook.handleCancelReport}
+          onSubmit={interactionHook.handleSubmitReport}
+          loading={interactionHook.reportModal.loading}
+          serverError={interactionHook.reportModal.serverError}
+      />
     </>
   );
 }

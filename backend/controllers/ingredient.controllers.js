@@ -1,21 +1,13 @@
-const db = require('../config/db'); 
-const IngredientModel = require('../models/ingredient.model');
+const IngredientService = require('../services/ingredient.service');
+const asyncHandler = require('../utils/asyncHandler');
 
-// 2. Định nghĩa pool bằng cách lấy từ đối tượng db
-const pool = db.pool;
-
-const getAllIngredients = async (req, res) => {
-    try {
-        const result = await IngredientModel.getAll();
-        const rows = result;
-        res.json(rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Lỗi khi lấy danh sách nguyên liệu' });
-    }
-}
-
-
+const getAllIngredients = asyncHandler(async (req, res) => {
+    // Controller chỉ gọi Service, không gọi Model
+    const rows = await IngredientService.getAllIngredients();
+    
+    // Giữ nguyên y hệt định dạng trả về cũ để không gãy Frontend
+    res.json(rows);
+});
 
 module.exports = {
     getAllIngredients

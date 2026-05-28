@@ -1,7 +1,7 @@
 const express = require('express');
 const authController = require('../controllers/auth.controllers');
 const router = express.Router();
-const {protect} = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
 
 
 // Đăng ký
@@ -16,5 +16,6 @@ router.post('/resend-otp', authController.resendOTP)
 router.post('/request-password-reset', authController.requestPasswordReset)
 router.put('/reset-password', authController.resetPassword);
 //Chủ động đổi mật khẩu
-router.put('/change-password', protect, authController.changePasswordAuth);
+//Chuyển sang cho user(Nhớ kiểm tra lại)
+// router.put('/change-password', protect, authController.changePasswordAuth);
 module.exports = router;

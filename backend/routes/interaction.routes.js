@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const interactionController = require('../controllers/interaction.controllers');
-const { protect } = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
+
 
 // Nhóm Like & Save
 router.post('/like', protect, interactionController.toggleLike);

@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const recipeController = require('../controllers/recipe.controllers');
-const {protect} = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
+
 
 const { v4: uuidv4 } = require('uuid');
 

@@ -1,19 +1,12 @@
-const db = require('../config/db'); 
-const UnitModel = require('../models/unit.model');
+const UnitService = require('../services/unit.service');
+const asyncHandler = require('../utils/asyncHandler');
 
-// 2. Định nghĩa pool bằng cách lấy từ đối tượng db
-const pool = db.pool;
-
-const getAllUnits = async (req, res) => {
-    try {
-        // Gọi hàm Model bạn vừa thêm ở bước 1
-        const result = await UnitModel.getAllUnits(); 
-        res.json(result);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Lỗi khi lấy danh sách đơn vị' });
-    }
-}
+const getAllUnits = asyncHandler(async (req, res) => {
+    const result = await UnitService.getAllUnits();
+    
+    // Giữ nguyên định dạng trả về cũ
+    res.json(result);
+});
 
 module.exports = {
     getAllUnits

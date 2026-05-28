@@ -2,7 +2,8 @@ const express = require('express');
 const userController = require('../controllers/user.controllers');
 const router = express.Router();
 const upload = require('../config/multer.config');
-const {protect} = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
+
 
 router.get('/me', protect, userController.getMyProfile);
 router.get('/search', userController.searchUsers);

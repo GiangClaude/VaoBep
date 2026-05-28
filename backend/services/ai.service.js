@@ -397,5 +397,54 @@ Trả về JSON theo đúng định dạng, không thêm gì khác.`;
     }
 }
 
+// ... (Các code cũ của ai.service.js giữ nguyên)
+
+// HÀM MỚI: Tóm tắt bài viết / công thức (Thay thế cho recipeAi.service.js cũ)
+async function generateSummary(contextText) {
+    const apiKey = await getAvailableKey();
+    const model = process.env.EXTENSION_GEMINI_MODEL || 'gemini-2.5-flash-lite'; 
+    if (!apiKey) throw new Error('Missing GOOGLE_API_KEY');
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${apiKey}`;
+    
+    const systemInstruction = `Bạn là chuyên gia dinh dưỡng và đầu bếp AI. Hãy tóm tắt nội dung sau một cách ngắn gọn, súc tích. Đưa ra các điểm chính và các lưu ý quan trọng nếu có. Trình bày bằng Markdown đẹp mắt.`;
+
+    const body = {
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents: [{ role: 'user', parts: [{ text: `Văn bản cần tóm tắt:\n${contextText}` }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 800 }
+    };
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+
+    const json = await res.json();
+    return json.candidates[0].content.parts[0].text.trim();
+}
+
+// Cập nhật lại module.exports ở cuối file ai.service.js:
+module.exports = { 
+    generateResponse, 
+    logSqlExecution, 
+    getEmbedding, 
+    clearChatHistory, 
+    analyzeMenuWithAI, 
+    generateMenuWithRAG, 
+    generateSummary // Bổ sung hàm này
+};
+
 // Cập nhật module.exports cuối file:
-module.exports = { generateResponse, logSqlExecution, getEmbedding, clearChatHistory, analyzeMenuWithAI, generateMenuWithRAG };
+module.exports = { 
+  generateResponse, 
+  logSqlExecution, 
+  getEmbedding, 
+  clearChatHistory, 
+  analyzeMenuWithAI, 
+  generateMenuWithRAG,
+  generateSummary
+ };

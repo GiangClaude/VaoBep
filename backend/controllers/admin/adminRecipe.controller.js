@@ -3,65 +3,49 @@ const RecipeModel = require('../../models/recipe.model');
 const path = require('path');
 const fs = require('fs');
 const { addVectorSyncJob } = require('../../services/vectorQueue.service');
+const asyncHandler = require('../../utils/asyncHandler');
+const AppError = require('../../utils/AppError');
 
-const getRecipes = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const search = req.query.search || '';
+const getRecipes = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const sortKey = req.query.sortKey || 'created_at';
+    const sortOrder = req.query.sortOrder || 'DESC';
+    const offset = (page - 1) * limit;
 
-        const sortKey = req.query.sortKey || 'created_at';
-        const sortOrder = req.query.sortOrder || 'DESC';
+    const recipes = await RecipeModel.getAllRecipesForAdmin(limit, offset, search, sortKey, sortOrder);
+    const total = await RecipeModel.countAllRecipes(search);
 
-        const offset = (page - 1) * limit;
+    res.status(200).json({
+        data: recipes,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    });
+});
 
-        const recipes = await RecipeModel.getAllRecipesForAdmin(limit, offset, search, sortKey, sortOrder);
-        const total = await RecipeModel.countAllRecipes(search);
+const hideRecipe = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    const targetStatus = status || 'banned';
 
-        res.status(200).json({
-            data: recipes,
-            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+    await RecipeModel.updateStatus(id, targetStatus);
+    if (targetStatus === 'public' || targetStatus === 'hidden') addVectorSyncJob(id, 'recipe', 'upsert');
+    else addVectorSyncJob(id, 'recipe', 'delete');
+    res.status(200).json({ message: `Recipe status updated to ${targetStatus}` });
+});
 
-const hideRecipe = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        const targetStatus = status || 'banned';
+const getRecipeDetail = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const recipe = await RecipeModel.findById(id);
+    if (!recipe) throw new AppError('Recipe not found', 404);
+    res.status(200).json({ data: recipe });
+});
 
-        await RecipeModel.updateStatus(id, targetStatus);
-        if (targetStatus === 'public' || targetStatus === 'hidden') {
-            addVectorSyncJob(id, 'recipe', 'upsert');
-        } else {
-            addVectorSyncJob(id, 'recipe', 'delete');
-        }
-        res.status(200).json({ message: `Recipe status updated to ${targetStatus}` });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+const createAdminRecipe = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const recipeId = uuidv4();
 
-const getRecipeDetail = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const recipe = await RecipeModel.findById(id);
-        if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
-        res.status(200).json({ data: recipe });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-const createAdminRecipe = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const recipeId = uuidv4();
-
-        const { title, description, instructions, servings, cook_time, total_calo, ingredients, tags } = req.body;
+    const { title, description, instructions, servings, cook_time, total_calo, ingredients, tags } = req.body;
 
         let coverImage = 'default.png';
         if (req.file) {
@@ -77,72 +61,58 @@ const createAdminRecipe = async (req, res) => {
             }
         }
 
-        let ingredientsData = [];
-        if (ingredients) {
-            try {
-                const rawIngredients = JSON.parse(ingredients);
-                ingredientsData = rawIngredients.map(item => ({
-                    name: item.name?.trim(),
-                    unit: item.unit?.trim(),
-                    quantity: parseFloat(item.quantity) || 0
-                })).filter(item => item.name && item.unit);
-            } catch (e) {
-                return res.status(400).json({ message: 'Dữ liệu nguyên liệu không hợp lệ' });
-            }
+    let ingredientsData = [];
+    if (ingredients) {
+        try {
+            const rawIngredients = JSON.parse(ingredients);
+            ingredientsData = rawIngredients.map(item => ({
+                name: item.name?.trim(),
+                unit: item.unit?.trim(),
+                quantity: parseFloat(item.quantity) || 0
+            })).filter(item => item.name && item.unit);
+        } catch (e) {
+            throw new AppError('Dữ liệu nguyên liệu không hợp lệ', 400);
         }
-
-        let tagsData = [];
-        if (tags) {
-            try { tagsData = JSON.parse(tags); } catch (e) { }
-        }
-
-        if (!title || !instructions) {
-            return res.status(400).json({ message: 'Tên món và hướng dẫn không được để trống' });
-        }
-
-        await RecipeModel.create({
-            recipeId,
-            userId,
-            title,
-            description,
-            instructions,
-            coverImage,
-            servings: parseInt(servings) || 1,
-            cookTime: parseInt(cook_time) || 0,
-            totalCalo: parseFloat(total_calo) || 0,
-            ingredientsData,
-            status: 'public',
-            tags: tagsData
-        });
-
-        addVectorSyncJob(recipeId, 'recipe', 'upsert');
-
-        res.status(201).json({ message: 'Tạo công thức thành công', recipeId });
-    } catch (error) {
-        console.error('Create Admin Recipe Error:', error);
-        res.status(500).json({ message: error.message });
     }
-};
 
-const updateRecipe = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status, is_trust } = req.body;
-        await RecipeModel.adminUpdate(id, { status, is_trust });
-        if (status) {
-            if (status === 'public' || status === 'hidden') {
-                addVectorSyncJob(id, 'recipe', 'upsert');
-            } else {
-                addVectorSyncJob(id, 'recipe', 'delete');
-            }
-        } else {
-            // Nếu chỉ update is_trust mà không đổi status, vẫn gọi upsert để AI cập nhật metadata
-            addVectorSyncJob(id, 'recipe', 'upsert');
-        }
-        res.status(200).json({ message: 'Cập nhật công thức thành công' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    let tagsData = [];
+    if (tags) {
+        try { tagsData = JSON.parse(tags); } catch (e) { }
     }
-};
+
+    if (!title || !instructions) throw new AppError('Tên món và hướng dẫn không được để trống', 400);
+
+    await RecipeModel.create({
+        recipeId,
+        userId,
+        title,
+        description,
+        instructions,
+        coverImage,
+        servings: parseInt(servings) || 1,
+        cookTime: parseInt(cook_time) || 0,
+        totalCalo: parseFloat(total_calo) || 0,
+        ingredientsData,
+        status: 'public',
+        tags: tagsData
+    });
+
+    addVectorSyncJob(recipeId, 'recipe', 'upsert');
+
+    res.status(201).json({ message: 'Tạo công thức thành công', recipeId });
+});
+
+const updateRecipe = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { status, is_trust } = req.body;
+    await RecipeModel.adminUpdate(id, { status, is_trust });
+    if (status) {
+        if (status === 'public' || status === 'hidden') addVectorSyncJob(id, 'recipe', 'upsert');
+        else addVectorSyncJob(id, 'recipe', 'delete');
+    } else {
+        addVectorSyncJob(id, 'recipe', 'upsert');
+    }
+    res.status(200).json({ message: 'Cập nhật công thức thành công' });
+});
 
 module.exports = { getRecipes, hideRecipe, createAdminRecipe, getRecipeDetail, updateRecipe };

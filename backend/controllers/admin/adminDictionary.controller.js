@@ -3,35 +3,29 @@ const DictionaryDishModel = require('../../models/dictionaryDish.model');
 const path = require('path');
 const fs = require('fs');
 const { addVectorSyncJob } = require('../../services/vectorQueue.service');
+const asyncHandler = require('../../utils/asyncHandler');
+const AppError = require('../../utils/AppError');
 
-const getDictionaryDishes = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const search = req.query.search || '';
-        const sortKey = req.query.sortKey || 'created_at';
-        const sortOrder = req.query.sortOrder || 'DESC';
-        const offset = (page - 1) * limit;
+const getDictionaryDishes = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const sortKey = req.query.sortKey || 'created_at';
+    const sortOrder = req.query.sortOrder || 'DESC';
+    const offset = (page - 1) * limit;
 
-        const dishes = await DictionaryDishModel.getAll(limit, offset, search, sortKey, sortOrder);
-        const total = await DictionaryDishModel.countAll(search);
+    const dishes = await DictionaryDishModel.getAll(limit, offset, search, sortKey, sortOrder);
+    const total = await DictionaryDishModel.countAll(search);
 
-        res.status(200).json({
-            data: dishes,
-            pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+    res.status(200).json({ data: dishes, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } });
+});
 
-const createDictionaryDish = async (req, res) => {
-    try {
-        const adminId = req.user.id;
-        const dishId = uuidv4();
-        const { original_name, english_name, description, history, country, latitude, longitude, eateries } = req.body;
+const createDictionaryDish = asyncHandler(async (req, res) => {
+    const adminId = req.user.id;
+    const dishId = uuidv4();
+    const { original_name, english_name, description, history, country, latitude, longitude, eateries } = req.body;
 
-        if (!original_name) return res.status(400).json({ message: 'Tên món ăn không được để trống' });
+    if (!original_name) throw new AppError('Tên món ăn không được để trống', 400);
 
         let image_url = null;
         if (req.file) {
@@ -69,23 +63,18 @@ const createDictionaryDish = async (req, res) => {
 
         addVectorSyncJob(dishId, 'dish', 'upsert');
 
-        res.status(201).json({ message: 'Tạo món ăn thành công', dishId });
-    } catch (error) {
-        console.error('Create Dish Error:', error);
-        res.status(500).json({ message: error.message });
-    }
-};
+    res.status(201).json({ message: 'Tạo món ăn thành công', dishId });
+});
 
-const updateDictionaryDish = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { original_name, english_name, description, history, country, latitude, longitude, eateries } = req.body;
+const updateDictionaryDish = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { original_name, english_name, description, history, country, latitude, longitude, eateries } = req.body;
 
-        let updateData = {
-            original_name, english_name, description, history, country,
-            latitude: latitude ? parseFloat(latitude) : null,
-            longitude: longitude ? parseFloat(longitude) : null
-        };
+    let updateData = {
+        original_name, english_name, description, history, country,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null
+    };
 
         if (req.file) updateData.image_url = req.file.filename;
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
@@ -105,27 +94,18 @@ const updateDictionaryDish = async (req, res) => {
             }
         }
 
-        addVectorSyncJob(id, 'dish', 'upsert');
+    addVectorSyncJob(id, 'dish', 'upsert');
 
-        res.status(200).json({ message: 'Cập nhật món ăn thành công' });
-    } catch (error) {
-        console.error('Update Dish Error:', error);
-        res.status(500).json({ message: error.message });
-    }
-};
+    res.status(200).json({ message: 'Cập nhật món ăn thành công' });
+});
 
-const deleteDictionaryDish = async (req, res) => {
-    try {
-        const { id } = req.params;
-        await DictionaryDishModel.deleteDish(id);
-        const targetDir = path.join(__dirname, '../../public/dictionarydish', id);
-        if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true, force: true });
-        addVectorSyncJob(id, 'dish', 'delete');
-        res.status(200).json({ message: 'Xóa món ăn thành công' });
-    } catch (error) {
-        console.error('Delete Dish Error:', error);
-        res.status(500).json({ message: error.message });
-    }
-};
+const deleteDictionaryDish = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    await DictionaryDishModel.deleteDish(id);
+    const targetDir = path.join(__dirname, '../../public/dictionarydish', id);
+    if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true, force: true });
+    addVectorSyncJob(id, 'dish', 'delete');
+    res.status(200).json({ message: 'Xóa món ăn thành công' });
+});
 
 module.exports = { getDictionaryDishes, createDictionaryDish, updateDictionaryDish, deleteDictionaryDish };

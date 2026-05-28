@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const RewardController = require('../controllers/reward.controllers');
-const {protect} = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
  // Giả định bạn đã có middleware verify token
 
 // Tất cả các route này đều cần đăng nhập

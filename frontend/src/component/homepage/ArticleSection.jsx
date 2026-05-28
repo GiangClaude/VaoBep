@@ -5,7 +5,6 @@ import {useNavigate, Link} from 'react-router-dom';
 export default function ArticleSection({ articles }) {
   const navigate = useNavigate();
   const goToArticle = (id) => navigate(`/article/${id}`);
-  console.log("ArticleSection - articles: ", articles);
   return (
     <section className="mb-12">
       {/* Section Header */}
@@ -42,8 +41,10 @@ export default function ArticleSection({ articles }) {
             excerpt={a.excerpt}
             image={a.image}
             tags={a.rawTags || a.tags || []}
-            // category={a.category}
-            commentCount={a.commentCount}
+            is_liked={a.is_liked}
+            is_saved={a.is_saved}
+            likeCount={a.likeCount}
+            commentCount={a.totalComments}
             onClick={() => goToArticle(a.id)}
             />
         ))}

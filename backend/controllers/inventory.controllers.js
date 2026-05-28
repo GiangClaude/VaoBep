@@ -1,56 +1,38 @@
-const InventoryModel = require('../models/inventory.model');
+const InventoryService = require('../services/inventory.service');
+const asyncHandler = require('../utils/asyncHandler');
 
 /**
  * Lấy túi đồ của chính mình (Lấy tất cả)
- * Yêu cầu: Phải đi qua middleware auth (protect)
  */
-const getMyInventory = async (req, res) => {
+const getMyInventory = asyncHandler(async (req, res) => {
+    const userId = req.user.user_id; 
+    console.log(`User ${userId} đang lấy túi đồ cá nhân`);
 
-    try {
-        const userId = req.user.user_id; // Lấy từ middleware protect
-        console.log(`User ${userId} đang lấy túi đồ cá nhân`);
+    // Giao phó logic lấy dữ liệu cho Service
+    const inventory = await InventoryService.getMyInventory(userId);
 
-        // Không truyền tham số thứ 2 -> lấy tất cả các loại item
-        const inventory = await InventoryModel.getUserInventory(userId);
-
-        return res.status(200).json({
-            success: true,
-            data: inventory
-        });
-    } catch (error) {
-        console.error('Lỗi khi lấy túi đồ cá nhân:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Lỗi server khi lấy thông tin túi đồ'
-        });
-    }
-};
+    return res.status(200).json({
+        success: true,
+        data: inventory
+    });
+});
 
 /**
  * Lấy túi đồ của người khác (Public)
- * Mặc định chỉ lấy 'badge', nhưng có thể mở rộng bằng query (vd: ?type=ticket)
  */
-const getPublicInventory = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        
-        // Mặc định lấy 'badge' nếu client không truyền query ?type=...
-        const itemType = req.query.type || 'badge';
+const getPublicInventory = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    
+    // Xử lý giá trị mặc định ở Controller
+    const itemType = req.query.type || 'badge';
 
-        const inventory = await InventoryModel.getUserInventory(userId, itemType);
+    const inventory = await InventoryService.getPublicInventory(userId, itemType);
 
-        return res.status(200).json({
-            success: true,
-            data: inventory
-        });
-    } catch (error) {
-        console.error('Lỗi khi lấy túi đồ người dùng khác:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Lỗi server khi lấy thông tin vật phẩm'
-        });
-    }
-};
+    return res.status(200).json({
+        success: true,
+        data: inventory
+    });
+});
 
 module.exports = {
     getMyInventory,

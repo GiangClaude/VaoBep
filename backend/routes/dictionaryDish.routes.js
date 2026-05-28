@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {protect} = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
 const dictionaryDishController = require('../controllers/dictionaryDish.controllers');
 
 router.get('/map/summary', dictionaryDishController.getMapSummary);

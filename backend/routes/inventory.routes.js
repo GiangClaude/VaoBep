@@ -3,7 +3,7 @@ const router = express.Router();
 const inventoryController = require('../controllers/inventory.controllers');
 
 // Import middleware protect từ auth.controllers (Dựa theo cấu trúc bạn đã gửi)
-const { protect } = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
 
 
 // Lấy túi đồ của chính mình (Yêu cầu đăng nhập)

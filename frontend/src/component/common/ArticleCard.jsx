@@ -1,75 +1,35 @@
 import React, { useState } from 'react';
-import { Clock, Heart, MessageCircle, Share2, MoreHorizontal, Edit3, Trash2, Bookmark, Flag } from 'lucide-react';
+import { Clock, Heart, MessageCircle, Share2, MoreHorizontal, Edit3, Trash2, Bookmark, Flag, Lock } from 'lucide-react';
 import { motion } from 'framer-motion'; 
 import ImageWithFallback from '../figma/ImageWithFallBack';
 import useInteraction from '../../hooks/useInteraction';
 import Toast from '../common/Toast'; 
 import CommentSection from '../comment/CommentSection'; 
-import { Lock } from 'lucide-react'; // Import thêm icon Lock
 import { useAuth } from '../../AuthContext';
 
-// Hàm render badge trạng thái bài viết
+// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
+import Modal from './modal';
+import ReportModalComponent from './ReportModal'; 
+
 const renderStatusBadge = (status) => {
   switch (status) {
-    case 'public':
-      return <span className="bg-green-50 text-green-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-100">Công khai</span>;
-    case 'draft':
-      return <span className="bg-yellow-50 text-yellow-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-yellow-100">Bản nháp</span>;
-    case 'hidden':
-      return <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-gray-200">Đã ẩn</span>;
-    case 'banned':
-      return <span className="bg-red-50 text-red-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-red-100">Bị khóa</span>;
-    default:
-      return null;
+    case 'public': return <span className="bg-green-50 text-green-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-100">Công khai</span>;
+    case 'draft': return <span className="bg-yellow-50 text-yellow-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-yellow-100">Bản nháp</span>;
+    case 'hidden': return <span className="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-gray-200">Đã ẩn</span>;
+    case 'banned': return <span className="bg-red-50 text-red-600 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-red-100">Bị khóa</span>;
+    default: return null;
   }
 };
 
 export default function ArticleCard({ 
-  id, 
-  author, 
-  authorAvatar, 
-  date, 
-  readTime, 
-  title, 
-  excerpt, 
-  category, 
-  image, 
-  commentCount = 0, 
-  status,          
-  isOwnerView,     
-  onEdit,          
-  onDelete,        
-  onClick,
-  tags = [],
-  is_liked = false,
-  is_saved = false,
-  likeCount = 0
+  id, author, authorAvatar, date, readTime, title, excerpt, category, image, 
+  commentCount = 0, status, isOwnerView, onEdit, onDelete, onClick, tags = [],
+  is_liked = false, is_saved = false, likeCount = 0
 }) {
-  console.log('Render ArticleCard với props:', { id, 
-  author, 
-  authorAvatar, 
-  date, 
-  readTime, 
-  title, 
-  excerpt, 
-  category, 
-  image, 
-  commentCount, 
-  status,          
-  isOwnerView,     
-  onEdit,          
-  onDelete,        
-  onClick,
-  tags,
-  is_liked,
-  is_saved,
-  likeCount});
-
   const { currentUser } = useAuth();
-
   const [showMenu, setShowMenu] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
-  const [showComments, setShowComments] = useState(false); // State quản lý hiển thị bình luận
+  const [showComments, setShowComments] = useState(false); 
 
   const displayAuthorName = typeof author === 'object' ? author.name : author;
   const displayAvatar = typeof author === 'object' ? author.avatar : authorAvatar;
@@ -85,46 +45,32 @@ export default function ArticleCard({
       }
   });
 
-  // console.log(currentUser);
-  //Xem xét biến cái này thành utils gọi nhiều cho cả recipe, article
   const isOwner = currentUser?.id === (author?.id || author);
   const isLocked = !isOwner && (status === 'draft' || status === 'banned' || status === 'hidden');
   
-  const { InteractionModal, ReportModal } = interactionHook;
-
-  // Hàm xử lý việc ẩn/hiện phần bình luận khi nhấn nút
   const toggleComments = (e) => {
-    e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài Card
+    e.stopPropagation(); 
     setShowComments(!showComments);
   };
 
-if (isLocked) {
-  return (
-    <div className="flex flex-col h-full bg-gray-50 rounded-2xl border border-dashed border-gray-300 p-8 items-center justify-center text-center relative group">
-      <Lock className="w-8 h-8 text-gray-300 mb-3" />
-      <h3 className="text-gray-500 font-bold text-sm">Nội dung đã bị ẩn</h3>
-      
-      {/* Nút bỏ lưu cho bài viết bị khóa */}
-      <button 
-        onClick={(e) => {
-          e.stopPropagation();
-          interactionHook.handleToggleSave(e); // Gọi hàm bỏ lưu bình thường
-        }}
-        className="mt-4 text-xs text-red-500 font-medium hover:underline flex items-center gap-1"
-      >
-        <Trash2 className="w-3 h-3" /> Gỡ khỏi mục đã lưu
-      </button>
-      
-      <Toast 
-        message={interactionHook.toast.message} 
-        isVisible={interactionHook.toast.show} 
-        onClose={interactionHook.closeToast} 
-      />
-    </div>
-  );
-}
+  if (isLocked) {
+    return (
+      <div className="flex flex-col h-full bg-gray-50 rounded-2xl border border-dashed border-gray-300 p-8 items-center justify-center text-center relative group">
+        <Lock className="w-8 h-8 text-gray-300 mb-3" />
+        <h3 className="text-gray-500 font-bold text-sm">Nội dung đã bị ẩn</h3>
+        <button 
+          onClick={(e) => { e.stopPropagation(); interactionHook.handleToggleSave(e); }}
+          className="mt-4 text-xs text-red-500 font-medium hover:underline flex items-center gap-1"
+        >
+          <Trash2 className="w-3 h-3" /> Gỡ khỏi mục đã lưu
+        </button>
+        <Toast message={interactionHook.toast.message} isVisible={interactionHook.toast.show} onClose={interactionHook.closeToast} />
+      </div>
+    );
+  }
 
-  
+  console.log("ArticleCard render with props:", { id, title, is_liked, is_saved, likeCount, commentCount });
+
   return (
     <motion.article 
       whileHover={{ y: -2 }}
@@ -141,22 +87,15 @@ if (isLocked) {
               {isOwnerView && renderStatusBadge(status)}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-              <span>{date}</span>
-              <span>•</span>
-              <Clock className="w-3 h-3" />
-              <span>{readTime}</span>
+              <span>{date}</span><span>•</span><Clock className="w-3 h-3" /><span>{readTime}</span>
             </div>
           </div>
         </div>
         
         <div className="relative">
-          <button 
-            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-50 transition-colors"
-          >
+          <button onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }} className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-50 transition-colors">
             <MoreHorizontal className="w-5 h-5" />
           </button>
-
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
@@ -205,10 +144,7 @@ if (isLocked) {
               </span>
             ))}
             {tags.length > 3 && (
-               <button 
-                onClick={(e) => { e.stopPropagation(); setShowAllTags(!showAllTags); }} 
-                className="text-[11px] font-medium text-gray-500 hover:text-[#ff6b35] px-2.5 py-1 rounded-full bg-gray-50 transition-colors"
-              >
+               <button onClick={(e) => { e.stopPropagation(); setShowAllTags(!showAllTags); }} className="text-[11px] font-medium text-gray-500 hover:text-[#ff6b35] px-2.5 py-1 rounded-full bg-gray-50 transition-colors">
                 {showAllTags ? 'Thu gọn' : `+${tags.length - 3} xem thêm`}
               </button>
             )}
@@ -225,56 +161,48 @@ if (isLocked) {
         </div>
       )}
 
-      {/* 4. Footer: Interactive Buttons */}
+      {/* 4. Footer */}
       <div className="mt-auto flex items-center gap-6 pt-3 border-t border-gray-50 text-sm font-medium text-gray-500">
-        <button 
-          onClick={(e) => { e.stopPropagation(); interactionHook.handleToggleLike(e); }}
-          className={`flex items-center gap-2 transition-colors group ${interactionHook.state.liked ? 'text-red-500' : 'hover:text-[#ff6b35]'}`}
-        >
+        <button onClick={(e) => { e.stopPropagation(); interactionHook.handleToggleLike(e); }} className={`flex items-center gap-2 transition-colors group ${interactionHook.state.liked ? 'text-red-500' : 'hover:text-[#ff6b35]'}`}>
           <Heart className={`w-5 h-5 ${interactionHook.state.liked ? 'fill-current' : 'group-hover:fill-orange-50'}`} /> 
-          <span>{likeCount > 0 ? likeCount : ''} Thích</span>
+          <span>{interactionHook.state.likeCount > 0 ? interactionHook.state.likeCount : ''} Thích</span>
         </button>
 
-        {/* Nút bật/tắt bình luận */}
-        <button 
-          onClick={toggleComments}
-          className="flex items-center gap-2 hover:text-[#ff6b35] transition-colors group"
-        >
+        <button onClick={toggleComments} className="flex items-center gap-2 hover:text-[#ff6b35] transition-colors group">
           <MessageCircle className="w-5 h-5 group-hover:fill-orange-50" /> 
-          <span>{commentCount > 0 ? commentCount : ''} Bình luận</span>          
+          <span>{interactionHook.state.commentCount > 0 ? interactionHook.state.commentCount : ''} Bình luận</span>          
         </button>
 
-        <button 
-          onClick={(e) => { e.stopPropagation(); interactionHook.handleShare(e); }}
-          className="flex items-center gap-2 hover:text-[#ff6b35] transition-colors ml-auto group"
-        >
-          <Share2 className="w-5 h-5" /> 
-          <span className="hidden sm:inline">Chia sẻ</span>
+        <button onClick={(e) => { e.stopPropagation(); interactionHook.handleShare(e); }} className="flex items-center gap-2 hover:text-[#ff6b35] transition-colors ml-auto group">
+          <Share2 className="w-5 h-5" /> <span className="hidden sm:inline">Chia sẻ</span>
         </button>
       </div>
 
-      {/* 5. Comment Section (Chỉ hiển thị khi showComments là true) */}
+      {/* 5. Comment Section */}
       {showComments && (
-        <div 
-          className="mt-4 pt-2 border-t border-gray-100 cursor-default" 
-          onClick={(e) => e.stopPropagation()} // Ngăn click vào khu vực comment làm trigger thẻ Card
-        >
-          <CommentSection 
-            postId={id} 
-            postType="article" 
-            interactionHook={interactionHook} 
-          />
+        <div className="mt-4 pt-2 border-t border-gray-100 cursor-default" onClick={(e) => e.stopPropagation()}>
+          <CommentSection postId={id} postType="article" interactionHook={interactionHook} />
         </div>
       )}
 
-      {/* Modals & Toasts */}
-      <InteractionModal />
-      <ReportModal />
-      <Toast 
-        message={interactionHook.toast.message} 
-        isVisible={interactionHook.toast.show} 
-        onClose={interactionHook.closeToast} 
+      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI --- */}
+      <Modal 
+          isOpen={interactionHook.modalConfig.isOpen}
+          onClose={interactionHook.closeModal}
+          title={interactionHook.modalConfig.title}
+          message={interactionHook.modalConfig.message}
+          type={interactionHook.modalConfig.type}
+          actions={interactionHook.modalConfig.actions}
       />
+      <ReportModalComponent
+          isOpen={interactionHook.reportModal.isOpen}
+          onClose={interactionHook.handleCancelReport}
+          onSubmit={interactionHook.handleSubmitReport}
+          loading={interactionHook.reportModal.loading}
+          serverError={interactionHook.reportModal.serverError}
+      />
+
+      <Toast message={interactionHook.toast.message} isVisible={interactionHook.toast.show} onClose={interactionHook.closeToast} />
     </motion.article>
   );
 }

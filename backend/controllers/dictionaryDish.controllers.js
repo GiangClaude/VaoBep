@@ -1,123 +1,53 @@
-const db = require('../config/db');
-const DictionaryDish = require('../models/dictionaryDish.model');
-const DictionaryDishService = require('../utils/dictionaryDish.service');
-const RecipeLinkModel = require('../models/recipe_link.model');
-// const RecipeModel = require('../models/recipe.model');
-const InteractionModel = require('../models/interaction.model');
+const DictionaryDishService = require('../services/dictionaryDish.service');
 const { createPagination } = require('../utils/paginationHelper');
-// const { getUserById } = require('../config/db');
 const { getUserIdFromToken } = require('../utils/auth.utils');
-const { addVectorSyncJob } = require('../services/vectorQueue.service');
-const getAllDishes = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const search = req.query.search || '';
-        const offset = (page - 1) * limit;
+const asyncHandler = require('../utils/asyncHandler');
 
-        const totalItems = await DictionaryDish.countAll(search);
-        const dishes = await DictionaryDish.getAll(limit, offset, search);
+const getAllDishes = asyncHandler(async (req, res) => {
+    // 1. Nhận data từ request
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
 
-        const pagination = createPagination(page, limit, totalItems);
+    // 2. Chuyển qua Service xử lý
+    const { totalItems, dishes } = await DictionaryDishService.getAllDishes(page, limit, search);
 
-        res.status(200).json({
-            success: true,
-            data: {
-                dishes,
-                pagination
-            }
-        });
-    } catch (error) {
-        console.error('Error in getAllDishes:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-};
+    // 3. Trả về format chuẩn
+    res.status(200).json({
+        success: true,
+        data: { dishes, pagination: createPagination(page, limit, totalItems) }
+    });
+});
 
+const getDishDetail = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = getUserIdFromToken(req);
 
+    const dishData = await DictionaryDishService.getDishDetail(id, userId);
 
-const getDishDetail = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = getUserIdFromToken(req);
-        const [dish, eateries, recipes] = await Promise.all([
-            DictionaryDish.getById(id),
-            DictionaryDish.getEateriesByDishId(id), // Gọi từ Model Dish
-            RecipeLinkModel.getRecipesByPost(userId, id, 'dish') // Gọi từ Model liên kết
-        ]);
-        console.log("Dish detail: ", recipes);
-        let interactionState = null;
-        console.log("User ID from token:", userId); // Debug log để kiểm tra userId
-        if (userId) {
-            interactionState= await InteractionModel.getUserInteractionState(userId, id, 'dish');
-        }
+    res.status(200).json({ success: true, data: dishData });
+});
 
-        if (!dish) {
-            return res.status(404).json({ success: false, message: 'Dish not found' });
-        }
+const getMapSummary = asyncHandler(async (req, res) => {
+    // Không gọi Model nữa, gọi Service
+    const rows = await DictionaryDishService.getMapSummary();
+    res.status(200).json({ success: true, data: rows });
+});
 
-        res.status(200).json({
-            success: true,
-            data: {
-                ...dish,
-                eateries,
-                recipes,
-                interactionState
-            }
-        });
-    } catch (error) {
-        console.error('Error in getDishDetail:', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-};
+const getMapAllDishes = asyncHandler(async (req, res) => {
+    // Không gọi Model nữa, gọi Service
+    const rows = await DictionaryDishService.getMapAllDishes();
+    res.status(200).json({ success: true, data: rows });
+});
 
-const getMapSummary = async (req, res) => {
-    try {
-        const rows = await DictionaryDish.getMapSummary();
-        res.status(200).json({ success: true, data: rows });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+const voteRecipeForDish = asyncHandler(async (req, res) => {
+    const { id: dishId } = req.params;
+    const { recipeId } = req.body;
+    const userId = req.user.user_id;
 
-// API 2: Lấy tất cả món ăn kèm tọa độ rải rác (Dành cho Zoom in)
-const getMapAllDishes = async (req, res) => {
-    try {
-        const rows = await DictionaryDish.getMapAllDishes();
-        res.status(200).json({ success: true, data: rows });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+    const action = await DictionaryDishService.voteRecipeForDish(dishId, recipeId, userId);
 
-const voteRecipeForDish = async (req, res) => {
-    const connection = await db.pool.getConnection();
-    try {
-        const { id: dishId } = req.params; // ID của món ăn từ điển
-        const { recipeId } = req.body;     // ID của công thức được vote/đề xuất
-        const userId = req.user.user_id;;
+    res.status(200).json({ success: true, message: 'Bình chọn thành công!', action });
+});
 
-        if (!userId) {
-            return res.status(401).json({ success: false, message: 'Bạn cần đăng nhập để thực hiện chức năng này' });
-        }
-
-        const result = await RecipeLinkModel.toggleVote(connection, userId, recipeId, dishId, 'dish');
-        addVectorSyncJob(dishId, 'dish', 'upsert');
-        res.status(200).json({ success: true, message: 'Bình chọn thành công!', action: result.action });
-
-    } catch (error) {
-        await connection.rollback();
-        console.error('Error in voteRecipeForDish:', error);
-        res.status(500).json({ success: false, message: 'Lỗi server: ' + error.message });
-    } finally {
-        connection.release();
-    }
-};
-
-
-module.exports = {
-    getAllDishes,
-    getDishDetail,
-    getMapSummary,
-    getMapAllDishes,
-    voteRecipeForDish
-};
+module.exports = { getAllDishes, getDishDetail, getMapSummary, getMapAllDishes, voteRecipeForDish };

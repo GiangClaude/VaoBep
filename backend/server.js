@@ -7,7 +7,8 @@ const db = require('./config/db'); // Import module database
 const path = require('path');
 const app = express();
 const port = process.env.PORT || 5000; // Cổng cho backend
-
+const AppError = require('./utils/AppError');
+const errorHandler = require('./middlewares/error.middleware');
 
 // Sử dụng CORS để cho phép frontend truy cập
 app.use(cors());
@@ -36,7 +37,7 @@ const leaderboardRoutes = require('./routes/leaderboard.routes');
 const rewardRoutes = require('./routes/reward.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 
-
+const AiRoutes = require('./routes/ai.routes');
 const recipeAiRoutes = require('./routes/recipeAi.routes');
 const extensionRoutes = require('./routes/extension.routes');
 // Kiểm tra kết nối database khi khởi động server
@@ -59,11 +60,10 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/interaction', interactionRoutes);
 app.use('/api/dictionary-dishes', dictionaryDishRoutes);
 // Chatbot route
+app.use('/api/ai', AiRoutes);
 app.use('/api/chat', chatbotRoutes);
 app.use('/api/recipe-ai', recipeAiRoutes);
-app.use((req, res, next) => {
-    res.status(404).json({ error: 'Route not found' });
-})
+
 
 app.get('/api/users', async (req, res) => {
     try {
@@ -89,10 +89,11 @@ app.post('/api/users/:id', async (req, res) => {
     }
 });
 
-app.use ((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Something went wrong!' });
+app.use((req, res, next) => {
+    next(new AppError(`Không tìm thấy đường dẫn ${req.originalUrl} trên máy chủ`, 404));
 });
+
+app.use(errorHandler);
 
 // Khởi động server
 app.listen(port, () => {

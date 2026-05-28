@@ -12,280 +12,475 @@ const FEATURE_CRITERIA = {
 };
 
 class Recipe{
-    static async create({
-        recipeId, 
-        userId, 
-        title, 
-        description, 
-        instructions,  
-        coverImage, 
-        servings, 
-        cookTime, 
-        totalCalo,
-        ingredientsData,
-        status,
-        resultImages = [],
-        tags = []
-    }) {
-        const connection = await pool.getConnection();
+    // static async create({
+    //     recipeId, 
+    //     userId, 
+    //     title, 
+    //     description, 
+    //     instructions,  
+    //     coverImage, 
+    //     servings, 
+    //     cookTime, 
+    //     totalCalo,
+    //     ingredientsData,
+    //     status,
+    //     resultImages = [],
+    //     tags = []
+    // }) {
+    //     const connection = await pool.getConnection();
 
-        try {
-            // Bắt đầu Transaction (đảm bảo thêm tất cả hoặc không thêm gì cả)
-            await connection.beginTransaction();
+    //     try {
+    //         // Bắt đầu Transaction (đảm bảo thêm tất cả hoặc không thêm gì cả)
+    //         await connection.beginTransaction();
 
-            // --- 1. INSERT vào bảng Recipes ---
-            const sqlRecipe = `
-                INSERT INTO Recipes 
-                    (recipe_id, user_id, title, description, instructions, cover_image, status, servings, cook_time, total_calo)
-                VALUES 
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
+    //         // --- 1. INSERT vào bảng Recipes ---
+    //         const sqlRecipe = `
+    //             INSERT INTO Recipes 
+    //                 (recipe_id, user_id, title, description, instructions, cover_image, status, servings, cook_time, total_calo)
+    //             VALUES 
+    //                 (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    //         `;
             
-            console.log("Model - Ingredients nhận được:", ingredientsData);
-            await connection.execute(sqlRecipe, [
-                recipeId,
-                userId,
-                title,
-                description,
-                instructions,
-                coverImage,
-                status || 'draft', // Mặc định là public hoặc lấy từ tham số nếu cần
-                servings,
-                cookTime,
-                totalCalo
-            ]);
+    //         console.log("Model - Ingredients nhận được:", ingredientsData);
+    //         await connection.execute(sqlRecipe, [
+    //             recipeId,
+    //             userId,
+    //             title,
+    //             description,
+    //             instructions,
+    //             coverImage,
+    //             status || 'draft', // Mặc định là public hoặc lấy từ tham số nếu cần
+    //             servings,
+    //             cookTime,
+    //             totalCalo
+    //         ]);
 
-            console.log("Xử lý nguyên liệu");
-            // --- 2. XỬ LÝ NGUYÊN LIỆU (Ingredients & Units) ---
-            if (ingredientsData && ingredientsData.length > 0) {
-                // Dùng vòng lặp for...of để xử lý tuần tự (await bên trong loop)
-                for (const ing of ingredientsData) {
+    //         console.log("Xử lý nguyên liệu");
+    //         // --- 2. XỬ LÝ NGUYÊN LIỆU (Ingredients & Units) ---
+    //         if (ingredientsData && ingredientsData.length > 0) {
+    //             // Dùng vòng lặp for...of để xử lý tuần tự (await bên trong loop)
+    //             for (const ing of ingredientsData) {
                     
-                    // A. Xử lý tên Nguyên liệu (Ingredient Name -> ID)
-                    let ingredientId;
-                    const [foundIng] = await connection.execute(
-                        `SELECT ingredient_id FROM Ingredients WHERE name = ?`, 
-                        [ing.name]
+    //                 // A. Xử lý tên Nguyên liệu (Ingredient Name -> ID)
+    //                 let ingredientId;
+    //                 const [foundIng] = await connection.execute(
+    //                     `SELECT ingredient_id FROM Ingredients WHERE name = ?`, 
+    //                     [ing.name]
+    //                 );
+    //                 console.log("Tìm nguyên liệu:", ing.name, foundIng);
+
+    //                 if (foundIng.length > 0) {
+    //                     ingredientId = foundIng[0].ingredient_id;
+    //                 } else {
+    //                     // Nếu chưa có, tạo mới với status pending
+    //                     const newIngId = uuidv4()
+    //                     await connection.execute(
+    //                         `INSERT INTO Ingredients (ingredient_id, name, status) VALUES (?, ?, 'pending')`,
+    //                         [newIngId, ing.name]
+    //                     );
+    //                     ingredientId = newIngId;
+    //                 }
+
+    //                 // B. Xử lý Đơn vị (Unit Name -> ID)
+    //                 // Frontend gửi ing.unit (string), DB cần unit_id
+    //                 let unitId;
+    //                 const [foundUnit] = await connection.execute(
+    //                     `SELECT unit_id FROM Units WHERE name = ?`,
+    //                     [ing.unit]
+    //                 );
+    //                 console.log("Tìm đơn vị:", ing.unit, foundUnit);
+
+    //                 if (foundUnit.length > 0) {
+    //                     unitId = foundUnit[0].unit_id;
+    //                 } else {
+    //                     // Nếu đơn vị chưa có, tạo mới luôn
+    //                     const newUnitId = uuidv4();
+    //                     await connection.execute(
+    //                         `INSERT INTO Units (unit_id, name) VALUES (?, ?)`,
+    //                         [newUnitId, ing.unit]
+    //                     );
+    //                     unitId = newUnitId;
+    //                 }
+
+    //                 console.log("Inserting into recipe_ingredients:", recipeId, ingredientId, ing.amount || ing.quantity, unitId);
+    //                 // C. Insert vào bảng liên kết Recipe_Ingredients
+    //                 await connection.execute(
+    //                     `INSERT INTO Recipe_Ingredients (recipe_id, ingredient_id, quantity, unit_id) VALUES (?, ?, ?, ?)`,
+    //                     [recipeId, ingredientId, ing.amount || ing.quantity, unitId] 
+    //                     // Lưu ý: Frontend có thể gửi 'amount', DB dùng 'quantity'
+    //                 );
+    //             }
+    //         }
+
+    //         if (tags && tags.length > 0) {
+    //             const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
+    //             for (const tagId of tags) {
+    //                 // tagId ở đây là ID của tag mà user chọn
+    //                 await connection.execute(tagSql, [tagId, recipeId]);
+    //             }
+    //         }
+
+    //         // --- 3. INSERT bảng Recipe_Images ---
+    //         // Sửa lại cột imgLink cho đúng với file SQL của bạn
+    //         if (resultImages && resultImages.length > 0) {
+    //             const imgSql = `
+    //                 INSERT INTO Recipe_Images (img_id, recipe_id, imgLink, description) 
+    //                 VALUES (?, ?, ?, ?)
+    //             `;
+
+    //             for (const img of resultImages) {
+    //                 const newImgId = uuidv4();
+    //                 await connection.execute(imgSql, [
+    //                     newImgId, 
+    //                     recipeId, 
+    //                     img.url, 
+    //                     img.description
+    //                 ]);
+    //             }
+    //         }
+
+    //         // Commit Transaction
+    //         await connection.commit();
+
+    //         return {
+    //             recipe_id: recipeId,
+    //             title: title
+    //         };
+
+    //     } catch (err) {
+    //         // Nếu có lỗi, rollback toàn bộ thao tác
+    //         await connection.rollback();
+    //         throw err;
+    //     } finally {
+    //         connection.release();
+    //     }
+    // }
+    // static async update(recipeId, recipeData, ingredientList, tagList) {
+    //     const connection = await pool.getConnection();
+    //     let newIngredientsPending = false;
+    //     let totalCalo = recipeData.total_calo || 0; // Lấy calo từ input người dùng update
+
+    //     try {
+    //         await connection.beginTransaction();
+
+    //         // 1. UPDATE bảng Recipes (Giữ nguyên logic của bạn)
+    //         const recipeKeys = Object.keys(recipeData).filter(key => recipeData[key] !== undefined);
+    //         if (recipeKeys.length > 0) {
+    //             const setClauses = recipeKeys.map(key => `\`${key}\` = ?`);
+    //             setClauses.push('update_at = NOW()');
+    //             const queryValues = recipeKeys.map(key => recipeData[key]);
+    //             queryValues.push(recipeId);
+
+    //             const updateQuery = `UPDATE Recipes SET ${setClauses.join(', ')} WHERE recipe_id = ?`;
+    //             await connection.execute(updateQuery, queryValues);
+    //         }
+
+    //         // 2. XỬ LÝ NGUYÊN LIỆU (QUAN TRỌNG)
+    //         // Xóa nguyên liệu cũ
+    //         await connection.execute('DELETE FROM recipe_ingredients WHERE recipe_id = ?', [recipeId]);
+
+    //         if (ingredientList && ingredientList.length > 0) {
+    //             const processedIngredients = await Promise.all(ingredientList.map(async (item) => {
+    //                 const { name: ingredientName, quantity, unit: unitName } = item; // Lấy unitName thay vì unitId
+
+    //                 // A. Xử lý Ingredients (Tìm hoặc Tạo)
+    //                 let ingredientId;
+    //                 let ingredientStatus = 'approved';
+
+    //                 let [foundIng] = await connection.execute(
+    //                     `SELECT ingredient_id, status FROM Ingredients WHERE name = ?`, 
+    //                     [ingredientName]
+    //                 );
+
+    //                 if (foundIng.length > 0) {
+    //                     ingredientId = foundIng[0].ingredient_id;
+    //                     ingredientStatus = foundIng[0].status;
+    //                 } else {
+    //                     const [newIng] = await connection.execute(
+    //                         `INSERT INTO Ingredients (name, status) VALUES (?, 'pending')`,
+    //                         [ingredientName]
+    //                     );
+    //                     // Lấy ID vừa insert (cần check lại hàm insert của bạn trả về gì, thường là insertId với auto_increment hoặc phải query lại nếu dùng UUID)
+    //                     // Vì bạn dùng UUID default trong DB, insertId sẽ không hoạt động nếu DB tự sinh UUID.
+    //                     // Tốt nhất là generate UUID từ code JS:
+    //                     /* const newUuid = uuidv4(); 
+    //                     await connection.execute(..., [newUuid, ingredientName]); 
+    //                     ingredientId = newUuid; 
+    //                     */
+    //                 // Để đơn giản và khớp với code cũ của bạn, tôi giả sử bạn query lại:
+    //                 const [reQuery] = await connection.execute(`SELECT ingredient_id FROM Ingredients WHERE name = ?`, [ingredientName]);
+    //                 ingredientId = reQuery[0].ingredient_id;
+    //                 ingredientStatus = 'pending';
+    //                 }
+
+    //                 if (ingredientStatus === 'pending') newIngredientsPending = true;
+
+    //                 // B. Xử lý Units (Tìm hoặc Tạo - Logic còn thiếu ở code cũ)
+    //                 let unitId;
+    //                 const [foundUnit] = await connection.execute(
+    //                     `SELECT unit_id FROM Units WHERE name = ?`,
+    //                     [unitName]
+    //                 );
+
+    //                 if (foundUnit.length > 0) {
+    //                     unitId = foundUnit[0].unit_id;
+    //                 } else {
+    //                     // Tạo mới Unit
+    //                     await connection.execute(`INSERT INTO Units (name) VALUES (?)`, [unitName]);
+    //                     // Lại query lấy UUID (do DB tự sinh)
+    //                     const [reQueryUnit] = await connection.execute(`SELECT unit_id FROM Units WHERE name = ?`, [unitName]);
+    //                     unitId = reQueryUnit[0].unit_id;
+    //                 }
+
+    //                 return {
+    //                     ingredientId,
+    //                     quantity,
+    //                     unitId
+    //                 };
+    //             }));
+
+    //             // C. Insert Bulk vào recipe_ingredients
+    //             const ingredientPlaceholders = processedIngredients.map(() => '(?, ?, ?, ?)');
+    //             const ingredientParams = processedIngredients.flatMap(item => 
+    //                 [recipeId, item.ingredientId, item.quantity, item.unitId]
+    //             );
+
+    //             if (ingredientPlaceholders.length > 0) {
+    //                 const ingredientSql = `
+    //                     INSERT INTO recipe_ingredients 
+    //                     (recipe_id, ingredient_id, quantity, unit_id) 
+    //                     VALUES ${ingredientPlaceholders.join(', ')}
+    //                 `;
+    //                 await connection.execute(ingredientSql, ingredientParams);
+    //             }
+    //         }
+
+    //         if (tagList) { // Chỉ xử lý nếu frontend có gửi field tags lên
+    //             // B1: Xóa hết các liên kết tag cũ của bài viết này
+    //             await connection.execute(
+    //                 `DELETE FROM tag_post WHERE post_id = ? AND post_type = 'recipe'`, 
+    //                 [recipeId]
+    //             );
+
+    //             // B2: Insert lại các tag mới
+    //             if (tagList.length > 0) {
+    //                 const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
+    //                 for (const tagId of tagList) {
+    //                      await connection.execute(tagSql, [tagId, recipeId]);
+    //                 }
+    //             }
+    //         }
+
+    //         await connection.commit();
+
+    //         return { 
+    //             success: true, 
+    //             message: 'Cập nhật công thức thành công!',
+    //             notification: newIngredientsPending ? 'Nguyên liệu mới đang chờ duyệt.' : null 
+    //         };
+
+    //     } catch (error) {
+    //         await connection.rollback();
+    //         console.error('Lỗi Model Update:', error);
+    //         throw error;
+    //     } finally {
+    //         if (connection) connection.release();
+    //     }
+    // }
+
+    // --- BẢN CHUẨN HÓA KHỚP VỚI SERVICE ---
+
+    static async create(connection, {
+        recipeId, userId, title, description, instructions, coverImage, 
+        servings, cookTime, totalCalo, ingredientsData, status, resultImages = [], tags = []
+    }) {
+        // Sử dụng connection từ Service truyền vào, nếu không có thì dùng pool tạm (fallback)
+        const executor = connection || pool;
+
+        // BỎ beginTransaction ở đây vì Service đã lo việc đó!
+
+        // --- 1. INSERT vào bảng Recipes ---
+        const sqlRecipe = `
+            INSERT INTO Recipes 
+                (recipe_id, user_id, title, description, instructions, cover_image, status, servings, cook_time, total_calo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        await executor.execute(sqlRecipe, [
+            recipeId, userId, title, description, instructions, coverImage,
+            status || 'draft', servings, cookTime, totalCalo
+        ]);
+
+        // --- 2. XỬ LÝ NGUYÊN LIỆU (Ingredients & Units) ---
+        if (ingredientsData && ingredientsData.length > 0) {
+            for (const ing of ingredientsData) {
+                // A. Xử lý tên Nguyên liệu
+                let ingredientId;
+                const [foundIng] = await executor.execute(
+                    `SELECT ingredient_id FROM Ingredients WHERE name = ?`, [ing.name]
+                );
+
+                if (foundIng.length > 0) {
+                    ingredientId = foundIng[0].ingredient_id;
+                } else {
+                    const newIngId = uuidv4()
+                    await executor.execute(
+                        `INSERT INTO Ingredients (ingredient_id, name, status) VALUES (?, ?, 'pending')`,
+                        [newIngId, ing.name]
                     );
-                    console.log("Tìm nguyên liệu:", ing.name, foundIng);
+                    ingredientId = newIngId;
+                }
 
-                    if (foundIng.length > 0) {
-                        ingredientId = foundIng[0].ingredient_id;
-                    } else {
-                        // Nếu chưa có, tạo mới với status pending
-                        const newIngId = uuidv4()
-                        await connection.execute(
-                            `INSERT INTO Ingredients (ingredient_id, name, status) VALUES (?, ?, 'pending')`,
-                            [newIngId, ing.name]
-                        );
-                        ingredientId = newIngId;
-                    }
+                // B. Xử lý Đơn vị
+                let unitId;
+                const [foundUnit] = await executor.execute(
+                    `SELECT unit_id FROM Units WHERE name = ?`, [ing.unit]
+                );
 
-                    // B. Xử lý Đơn vị (Unit Name -> ID)
-                    // Frontend gửi ing.unit (string), DB cần unit_id
-                    let unitId;
-                    const [foundUnit] = await connection.execute(
-                        `SELECT unit_id FROM Units WHERE name = ?`,
-                        [ing.unit]
+                if (foundUnit.length > 0) {
+                    unitId = foundUnit[0].unit_id;
+                } else {
+                    const newUnitId = uuidv4();
+                    await executor.execute(
+                        `INSERT INTO Units (unit_id, name) VALUES (?, ?)`,
+                        [newUnitId, ing.unit]
                     );
-                    console.log("Tìm đơn vị:", ing.unit, foundUnit);
-
-                    if (foundUnit.length > 0) {
-                        unitId = foundUnit[0].unit_id;
-                    } else {
-                        // Nếu đơn vị chưa có, tạo mới luôn
-                        const newUnitId = uuidv4();
-                        await connection.execute(
-                            `INSERT INTO Units (unit_id, name) VALUES (?, ?)`,
-                            [newUnitId, ing.unit]
-                        );
-                        unitId = newUnitId;
-                    }
-
-                    console.log("Inserting into recipe_ingredients:", recipeId, ingredientId, ing.amount || ing.quantity, unitId);
-                    // C. Insert vào bảng liên kết Recipe_Ingredients
-                    await connection.execute(
-                        `INSERT INTO Recipe_Ingredients (recipe_id, ingredient_id, quantity, unit_id) VALUES (?, ?, ?, ?)`,
-                        [recipeId, ingredientId, ing.amount || ing.quantity, unitId] 
-                        // Lưu ý: Frontend có thể gửi 'amount', DB dùng 'quantity'
-                    );
+                    unitId = newUnitId;
                 }
+
+                // C. Insert vào bảng liên kết Recipe_Ingredients
+                await executor.execute(
+                    `INSERT INTO Recipe_Ingredients (recipe_id, ingredient_id, quantity, unit_id) VALUES (?, ?, ?, ?)`,
+                    [recipeId, ingredientId, ing.amount || ing.quantity, unitId] 
+                );
             }
-
-            if (tags && tags.length > 0) {
-                const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
-                for (const tagId of tags) {
-                    // tagId ở đây là ID của tag mà user chọn
-                    await connection.execute(tagSql, [tagId, recipeId]);
-                }
-            }
-
-            // --- 3. INSERT bảng Recipe_Images ---
-            // Sửa lại cột imgLink cho đúng với file SQL của bạn
-            if (resultImages && resultImages.length > 0) {
-                const imgSql = `
-                    INSERT INTO Recipe_Images (img_id, recipe_id, imgLink, description) 
-                    VALUES (?, ?, ?, ?)
-                `;
-
-                for (const img of resultImages) {
-                    const newImgId = uuidv4();
-                    await connection.execute(imgSql, [
-                        newImgId, 
-                        recipeId, 
-                        img.url, 
-                        img.description
-                    ]);
-                }
-            }
-
-            // Commit Transaction
-            await connection.commit();
-
-            return {
-                recipe_id: recipeId,
-                title: title
-            };
-
-        } catch (err) {
-            // Nếu có lỗi, rollback toàn bộ thao tác
-            await connection.rollback();
-            throw err;
-        } finally {
-            connection.release();
         }
+
+        // --- Xử lý Tags ---
+        if (tags && tags.length > 0) {
+            const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
+            for (const tagId of tags) {
+                await executor.execute(tagSql, [tagId, recipeId]);
+            }
+        }
+
+        // --- 3. INSERT bảng Recipe_Images ---
+        if (resultImages && resultImages.length > 0) {
+            const imgSql = `INSERT INTO Recipe_Images (img_id, recipe_id, imgLink, description) VALUES (?, ?, ?, ?)`;
+            for (const img of resultImages) {
+                const newImgId = uuidv4();
+                await executor.execute(imgSql, [newImgId, recipeId, img.url, img.description]);
+            }
+        }
+
+        // BỎ commit() và rollback() ở đây, Service sẽ lo!
+
+        return { recipe_id: recipeId, title: title };
     }
-    static async update(recipeId, recipeData, ingredientList, tagList) {
-        const connection = await pool.getConnection();
+
+
+    static async update(recipeId, recipeData, ingredientList, tagList, connection) {
+        // Nhận connection ở vị trí số 5 từ Service truyền qua
+        const executor = connection || pool;
         let newIngredientsPending = false;
-        let totalCalo = recipeData.total_calo || 0; // Lấy calo từ input người dùng update
 
-        try {
-            await connection.beginTransaction();
+        // BỎ beginTransaction()
 
-            // 1. UPDATE bảng Recipes (Giữ nguyên logic của bạn)
-            const recipeKeys = Object.keys(recipeData).filter(key => recipeData[key] !== undefined);
-            if (recipeKeys.length > 0) {
-                const setClauses = recipeKeys.map(key => `\`${key}\` = ?`);
-                setClauses.push('update_at = NOW()');
-                const queryValues = recipeKeys.map(key => recipeData[key]);
-                queryValues.push(recipeId);
+        // 1. UPDATE bảng Recipes
+        const recipeKeys = Object.keys(recipeData).filter(key => recipeData[key] !== undefined);
+        if (recipeKeys.length > 0) {
+            const setClauses = recipeKeys.map(key => `\`${key}\` = ?`);
+            setClauses.push('update_at = NOW()');
+            const queryValues = recipeKeys.map(key => recipeData[key]);
+            queryValues.push(recipeId);
 
-                const updateQuery = `UPDATE Recipes SET ${setClauses.join(', ')} WHERE recipe_id = ?`;
-                await connection.execute(updateQuery, queryValues);
-            }
-
-            // 2. XỬ LÝ NGUYÊN LIỆU (QUAN TRỌNG)
-            // Xóa nguyên liệu cũ
-            await connection.execute('DELETE FROM recipe_ingredients WHERE recipe_id = ?', [recipeId]);
-
-            if (ingredientList && ingredientList.length > 0) {
-                const processedIngredients = await Promise.all(ingredientList.map(async (item) => {
-                    const { name: ingredientName, quantity, unit: unitName } = item; // Lấy unitName thay vì unitId
-
-                    // A. Xử lý Ingredients (Tìm hoặc Tạo)
-                    let ingredientId;
-                    let ingredientStatus = 'approved';
-
-                    let [foundIng] = await connection.execute(
-                        `SELECT ingredient_id, status FROM Ingredients WHERE name = ?`, 
-                        [ingredientName]
-                    );
-
-                    if (foundIng.length > 0) {
-                        ingredientId = foundIng[0].ingredient_id;
-                        ingredientStatus = foundIng[0].status;
-                    } else {
-                        const [newIng] = await connection.execute(
-                            `INSERT INTO Ingredients (name, status) VALUES (?, 'pending')`,
-                            [ingredientName]
-                        );
-                        // Lấy ID vừa insert (cần check lại hàm insert của bạn trả về gì, thường là insertId với auto_increment hoặc phải query lại nếu dùng UUID)
-                        // Vì bạn dùng UUID default trong DB, insertId sẽ không hoạt động nếu DB tự sinh UUID.
-                        // Tốt nhất là generate UUID từ code JS:
-                        /* const newUuid = uuidv4(); 
-                        await connection.execute(..., [newUuid, ingredientName]); 
-                        ingredientId = newUuid; 
-                        */
-                    // Để đơn giản và khớp với code cũ của bạn, tôi giả sử bạn query lại:
-                    const [reQuery] = await connection.execute(`SELECT ingredient_id FROM Ingredients WHERE name = ?`, [ingredientName]);
-                    ingredientId = reQuery[0].ingredient_id;
-                    ingredientStatus = 'pending';
-                    }
-
-                    if (ingredientStatus === 'pending') newIngredientsPending = true;
-
-                    // B. Xử lý Units (Tìm hoặc Tạo - Logic còn thiếu ở code cũ)
-                    let unitId;
-                    const [foundUnit] = await connection.execute(
-                        `SELECT unit_id FROM Units WHERE name = ?`,
-                        [unitName]
-                    );
-
-                    if (foundUnit.length > 0) {
-                        unitId = foundUnit[0].unit_id;
-                    } else {
-                        // Tạo mới Unit
-                        await connection.execute(`INSERT INTO Units (name) VALUES (?)`, [unitName]);
-                        // Lại query lấy UUID (do DB tự sinh)
-                        const [reQueryUnit] = await connection.execute(`SELECT unit_id FROM Units WHERE name = ?`, [unitName]);
-                        unitId = reQueryUnit[0].unit_id;
-                    }
-
-                    return {
-                        ingredientId,
-                        quantity,
-                        unitId
-                    };
-                }));
-
-                // C. Insert Bulk vào recipe_ingredients
-                const ingredientPlaceholders = processedIngredients.map(() => '(?, ?, ?, ?)');
-                const ingredientParams = processedIngredients.flatMap(item => 
-                    [recipeId, item.ingredientId, item.quantity, item.unitId]
-                );
-
-                if (ingredientPlaceholders.length > 0) {
-                    const ingredientSql = `
-                        INSERT INTO recipe_ingredients 
-                        (recipe_id, ingredient_id, quantity, unit_id) 
-                        VALUES ${ingredientPlaceholders.join(', ')}
-                    `;
-                    await connection.execute(ingredientSql, ingredientParams);
-                }
-            }
-
-            if (tagList) { // Chỉ xử lý nếu frontend có gửi field tags lên
-                // B1: Xóa hết các liên kết tag cũ của bài viết này
-                await connection.execute(
-                    `DELETE FROM tag_post WHERE post_id = ? AND post_type = 'recipe'`, 
-                    [recipeId]
-                );
-
-                // B2: Insert lại các tag mới
-                if (tagList.length > 0) {
-                    const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
-                    for (const tagId of tagList) {
-                         await connection.execute(tagSql, [tagId, recipeId]);
-                    }
-                }
-            }
-
-            await connection.commit();
-
-            return { 
-                success: true, 
-                message: 'Cập nhật công thức thành công!',
-                notification: newIngredientsPending ? 'Nguyên liệu mới đang chờ duyệt.' : null 
-            };
-
-        } catch (error) {
-            await connection.rollback();
-            console.error('Lỗi Model Update:', error);
-            throw error;
-        } finally {
-            if (connection) connection.release();
+            const updateQuery = `UPDATE Recipes SET ${setClauses.join(', ')} WHERE recipe_id = ?`;
+            await executor.execute(updateQuery, queryValues);
         }
+
+        // 2. XỬ LÝ NGUYÊN LIỆU
+        await executor.execute('DELETE FROM recipe_ingredients WHERE recipe_id = ?', [recipeId]);
+
+        if (ingredientList && ingredientList.length > 0) {
+            const processedIngredients = await Promise.all(ingredientList.map(async (item) => {
+                const { name: ingredientName, quantity, unit: unitName } = item;
+
+                // A. Xử lý Ingredients
+                let ingredientId;
+                let ingredientStatus = 'approved';
+
+                let [foundIng] = await executor.execute(
+                    `SELECT ingredient_id, status FROM Ingredients WHERE name = ?`, [ingredientName]
+                );
+
+                if (foundIng.length > 0) {
+                    ingredientId = foundIng[0].ingredient_id;
+                    ingredientStatus = foundIng[0].status;
+                } else {
+                    const newIngId = uuidv4();
+                    await executor.execute(
+                        `INSERT INTO Ingredients (ingredient_id, name, status) VALUES (?, ?, 'pending')`,
+                        [newIngId, ingredientName]
+                    );
+                    ingredientId = newIngId;
+                    ingredientStatus = 'pending';
+                }
+
+                if (ingredientStatus === 'pending') newIngredientsPending = true;
+
+                // B. Xử lý Units
+                let unitId;
+                const [foundUnit] = await executor.execute(
+                    `SELECT unit_id FROM Units WHERE name = ?`, [unitName]
+                );
+
+                if (foundUnit.length > 0) {
+                    unitId = foundUnit[0].unit_id;
+                } else {
+                    const newUnitId = uuidv4();
+                    await executor.execute(`INSERT INTO Units (unit_id, name) VALUES (?, ?)`, [newUnitId, unitName]);
+                    unitId = newUnitId;
+                }
+
+                return { ingredientId, quantity, unitId };
+            }));
+
+            // C. Insert Bulk
+            const ingredientPlaceholders = processedIngredients.map(() => '(?, ?, ?, ?)');
+            const ingredientParams = processedIngredients.flatMap(item => 
+                [recipeId, item.ingredientId, item.quantity, item.unitId]
+            );
+
+            if (ingredientPlaceholders.length > 0) {
+                const ingredientSql = `
+                    INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity, unit_id) 
+                    VALUES ${ingredientPlaceholders.join(', ')}
+                `;
+                await executor.execute(ingredientSql, ingredientParams);
+            }
+        }
+
+        // 3. XỬ LÝ TAGS
+        if (tagList) { 
+            await executor.execute(
+                `DELETE FROM tag_post WHERE post_id = ? AND post_type = 'recipe'`, [recipeId]
+            );
+
+            if (tagList.length > 0) {
+                const tagSql = `INSERT INTO tag_post (tag_id, post_id, post_type) VALUES (?, ?, 'recipe')`;
+                for (const tagId of tagList) {
+                     await executor.execute(tagSql, [tagId, recipeId]);
+                }
+            }
+        }
+
+        // BỎ commit(), rollback() và finally{} ở đây!
+
+        return { 
+            success: true, 
+            message: 'Cập nhật công thức thành công!',
+            notification: newIngredientsPending ? 'Nguyên liệu mới đang chờ duyệt.' : null 
+        };
     }
 
     static async deleteById(recipeId){
@@ -535,7 +730,7 @@ class Recipe{
             throw error;
         }
     }
-    static async getRecentlyRecipes(category, tag, limit = 10) {
+    static async getRecentlyRecipes(category, tag, limit = 10, currentUserId = null) {
         try {
             const sql = `
             SELECT 
@@ -544,6 +739,9 @@ class Recipe{
                 U.avatar as author_avatar,
                 GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,
                 
+                (EXISTS(SELECT 1 FROM Likes WHERE post_id = R.recipe_id AND post_type = 'recipe' AND user_id = ?)) as is_liked,
+                (EXISTS(SELECT 1 FROM Saved_Posts WHERE post_id = R.recipe_id AND post_type = 'recipe' AND user_id = ?)) as is_saved,
+
                 GROUP_CONCAT(
                     DISTINCT CONCAT(Commenter.full_name, ':::', C.content) 
                     SEPARATOR '|||'
@@ -570,9 +768,14 @@ class Recipe{
 
             const sqlParams = [limit.toString()];
             
-            const [result] = await pool.execute(sql, sqlParams);
+            const [result] = await pool.execute(sql, [currentUserId, currentUserId, currentUserId]);
 
-            return result;
+            return result.map(row => ({
+                ...row,
+                is_liked: !!row.is_liked,
+                is_saved: !!row.is_saved
+            }));
+
         } catch (err){
             console.log(err.message);
             throw err;
@@ -616,6 +819,9 @@ class Recipe{
                 U.avatar as author_avatar,
                 GROUP_CONCAT(DISTINCT I.name SEPARATOR ',') as ingredient_names,
                 
+                (EXISTS(SELECT 1 FROM Likes WHERE post_id = R.recipe_id AND post_type = 'recipe' AND user_id = ?)) as is_liked,
+                (EXISTS(SELECT 1 FROM Saved_Posts WHERE post_id = R.recipe_id AND post_type = 'recipe' AND user_id = ?)) as is_saved,
+
                 GROUP_CONCAT(
                     DISTINCT CONCAT(Commenter.full_name, ':::', C.content) 
                     SEPARATOR '|||'
@@ -638,7 +844,7 @@ class Recipe{
             GROUP BY R.recipe_id
             ORDER BY R.created_at DESC 
             `
-            const [result] = await pool.execute(sql, [userId]);
+            const [result] = await pool.execute(sql, [userId, userId, userId]);
             return result;
         } catch (error) {
             console.error('Lỗi Model (getOwnerRecipe):', error);

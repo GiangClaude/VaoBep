@@ -225,7 +225,7 @@ const ArticleModel = {
     // Công thức kết hợp: tương tác (comment_count), độ dài (read_time), báo cáo (report_count), tươi mới (created_at) và một jitter ngẫu nhiên để tránh lặp bài
     getFeaturedArticles: async (limit = 10) => {
         const query = `
-            SELECT a.article_id, a.title, a.description, a.cover_image, a.created_at, a.comment_count, a.report_count, a.read_time,
+            SELECT a.article_id, a.title, a.description, a.cover_image, a.created_at, a.comment_count, a.like_count, a.report_count, a.read_time,
                    u.full_name as author_name, u.avatar as author_avatar, u.user_id as author_id,
                    (
                        (LOG(1 + COALESCE(a.comment_count,0)) * 2)

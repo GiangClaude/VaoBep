@@ -1,62 +1,39 @@
-const LeaderboardModel = require('../models/leaderboard.model');
+const LeaderboardService = require('../services/leaderboard.service');
+const asyncHandler = require('../utils/asyncHandler');
 
-const getTopRecipes = async (req, res) => {
-    try {
-        const { month, year } = req.query;
-        const currentMonth = new Date().getMonth() + 1;
-        const currentYear = new Date().getFullYear();
+const getTopRecipes = asyncHandler(async (req, res) => {
+    // 1. Chỉ lấy input
+    const { month, year } = req.query;
 
-        // Kiểm tra xem client yêu cầu tháng hiện tại hay tháng quá khứ
-        const isCurrentMonth = (!month && !year) || (parseInt(month) === currentMonth && parseInt(year) === currentYear);
+    // 2. Giao phó toàn bộ logic xử lý rẽ nhánh cho Service
+    const result = await LeaderboardService.getTopRecipes(month, year);
 
-        let data = [];
-        if (isCurrentMonth) {
-            data = await LeaderboardModel.getLiveTopRecipes(10);
-        } else {
-            if (!month || !year) return res.status(400).json({ success: false, message: "Thiếu tháng hoặc năm" });
-            data = await LeaderboardModel.getHistoryLeaderboard('recipe', parseInt(month), parseInt(year), 10);
-        }
+    // 3. Trả về đúng format cũ (result bao gồm cả { data, isCurrentMonth })
+    return res.status(200).json({ 
+        success: true, 
+        ...result 
+    });
+});
 
-        return res.status(200).json({ success: true, data, isCurrentMonth });
-    } catch (error) {
-        console.error("Lỗi getTopRecipes:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server: " + error.message });
-    }
-};
+const getTopUsers = asyncHandler(async (req, res) => {
+    // 1. Chỉ lấy input
+    const { month, year } = req.query;
 
-const getTopUsers = async (req, res) => {
-    try {
-        const { month, year } = req.query;
-        const currentMonth = new Date().getMonth() + 1;
-        const currentYear = new Date().getFullYear();
+    // 2. Gọi Service
+    const result = await LeaderboardService.getTopUsers(month, year);
 
-        const isCurrentMonth = (!month && !year) || (parseInt(month) === currentMonth && parseInt(year) === currentYear);
-
-        let data = [];
-        if (isCurrentMonth) {
-            data = await LeaderboardModel.getLiveTopUsers(10);
-        } else {
-            if (!month || !year) return res.status(400).json({ success: false, message: "Thiếu tháng hoặc năm" });
-            data = await LeaderboardModel.getHistoryLeaderboard('user', parseInt(month), parseInt(year), 10);
-        }
-
-        return res.status(200).json({ success: true, data, isCurrentMonth });
-    } catch (error) {
-        console.error("Lỗi getTopUsers:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server: " + error.message });
-    }
-};
+    // 3. Trả về format cũ
+    return res.status(200).json({ 
+        success: true, 
+        ...result 
+    });
+});
 
 // Khuyến cáo: URL này nên được bảo mật (dùng cho Admin hoặc hệ thống tự gọi)
-const triggerSnapshot = async (req, res) => {
-    try {
-        const result = await LeaderboardModel.runMonthlySnapshot();
-        return res.status(200).json(result);
-    } catch (error) {
-        console.error("Lỗi triggerSnapshot:", error);
-        return res.status(500).json({ success: false, message: "Lỗi server: " + error.message });
-    }
-};
+const triggerSnapshot = asyncHandler(async (req, res) => {
+    const result = await LeaderboardService.triggerSnapshot();
+    return res.status(200).json(result);
+});
 
 module.exports = {
     getTopRecipes,

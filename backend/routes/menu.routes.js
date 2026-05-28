@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const menuController = require('../controllers/menu.controllers');
-const { protect } = require('../controllers/auth.controllers'); // Đảm bảo đường dẫn này đúng với auth.controllers của bạn
+const { protect } = require('../middlewares/auth.middleware');
 
 // Tạo menu mới
 router.post('/create', protect, menuController.createMenu);

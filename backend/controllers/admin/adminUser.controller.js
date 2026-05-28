@@ -4,65 +4,43 @@ const path = require('path');
 const fs = require('fs');
 const emailUtils = require('../../utils/email.utils');
 const authUtils = require('../../utils/auth.utils');
+const asyncHandler = require('../../utils/asyncHandler');
+const AppError = require('../../utils/AppError');
 
-const getUsers = async (req, res) => {
-    try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const search = req.query.search || '';
+const getUsers = asyncHandler(async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const sortKey = req.query.sortKey || 'created_at';
+    const sortOrder = req.query.sortOrder || 'DESC';
+    const offset = (page - 1) * limit;
 
-        const sortKey = req.query.sortKey || 'created_at';
-        const sortOrder = req.query.sortOrder || 'DESC';
+    const users = await UserModel.getAllUsers(limit, offset, search, sortKey, sortOrder);
+    const total = await UserModel.countUsers(search);
 
-        const offset = (page - 1) * limit;
+    res.status(200).json({
+        data: users,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    });
+});
 
-        const users = await UserModel.getAllUsers(limit, offset, search, sortKey, sortOrder);
-        const total = await UserModel.countUsers(search);
+const toggleUserStatus = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
 
-        res.status(200).json({
-            data: users,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit)
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+    if (!['active', 'blocked'].includes(status)) throw new AppError('Invalid status', 400);
 
-const toggleUserStatus = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
+    await UserModel.updateStatus(id, status);
+    res.status(200).json({ message: `User status updated to ${status}` });
+});
 
-        if (!['active', 'blocked'].includes(status)) {
-            return res.status(400).json({ message: 'Invalid status' });
-        }
+const createUser = asyncHandler(async (req, res) => {
+    const { full_name, email, password, role } = req.body;
+    if (!['admin', 'vip', 'pro', 'user'].includes(role)) throw new AppError('Invalid role', 400);
+    if (!email || !password || !full_name) throw new AppError('Vui lòng điền đủ thông tin.', 400);
 
-        await UserModel.updateStatus(id, status);
-        res.status(200).json({ message: `User status updated to ${status}` });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-const createUser = async (req, res) => {
-    try {
-        const { full_name, email, password, role } = req.body;
-        if (!['admin', 'vip', 'pro', 'user'].includes(role)) {
-            return res.status(400).json({ message: 'Invalid role' });
-        }
-        if (!email || !password || !full_name) {
-            return res.status(400).json({ message: 'Vui lòng điền đủ thông tin.' });
-        }
-
-        const existingUser = await UserModel.findByEmail(email);
-        if (existingUser) {
-            return res.status(400).json({ message: 'Email đã tồn tại.' });
-        }
+    const existingUser = await UserModel.findByEmail(email);
+    if (existingUser) throw new AppError('Email đã tồn tại.', 400);
 
         const hashedPassword = await authUtils.hashPassword(password);
         const userId = uuidv4();
@@ -80,55 +58,32 @@ const createUser = async (req, res) => {
             otpExpires
         });
 
-        const emailResult = await emailUtils.sendVerificationEmail(email, otp);
-        if (!emailResult.success) {
-            return res.status(500).json({ error: 'Failed to send verification email.' });
-        }
+    const emailResult = await emailUtils.sendVerificationEmail(email, otp);
+    if (!emailResult.success) throw new AppError('Failed to send verification email.', 500);
 
-        const userFolderPath = path.join(__dirname, '../../public/user', userId.toString());
-        if (!fs.existsSync(userFolderPath)) {
-            fs.mkdirSync(userFolderPath, { recursive: true });
-        }
+    const userFolderPath = path.join(__dirname, '../../public/user', userId.toString());
+    if (!fs.existsSync(userFolderPath)) fs.mkdirSync(userFolderPath, { recursive: true });
 
-        res.status(201).json({ message: 'User created successfully', userId });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+    res.status(201).json({ message: 'User created successfully', userId });
+});
 
-const getUserDetail = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const user = await UserModel.findById(id);
+const getUserDetail = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const user = await UserModel.findById(id);
+    if (!user) throw new AppError('User not found', 404);
+    res.status(200).json({ data: user });
+});
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+const updateUser = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { role, account_status } = req.body;
 
-        res.status(200).json({ data: user });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+    if (role && !['admin', 'vip', 'pro', 'user'].includes(role)) throw new AppError('Invalid role', 400);
+    if (account_status && !['active', 'blocked', 'pending'].includes(account_status)) throw new AppError('Invalid status', 400);
 
-const updateUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { role, account_status } = req.body;
+    await UserModel.adminUpdateUser(id, { role, status: account_status });
 
-        if (role && !['admin', 'vip', 'pro', 'user'].includes(role)) {
-            return res.status(400).json({ message: 'Invalid role' });
-        }
-        if (account_status && !['active', 'blocked', 'pending'].includes(account_status)) {
-            return res.status(400).json({ message: 'Invalid status' });
-        }
-
-        await UserModel.adminUpdateUser(id, { role, status: account_status });
-
-        res.status(200).json({ message: 'User updated successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+    res.status(200).json({ message: 'User updated successfully' });
+});
 
 module.exports = { getUsers, toggleUserStatus, createUser, getUserDetail, updateUser };

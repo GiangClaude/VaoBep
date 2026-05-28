@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const articleController = require('../controllers/article.controllers');
-const { protect } = require('../controllers/auth.controllers');
+const { protect } = require('../middlewares/auth.middleware');
 const { verifyProMiddleware } = require('../utils/auth.utils'); // Nhớ import middleware này
 const upload = require('../config/multer.config');
 const { v4: uuidv4 } = require('uuid');

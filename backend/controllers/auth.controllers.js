@@ -1,341 +1,109 @@
-const fs = require('fs');
-const path = require('path');
-const { generate } = require('rxjs');
-const UserModel = require('../models/user.model');
 const authUtils = require('../utils/auth.utils');
-const emailUtils = require('../utils/email.utils');
-const bcrypt = require('bcryptjs');
+const asyncHandler = require('../utils/asyncHandler');
+const AppError = require('../utils/AppError');
+const AuthService = require('../services/auth.service');
+const UserModel = require('../models/user.model');
 
 // Đăng ký người dùng mới
-const register = async (req, res) => {
+const register = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
+    const user = await AuthService.register(name, email, password);
+    res.status(201).json({
+        message: 'User registered successfully. Please check your email for verification OTP.',
+        user
+    });
+});
 
-    console.log('Register request body:', req.body);
-    
-    if (!name || !email || !password) {
-        return res.status(400).json({ error: 'Name, email, and password are required' });
-    }
-
-
-    try {
-        let user = await UserModel.findByEmail(email);
-        if (user) {
-            if (user.account_status === 'active'){
-                return res.status(409).json({
-                    error: 'Email is already registered!'
-                })
-            }
-
-            return res.status(409).json({ error: 'Email is already registered' });
-        }
-
-        //Tạo otp
-        const otp = authUtils.generateOTP();
-        const otpExpires = new Date(Date.now() + 10*60*1000);
-
-        const hashedPassword = await authUtils.hashPassword(password);
-
-        const newUserId = await UserModel.create(name, email, hashedPassword, otp, otpExpires);
-
-        const emailResult = await emailUtils.sendVerificationEmail(email, otp);
-
-        if (!emailResult.success){
-            return res.status(500).json({ error: 'Failed to send verification email.' });
-        }
-
-        //Tạo folder name
-        const userFolderPath = path.join(__dirname, '../../public/user', newUserId.toString());
-
-        // 3. Kiểm tra và tạo thư mục nếu chưa có
-        if (!fs.existsSync(userFolderPath)) {
-            fs.mkdirSync(userFolderPath, { recursive: true });
-            // recursive: true giúp tạo cả thư mục cha nếu lỡ nó chưa tồn tại
-        }
-        
-        console.log(`Đã tạo thư mục cho user: ${userFolderPath}`);
-
-        res.status(201).json({
-            message: 'User registered successfully. Please check your email for verification OTP.',
-            // token,
-            // previewUrl: emailResult.url,
-            user: {id: newUserId, name, email}
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-        console.error('Error during registration:', error);
-    }
-}
-
-const login = async (req, res) => {
+const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required' });
-    }
-    
-    try {
-        const user = await UserModel.findByEmail(email);
-        if (!user) {
-            return res.status(400).json({ error: 'Invalid email or password' });
-        }
+    const result = await AuthService.login(email, password);
+    res.json({
+        message: 'Login successful',
+        token: result.token,
+        user: result.user
+    });
+});
 
-        const isMatch = await authUtils.comparePassword(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ error: 'Invalid email or password' });
-        }
+// const protect = asyncHandler(async (req, res, next) => {
+//     let token;
+//     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+//         token = req.headers.authorization.split(' ')[1];
 
-        if (user.account_status === 'pending') {
-            return res.status(403).json({
-                error: 'Tài khoản chưa xác thực'
-            })
-        } 
+//         const decoded = authUtils.verifyToken(token);
+//         if (!decoded) {
+//             throw new AppError('Not authorized, token failed', 401);
+//         }
 
-        const token = authUtils.generateToken(user.user_id);
-        res.json({
-            message: 'Login successful',
-            token,
-            user: {id: user.user_id, name: user.name, email: user.email}
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
-}
-
-const protect = async (req, res, next) => {
-    let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            token = req.headers.authorization.split(' ')[1];
-
-            const decoded = authUtils.verifyToken(token);
-            if (!decoded) {
-                return res.status(401).json({ error: 'Not authorized, token failed' });
-            }
-
-            
-            const fetchedUser = await UserModel.findAuth(decoded.id);
-            req.user = Array.isArray(fetchedUser) ? fetchedUser[0] : fetchedUser;
-            
-            if (!req.user) {
-                return res.status(401).json({ message: 'User không còn tồn tại.' });
-            }
-
-            return next();
-        } catch (error) {
-            console.error('Error in protect middleware:', error);
-            res.status(401).json({ message: 'Not authorized, token failed' });
-        }
-    }
-
-    if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
-    }
-}
-
-const verifyOTP = async (req, res) => {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-        return res.status(400).json({ error: 'Email and OTP are required' });
-    }
-
-    try {
-        // Hàm validateOTP của bạn đã có sẵn logic ném lỗi nếu sai hoặc hết hạn
-        const user = await authUtils.validateOTP(email, otp);
-
-        res.status(200).json({
-            success: true,
-            message: 'OTP hợp lệ.'
-            // user: { id: user.user_id, name: user.full_name, email: user.email }
-        });
-    } catch (error) {
-        console.error('Error during OTP verification only:', error);
-        res.status(400).json({ error: error.message }); // Trả về lỗi do validateOTP ném ra
-    }
-}
-
-const activateAccount = async (req, res) => {
-    const {email, otp} = req.body;
-
-    if (!email || !otp) {
-        return res.status(400).json({ error: 'Email and OTP are required' });
-    }
-
-    try {
-        //Tìm user
-        const user = await authUtils.validateOTP(email, otp);
-
-        console.log("Gia tri user tim thay:", user);
-
-        // 4. Nếu OTP đúng và còn hạn -> Kích hoạt user
-        await UserModel.activateUser(user.user_id);
-
-        await UserModel.clearOTP(user.user_id);
-
-        // 5. Tạo token cho user đăng nhập luôn
-        const token = authUtils.generateToken(user.user_id);
-
-        res.status(200).json({
-            message: 'Account verified successfully. You are now logged in.',
-            token,
-            user: { 
-                id: user.user_id, 
-                name: user.full_name, 
-                email: user.email 
-            }
-        });
-    } catch (error) {
-        console.error('Error during OTP verification:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-}
-
-const resendOTP = async (req, res) => {
-    const {email} = req.body;
-
-    if (!email) {
-        return res.status(400).json({
-            error: "Không nhận được email"
-        })
-    }
-
-    try {
-        const user = await UserModel.findByEmail(email);
-
-        if (!user) {
-            return res.status(400).json({
-                error: "Không tìm thấy tài khoản"
-            })
-        }
-
-        if (user.account_status === 'active') {
-            return res.status(400).json({
-                error: "Tài khoản đã được xác thực"
-            })
-        }
-
-        const otp = authUtils.generateOTP();
-        const otpExpires = new Date(Date.now() + 10*60*1000);
-
-
-        await UserModel.updateOTP(user.user_id, otp, otpExpires);
-        await emailUtils.sendPasswordResetEmail(email, otp);
-
-        res.status(200).json({ message: 'Đã gửi lại OTP'});
-    } catch (error) {
-        console.error('Error during resend OTP:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-}
-
-
-// Yêu cầu đặt lại mật khẩu (gửi OTP về email) (chỉ cho user đã đăng nhập, có token hợp lệ)
-const requestPasswordReset = async(req, res) => {
-    try {
-        const {email} = req.body;
-
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is required"
-            });
-        }
-
-        const user = await UserModel.findByEmail(email);
-
-        if (!user) {
-            return res.status(200).json({
-                success:true,
-                message: "If your email is registered, you will receive a password reset OTP."
-            })
-        }
-
-        const otp = authUtils.generateOTP();
-        const otpExpires = new Date(Date.now() + 10*60*1000);
-
-        await UserModel.updateOTP(user.user_id, otp, otpExpires);
-
-        await emailUtils.sendPasswordResetEmail(email, otp);
-
-        return res.status(200).json({
-            success: true,
-            message: "Password reset OTP sent to your email!"
-        })
-    } catch (error) {
-        console.error('Error during requestPasswordReset:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Internal server error' 
-        });       
-    }
-}
-
-// Xử lý đổi mật khẩu cho user đang đăng nhập bằng mật khẩu cũ
-const changePasswordAuth = async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
-    const userId = req.user.user_id || req.user.id;
-
-    if (!oldPassword || !newPassword) {
-        return res.status(400).json({ error: 'Vui lòng nhập mật khẩu cũ và mới' });
-    }
-
-    try {
-        // Lấy password hiện tại từ DB để so sánh
-        const currentHashedPassword = await UserModel.findPasswordByUserId(userId);
+//         const fetchedUser = await UserModel.findAuth(decoded.id);
+//         req.user = Array.isArray(fetchedUser) ? fetchedUser[0] : fetchedUser;
         
-        // Kiểm tra mật khẩu cũ có đúng không
-        const isMatch = await authUtils.comparePassword(oldPassword, currentHashedPassword);
-        if (!isMatch) {
-            return res.status(400).json({ error: 'Mật khẩu cũ không chính xác' });
-        }
+//         if (!req.user) {
+//             throw new AppError('User không còn tồn tại', 401);
+//         }
 
-        // Mã hóa mật khẩu mới và lưu xuống DB
-        const hashedNewPassword = await authUtils.hashPassword(newPassword);
-        await UserModel.changePassword(userId, hashedNewPassword); // Dùng chung 1 hàm ở Model là đủ
+//         return next();
+//     }
 
-        res.status(200).json({ message: 'Đổi mật khẩu thành công' });
-    } catch (error) {
-        console.error('Lỗi khi đổi mật khẩu chủ động:', error);
-        res.status(500).json({ error: 'Lỗi server' });
-    }
-}
+//     if (!token) {
+//         throw new AppError('Not authorized, no token', 401);
+//     }
+// });
 
-// Nhớ thêm changePasswordAuth vào module.exports ở cuối file nhé!
+const verifyOTP = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+    await AuthService.verifyOTP(email, otp);
+    res.status(200).json({
+        success: true,
+        message: 'OTP hợp lệ.'
+    });
+});
 
-//Đổi mật khẩu khi đã quên mật khẩu cũ => sử dụng hàm changePassword
-const resetPassword = async(req, res) => {
-    const {email, otp, newPassword} = req.body;
+const activateAccount = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+    const result = await AuthService.activateAccount(email, otp);
+    res.status(200).json({
+        message: 'Account verified successfully. You are now logged in.',
+        token: result.token,
+        user: result.user
+    });
+});
 
-    if (!email || !otp || !newPassword) {
-        return res.status(400).json({
-            error: 'Email, OTP, and new password are required'
-        });
-    }
+const resendOTP = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    const result = await AuthService.resendOTP(email);
+    res.status(200).json(result);
+});
 
-    try {
-        const user = await UserModel.findByEmail(email);
-        // const user = await authUtils.validateOTP(email, otp);
-        const hashedNewPassword = await authUtils.hashPassword(newPassword);
-        await UserModel.changePassword(user.user_id, hashedNewPassword);
+// Yêu cầu đặt lại mật khẩu (gửi OTP về email)
+const requestPasswordReset = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    const result = await AuthService.requestPasswordReset(email);
+    res.status(200).json({ success: true, message: result.message });
+});
 
-        await UserModel.clearOTP(user.user_id);
+// // Xử lý đổi mật khẩu cho user đang đăng nhập bằng mật khẩu cũ
+// const changePasswordAuth = asyncHandler(async (req, res) => {
+//     const { oldPassword, newPassword } = req.body;
+//     const userId = req.user.user_id || req.user.id;
+//     const result = await AuthService.changePasswordAuth(userId, oldPassword, newPassword);
+//     res.status(200).json(result);
+// });
 
-        res.status(200).json({
-            message: 'Password reset successfully'
-        });
-    } catch (error) {
-        console.error('Error during password reset:', error);
-        res.status(400).json({ error: error.message });
-    }
-}
+// Đổi mật khẩu khi đã quên mật khẩu cũ => sử dụng hàm resetPassword
+const resetPassword = asyncHandler(async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+    const result = await AuthService.resetPassword(email, otp, newPassword);
+    res.status(200).json(result);
+});
 
 module.exports = {
     register,
     login,
-    protect, 
+    // protect, 
     verifyOTP,
     activateAccount,
     resendOTP,
     requestPasswordReset,
-    changePasswordAuth,
+    // changePasswordAuth,
     resetPassword
 };
