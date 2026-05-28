@@ -3,7 +3,10 @@ const router = express.Router();
 const articleController = require('../controllers/article.controllers');
 const { protect } = require('../middlewares/auth.middleware');
 const { verifyProMiddleware } = require('../utils/auth.utils'); // Nhớ import middleware này
-const upload = require('../config/multer.config');
+const { uploadArticle } = require('../config/multer.config');
+const uploadArticleImages = uploadArticle.fields([
+    { name: 'cover_image', maxCount: 1 }
+]);
 const { v4: uuidv4 } = require('uuid');
 
 // Middleware tạo ID cho bài viết trước khi Upload ảnh (giống Recipe)
@@ -13,10 +16,6 @@ const generateArticleId = (req, res, next) => {
     next();
 };
 
-// Cấu hình nhận ảnh bìa (cover_image)
-const uploadArticleImages = upload.fields([
-    { name: 'cover_image', maxCount: 1 }
-]);
 
 
 // ==========================================

@@ -32,13 +32,13 @@ const adminRoutes = require('./routes/admin.routes');
 const tagRoutes = require('./routes/tag.routes');
 const interactionRoutes = require('./routes/interaction.routes');
 const dictionaryDishRoutes = require('./routes/dictionaryDish.routes');
-const chatbotRoutes = require('./routes/chatbot.routes');
+// const chatbotRoutes = require('./routes/chatbot.routes');
 const leaderboardRoutes = require('./routes/leaderboard.routes');
 const rewardRoutes = require('./routes/reward.routes');
 const inventoryRoutes = require('./routes/inventory.routes');
 
 const AiRoutes = require('./routes/ai.routes');
-const recipeAiRoutes = require('./routes/recipeAi.routes');
+// const recipeAiRoutes = require('./routes/recipeAi.routes');
 const extensionRoutes = require('./routes/extension.routes');
 // Kiểm tra kết nối database khi khởi động server
 db.testDbConnection();
@@ -61,8 +61,8 @@ app.use('/api/interaction', interactionRoutes);
 app.use('/api/dictionary-dishes', dictionaryDishRoutes);
 // Chatbot route
 app.use('/api/ai', AiRoutes);
-app.use('/api/chat', chatbotRoutes);
-app.use('/api/recipe-ai', recipeAiRoutes);
+// app.use('/api/chat', chatbotRoutes);
+// app.use('/api/recipe-ai', recipeAiRoutes);
 
 
 app.get('/api/users', async (req, res) => {

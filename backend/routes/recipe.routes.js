@@ -6,15 +6,11 @@ const { protect } = require('../middlewares/auth.middleware');
 
 const { v4: uuidv4 } = require('uuid');
 
-const upload = require('../config/multer.config');
-
-
-// Định nghĩa cấu hình upload
-const uploadRecipeImages = upload.fields([
+const { uploadRecipe } = require('../config/multer.config');
+const uploadRecipeImages = uploadRecipe.fields([
   { name: 'cover_image', maxCount: 1 },
   { name: 'result_images', maxCount: 10 }
 ]);
-
 
 // Đây là Middleware "Phát vé"
 const generateRecipeId = (req, res, next) => {

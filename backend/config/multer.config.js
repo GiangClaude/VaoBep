@@ -1,80 +1,85 @@
+// backend/config/multer.config.js
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const AppError = require('../utils/AppError');
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Đây là nơi quyết định thư mục lưu trữ
+// 1. Middleware kiểm tra định dạng file (Bảo mật)
+const fileFilter = (req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
     
-    // --- SỬA ĐỔI BẮT ĐẦU ---
-    // Logic cũ chỉ có recipeId
-    // const recipeId = req.savedRecipeId; 
-    
-    let uploadPath = '';
-
-    // 1. Kiểm tra nếu upload Avatar (Dựa vào fieldname 'avatar' gửi từ frontend)
-    if (file.fieldname === 'avatar') {
-        // Lấy userId từ req.user (được gán bởi middleware 'protect')
-        const userId = req.user ? req.user.user_id : 'unknown';
-        uploadPath = path.join(__dirname, '../public/user', userId);
-    } 
-    // 2. Kiểm tra nếu upload Recipe (Dựa vào req.savedRecipeId hoặc logic cũ)
-    else if (req.savedRecipeId || req.params.recipeId) {
-        // Ưu tiên ID mới tạo (Create), nếu không có thì lấy từ params (Update)
-        const recipeId = req.savedRecipeId || req.params.recipeId;
-        uploadPath = path.join(__dirname, '../public/recipes', recipeId);
-    } else if (req.savedArticleId || req.params.articleId) {
-        // Ưu tiên ID mới tạo (Create), nếu không có thì lấy từ params (Update)
-        const articleId = req.savedArticleId || req.params.articleId;
-        uploadPath = path.join(__dirname, '../public/articles', articleId);
-    } else if (req.savedDishId || req.params.id) {
-        // Form gửi lên update thường dùng req.params.id (dựa theo route /dictionary/:id)
-        const dishId = req.savedDishId || req.params.id;
-        uploadPath = path.join(__dirname, '../public/dictionarydish', dishId);
+    if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        // Ném lỗi vào AppError để Error Middleware của bạn bắt được
+        cb(new AppError('Định dạng file không hợp lệ! Chỉ cho phép JPG, PNG, WEBP.', 400), false);
     }
-    // --- KẾT THÚC PHẦN THÊM MỚI ---
-    else {
-        // Fallback nếu không xác định được (tránh lỗi crash)
-        uploadPath = path.join(__dirname, '../public/temp');
-    }
+};
 
-    // Tạo thư mục nếu chưa tồn tại
-    if (!fs.existsSync(uploadPath)){
-        fs.mkdirSync(uploadPath, {recursive: true});
-    }
+// 2. Factory Function tạo cấu hình Multer (Giải quyết vi phạm OCP)
+const createUploader = (entityConfig) => {
+    const storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            // Lấy ID động dựa trên hàm getId truyền vào từ config
+            const id = entityConfig.getId(req);
+            let uploadPath = path.join(__dirname, '../public', entityConfig.folderName);
 
-    // 3. Báo cho Multer biết đường dẫn xong xuôi
-    cb(null, uploadPath);
-    // --- SỬA ĐỔI KẾT THÚC ---
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    
-    // 2. Xác định tiền tố dựa trên tên trường (fieldname) gửi từ Frontend
-    // --- SỬA ĐỔI BẮT ĐẦU ---
-    // Code cũ: const prefix = file.fieldname === 'cover_image' ? 'cover' : 'result';
-    
-    let prefix = 'file';
-    if (file.fieldname === 'cover_image') prefix = 'cover';
-    else if (file.fieldname === 'result') prefix = 'result';
-    else if (file.fieldname === 'avatar') prefix = 'avatar'; // Thêm case cho avatar
-    else if (file.fieldname === 'article_images') prefix = 'article';
-    else if (file.fieldname === 'image_url') prefix = 'dish'; // [THÊM MỚI]
-    // --- SỬA ĐỔI KẾT THÚC ---
+            if (id) {
+                uploadPath = path.join(uploadPath, id.toString());
+            } else {
+                uploadPath = path.join(__dirname, '../public/temp');
+            }
 
-    // 3. Tạo chuỗi ngẫu nhiên nhỏ để tránh trùng lặp nếu up nhiều ảnh cùng lúc
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    
-    // 4. Ghép lại: cover_123456789.jpg
-    cb(null, `${prefix}_${uniqueSuffix}${ext}`);
-  }
+            // Tạo thư mục nếu chưa tồn tại (chỉ tạo 1 lần)
+            if (!fs.existsSync(uploadPath)) {
+                fs.mkdirSync(uploadPath, { recursive: true });
+            }
+
+            cb(null, uploadPath);
+        },
+        filename: function (req, file, cb) {
+            const ext = path.extname(file.originalname).toLowerCase();
+            
+            // Xử lý tiền tố thông minh: 'cover_image' -> 'cover', 'result_images' -> 'result'
+            const prefix = file.fieldname.split('_')[0]; 
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+            
+            cb(null, `${prefix}_${uniqueSuffix}${ext}`);
+        }
+    });
+
+    return multer({ 
+        storage: storage,
+        fileFilter: fileFilter,
+        limits: { fileSize: 5 * 1024 * 1024 } // Giới hạn 5MB
+    });
+};
+
+// 3. Khai báo các module Upload cụ thể (Mở rộng thoải mái mà không cần sửa code lõi)
+const uploadAvatar = createUploader({
+    folderName: 'user',
+    getId: (req) => req.user?.user_id || req.user?.id
 });
 
-const uploadLocal = multer({ 
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 } 
+const uploadRecipe = createUploader({
+    folderName: 'recipes',
+    getId: (req) => req.savedRecipeId || req.params.recipeId || req.params.id
 });
 
-// Lưu ý: Code cũ bạn export instance tạo mới, bỏ qua giới hạn file size ở trên. 
-// Tui giữ nguyên export cũ nhưng khuyên bạn nên dùng biến uploadLocal đã config limit.
-module.exports = multer({ storage: storage });
+const uploadArticle = createUploader({
+    folderName: 'articles',
+    getId: (req) => req.savedArticleId || req.params.articleId || req.params.id
+});
+
+const uploadDictionary = createUploader({
+    folderName: 'dictionarydish',
+    getId: (req) => req.savedDishId || req.params.id
+});
+
+// Export các hàm middleware để Router sử dụng
+module.exports = {
+    uploadAvatar,
+    uploadRecipe,
+    uploadArticle,
+    uploadDictionary
+};
