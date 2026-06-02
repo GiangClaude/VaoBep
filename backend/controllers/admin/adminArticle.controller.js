@@ -1,6 +1,6 @@
 const ArticleModel = require('../../models/article.model');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises; 
 const { addVectorSyncJob } = require('../../services/vectorQueue.service');
 const asyncHandler = require('../../utils/asyncHandler');
 const AppError = require('../../utils/AppError');
@@ -43,7 +43,8 @@ const deleteArticle = asyncHandler(async (req, res) => {
     try {
         await ArticleModel.deleteById(id);
         const targetDir = path.join(__dirname, '../../public/articles', id);
-        if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true, force: true });
+        if (fs.existsSync(targetDir)) 
+            await fs.rm(targetDir, { recursive: true, force: true }).catch(() => {});
         addVectorSyncJob(id, 'article', 'delete');
         res.status(200).json({ message: 'Xóa bài viết thành công' });
     } catch (error) {

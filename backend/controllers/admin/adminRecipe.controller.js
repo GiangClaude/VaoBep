@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const RecipeModel = require('../../models/recipe.model');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
 const { addVectorSyncJob } = require('../../services/vectorQueue.service');
 const asyncHandler = require('../../utils/asyncHandler');
 const AppError = require('../../utils/AppError');
@@ -54,8 +54,8 @@ const createAdminRecipe = asyncHandler(async (req, res) => {
             const targetDir = path.join(__dirname, '../../public/recipes', recipeId);
             const targetPath = path.join(targetDir, coverImage);
             try {
-                if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-                fs.renameSync(tempPath, targetPath);
+                if (!fs.existsSync(targetDir)) await fs.mkdir(targetDir, { recursive: true });
+                await fs.rename(tempPath, targetPath);
             } catch (moveError) {
                 console.error('Lỗi di chuyển ảnh:', moveError);
             }

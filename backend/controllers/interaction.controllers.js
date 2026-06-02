@@ -85,7 +85,7 @@ const ratePost = asyncHandler(async (req, res) => {
 const followUser = asyncHandler(async (req, res) => {
     const followerId = req.user.user_id;
     const { followingId } = req.body;
-
+    
     const result = await InteractionService.followUser(followerId, followingId);
     res.status(200).json({ 
         success: true, 

@@ -6,11 +6,7 @@ class MenuModel {
     /**
      * TẠO MENU MỚI (Lưu cả Ngày, Bữa, Món bằng Transaction)
      */
-    static async create(userId, menuData) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-
+    static async create(connection, userId, menuData) {
             const menuId = uuidv4();
             const { name, description, is_public, cloned_from_id, days } = menuData;
 
@@ -64,15 +60,7 @@ class MenuModel {
                 }
             }
 
-            await connection.commit();
             return { menu_id: menuId, name };
-        } catch (error) {
-            await connection.rollback();
-            console.error('Lỗi MenuModel (create):', error);
-            throw error;
-        } finally {
-            if (connection) connection.release();
-        }
     }
 
     /**
@@ -154,11 +142,7 @@ class MenuModel {
     /**
      * CẬP NHẬT MENU (Ghi đè cấu trúc lồng)
      */
-    static async update(menuId, userId, menuData) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-
+    static async update(connection,menuId, userId, menuData) {
             const { name, description, is_public, days } = menuData;
 
             // 1. Update basic info
@@ -202,16 +186,7 @@ class MenuModel {
                     }
                 }
             }
-
-            await connection.commit();
-            return { success: true };
-        } catch (error) {
-            await connection.rollback();
-            console.error('Lỗi MenuModel (update):', error);
-            throw error;
-        } finally {
-            if (connection) connection.release();
-        }
+        return { success: true };   
     }
 
     /**

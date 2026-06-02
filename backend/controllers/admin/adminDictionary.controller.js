@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const DictionaryDishModel = require('../../models/dictionaryDish.model');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
 const { addVectorSyncJob } = require('../../services/vectorQueue.service');
 const asyncHandler = require('../../utils/asyncHandler');
 const AppError = require('../../utils/AppError');
@@ -34,8 +34,8 @@ const createDictionaryDish = asyncHandler(async (req, res) => {
             const targetDir = path.join(__dirname, '../../public/dictionarydish', dishId);
             const targetPath = path.join(targetDir, image_url);
             try {
-                if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-                fs.renameSync(tempPath, targetPath);
+                if (!fs.existsSync(targetDir)) await fs.mkdir(targetDir, { recursive: true });
+                await fs.rename(tempPath, targetPath);
             } catch (moveError) {
                 console.error('Lỗi di chuyển ảnh từ điển:', moveError);
             }
@@ -103,9 +103,10 @@ const deleteDictionaryDish = asyncHandler(async (req, res) => {
     const { id } = req.params;
     await DictionaryDishModel.deleteDish(id);
     const targetDir = path.join(__dirname, '../../public/dictionarydish', id);
-    if (fs.existsSync(targetDir)) fs.rmSync(targetDir, { recursive: true, force: true });
+    if (fs.existsSync(targetDir)) await fs.rm(targetDir, { recursive: true, force: true }).catch(() => {});
     addVectorSyncJob(id, 'dish', 'delete');
     res.status(200).json({ message: 'Xóa món ăn thành công' });
 });
 
 module.exports = { getDictionaryDishes, createDictionaryDish, updateDictionaryDish, deleteDictionaryDish };
+ 

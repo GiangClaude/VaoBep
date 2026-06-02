@@ -57,11 +57,7 @@ class Interaction {
     }
     
     // --- 1. LIKE / UNLIKE (Hỗ trợ Recipe, Article, Dish) ---
-    static async toggleLike({ userId, postId, postType }) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-
+    static async toggleLike(connection, { userId, postId, postType }) {
             // Xác định bảng cần update count
             const { targetTable, idColumn } = await this._validatePostStatus(connection, postId, postType);
 
@@ -111,22 +107,12 @@ class Interaction {
 
             await connection.commit();
             return { isLiked };
-
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
     }
 
 
 
     // --- 2. SAVE / UNSAVE (Bookmark) ---
-    static async toggleSave({ userId, postId, postType }) {
-        const connection = await pool.getConnection();
-        try {
-
+    static async toggleSave(connection, { userId, postId, postType }) {
             await this._validatePostStatus(connection, postId, postType);
 
             // Kiểm tra đã lưu chưa
@@ -152,19 +138,10 @@ class Interaction {
                 isSaved = true;
             }
             return { isSaved };
-        } catch (error) {
-            throw error;
-        } finally {
-            connection.release();
-        }
     }
 
     // --- 3. COMMENT (Bình luận) ---
-    static async createComment({ userId, postId, postType, content, parentId = null}) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-
+    static async createComment(connection,{ userId, postId, postType, content, parentId = null}) {
             await this._validatePostStatus(connection, postId, postType);
 
             if (parentId) {
@@ -227,12 +204,6 @@ class Interaction {
 
             await connection.commit();
             return rows[0];
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
     }
 
     static async getComments(postId, postType, page = 1, limit = 10) {
@@ -292,13 +263,7 @@ class Interaction {
 
     // Hàm xóa bình luận và giảm comment_count của bài viết
 // Hàm xóa bình luận và tất cả phản hồi con, trigger sẽ tự lo việc giảm comment_count
-    static async deleteComment(commentId, userId) {
-        console.log("Attempting to delete comment and its replies:", { commentId, userId });
-
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-
+    static async deleteComment(connection, commentId, userId) {
             // 1. Kiểm tra xem comment có tồn tại và thuộc về user này không để chống xóa lén
             const [checkOwner] = await connection.execute(
                 `SELECT comment_id FROM Comments WHERE comment_id = ? AND user_id = ?`,
@@ -361,20 +326,10 @@ class Interaction {
             
             // Trả về số lượng comment đã xóa để client có thể biết
             return { success: true, deletedCount: idsToDelete.length };
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
     }
 
     // --- 4. RATING (Đánh giá sao) ---
-    static async ratePost({ userId, postId, postType, score }) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-
+    static async ratePost(connection, { userId, postId, postType, score }) {
             // Dùng INSERT ON DUPLICATE KEY UPDATE để xử lý việc user đánh giá lại
             // Bảng Ratings khóa chính là (user_id, post_id) -> Đảm bảo 1 user chỉ rate 1 lần/bài
             const sqlRate = `
@@ -418,21 +373,12 @@ class Interaction {
 
             await connection.commit();
             return { avgScore, ratingCount };
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
     }
 
     // --- 5. FOLLOW USER (Theo dõi người dùng) ---
-    static async toggleFollow(followerId, followingId) {
-        const connection = await pool.getConnection();
-        try {
-            // Không được follow chính mình
-            if (followerId === followingId) throw new Error("Không thể tự follow bản thân");
+    static async toggleFollow(connection, followerId, followingId) {
 
+            // Không được follow chính mình
             const [exists] = await connection.execute(
                 `SELECT * FROM Follows WHERE follower_id = ? AND following_id = ?`,
                 [followerId, followingId]
@@ -458,11 +404,6 @@ class Interaction {
             await LeaderboardModel.syncUserPoint(connection, followingId);
             
             return { isFollowing };
-        } catch (error) {
-            throw error;
-        } finally {
-            connection.release();
-        }
     }
     
     // Check trạng thái của user với các bài viết (Dùng khi load trang chi tiết)
@@ -490,11 +431,7 @@ class Interaction {
     }
 
     // --- 6. REPORT (Báo cáo bài viết) ---
-    static async reportPost({ userId, postId, postType, reason }) {
-        const connection = await pool.getConnection();
-        try {
-            await connection.beginTransaction();
-
+    static async reportPost(connection, { userId, postId, postType, reason }) {
             // Xác định bảng cần update report_count
             let targetTable = '';
             let idColumn = '';
@@ -530,12 +467,6 @@ class Interaction {
 
             await connection.commit();
             return { success: true };
-        } catch (error) {
-            await connection.rollback();
-            throw error;
-        } finally {
-            connection.release();
-        }
     }
 
     // --- Lấy trạng thái tương tác cho danh sách bài viết (Batch Check) ---

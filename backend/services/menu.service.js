@@ -1,13 +1,45 @@
 const MenuModel = require('../models/menu.model');
 const aiService = require('../services/ai.service');
 const AppError = require('../utils/AppError');
-
+const db = require('../config/db');
 class MenuService {
-    async createMenu(userId, menuData) {
+ async createMenu(userId, menuData) {
         if (!menuData || !menuData.name) throw new AppError('Tên thực đơn không được để trống', 400);
         if (userId == null) throw new AppError('Unauthorized: User ID is missing', 401);
 
-        return await MenuModel.create(userId, menuData);
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            // Truyền connection xuống Model
+            const newMenu = await MenuModel.create(connection, userId, menuData);
+            await connection.commit();
+            return newMenu;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    async updateMenu(menuId, userId, menuData) {
+        const existingMenu = await MenuModel.findById(menuId);
+        if (!existingMenu) throw new AppError('Không tìm thấy thực đơn', 404);
+        if (existingMenu.user_id !== userId) throw new AppError('Bạn không có quyền sửa thực đơn này', 403);
+
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            // Truyền connection xuống Model
+            await MenuModel.update(connection, menuId, userId, menuData);
+            await connection.commit();
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 
     async getUserMenus(userId) {
@@ -18,15 +50,6 @@ class MenuService {
         const menu = await MenuModel.findById(menuId);
         if (!menu) throw new AppError('Không tìm thấy thực đơn', 404);
         return menu;
-    }
-
-    async updateMenu(menuId, userId, menuData) {
-        const existingMenu = await MenuModel.findById(menuId);
-        if (!existingMenu) throw new AppError('Không tìm thấy thực đơn', 404);
-        if (existingMenu.user_id !== userId) throw new AppError('Bạn không có quyền sửa thực đơn này', 403);
-
-        await MenuModel.update(menuId, userId, menuData);
-        return true;
     }
 
     async deleteMenu(menuId, userId) {

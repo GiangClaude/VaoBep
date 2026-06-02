@@ -3,7 +3,7 @@ const RecipeModel = require('../models/recipe.model');
 const DictionaryDishService = require('../services/dictionaryDish.service'); // Đã sửa đường dẫn chuẩn
 const { validateReportInput, validateInteractionInput, validateCommentInput } = require('../utils/validation');
 const AppError = require('../utils/AppError');
-
+const db = require('../config/db');
 class InteractionService {
     // Helper giữ nguyên từ file cũ
     _isValidPostType(type) {
@@ -14,35 +14,51 @@ class InteractionService {
         const validation = validateInteractionInput({ postId, postType });
         if (!validation.valid) throw new AppError(validation.message, 400);
 
-        const result = await InteractionModel.toggleLike({ userId, postId, postType });
-        const typeName = (postType === 'recipe') ? 'công thức' : 
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const result = await InteractionModel.toggleLike({ userId, postId, postType });
+            await connection.commit();
+            const typeName = (postType === 'recipe') ? 'công thức' : 
                          (postType === 'article') ? 'bài viết' : 
                          (postType === 'dish') ? 'món ăn' : 'null';
-        
-        console.log('Toggle like result:', postId, result, postType, typeName);
-        
-        if (postType === 'dish') {
-            await DictionaryDishService.recalculatePoint(postId);
+                
+            if (postType === 'dish') {
+                await DictionaryDishService.recalculatePoint(postId);
+            }
+            return { message: result.isLiked ? `Đã thích ${typeName}` : `Đã bỏ thích ${typeName}`, isLiked: result.isLiked };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-
-        return {
-            message: result.isLiked ? `Đã thích ${typeName}` : `Đã bỏ thích ${typeName}`,
-            isLiked: result.isLiked
-        };
     }
 
     async toggleSave(userId, postId, postType) {
         const validation = validateInteractionInput({ postId, postType });
         if (!validation.valid) throw new AppError(validation.message, 400);
 
-        const result = await InteractionModel.toggleSave({ userId, postId, postType });
-        const typeName = (postType === 'recipe') ? 'công thức' : 
-                         (postType === 'article') ? 'bài viết' : 'món ăn';
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
 
-        return {
-            message: result.isSaved ? `Đã lưu ${typeName}` : `Đã bỏ lưu ${typeName}`,
-            isSaved: result.isSaved
-        };
+            // Truyền connection xuống Model
+            const result = await InteractionModel.toggleSave(connection, { userId, postId, postType });
+            
+            await connection.commit();
+
+            const typeName = (postType === 'recipe') ? 'công thức' : (postType === 'article') ? 'bài viết' : 'món ăn';
+            return {
+                message: result.isSaved ? `Đã lưu ${typeName}` : `Đã bỏ lưu ${typeName}`,
+                isSaved: result.isSaved
+            };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 
     async postComment(userId, postId, postType, content, parentId) {
@@ -51,17 +67,20 @@ class InteractionService {
 
         const validation = validateCommentInput({ postId, postType, content, parentId });
         if (!validation.valid) throw new AppError(validation.message, 400);
-
-        const newComment = await InteractionModel.createComment({ userId, postId, postType, content, parentId });
-        
-        if (postType === 'dish') {
-            await DictionaryDishService.recalculatePoint(postId);
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const newComment = await InteractionModel.createComment(connection, { userId, postId, postType, content, parentId });
+            await connection.commit();
+            
+            if (postType === 'dish') await DictionaryDishService.recalculatePoint(postId);
+            return { message: parentId ? "Phản hồi thành công" : "Bình luận thành công", newComment };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-
-        return {
-            message: parentId ? "Phản hồi thành công" : "Bình luận thành công",
-            newComment
-        };
     }
 
     async editComment(userId, commentId, content) {
@@ -81,17 +100,20 @@ class InteractionService {
         const comment = await InteractionModel.getCommentById(commentId);
         if (!comment) throw new AppError("Bình luận không tồn tại", 404);
         if (comment.user_id !== userId) throw new AppError("Bạn không có quyền xóa bình luận này", 403);
-
-        const success = await InteractionModel.deleteComment(commentId, userId);
-        const postType = comment.post_type;
-        
-        if (postType === 'dish') {
-            await DictionaryDishService.recalculatePoint(comment.post_id);
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const success = await InteractionModel.deleteComment(connection, commentId, userId);
+            await connection.commit();
+            
+            if (comment.post_type === 'dish') await DictionaryDishService.recalculatePoint(comment.post_id);
+            return true;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-        
-        if (!success) throw new AppError("Không tìm thấy bình luận hoặc bạn không có quyền xóa.", 403);
-
-        return true;
     }
 
     async getComments(postId, postType, page, limit) {
@@ -107,18 +129,42 @@ class InteractionService {
     async ratePost(userId, postId, postType, score) {
         if (!this._isValidPostType(postType)) throw new AppError('postType không hợp lệ', 400);
         if (!score || score < 1 || score > 5) throw new AppError('Điểm đánh giá phải từ 1 đến 5', 400);
-
-        return await InteractionModel.ratePost({ userId, postId, postType, score });
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const result = await InteractionModel.ratePost(connection, { userId, postId, postType, score });
+            await connection.commit();
+            return result;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 
     async followUser(followerId, followingId) {
         if (!followingId) throw new AppError('Thiếu ID người cần follow', 400);
-        const result = await InteractionModel.toggleFollow(followerId, followingId);
-        
-        return {
-            message: result.isFollowing ? 'Đã theo dõi' : 'Đã hủy theo dõi',
-            isFollowing: result.isFollowing
-        };
+        if (followerId === followingId) throw new AppError("Không thể tự follow bản thân", 400);
+         const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Truyền connection xuống Model
+            const result = await InteractionModel.toggleFollow(connection, followerId, followingId);
+            
+            await connection.commit();
+
+            return {
+                message: result.isFollowing ? 'Đã theo dõi' : 'Đã hủy theo dõi',
+                isFollowing: result.isFollowing
+            };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 
     async getInteractionState(userId, postId, postType) {
@@ -139,7 +185,18 @@ class InteractionService {
         const validation = validateReportInput({ postId, postType, reason });
         if (!validation.valid) throw new AppError(validation.message, 400);
 
-        return await InteractionModel.reportPost({ userId, postId, postType, reason });
+        const connection = await db.pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            const result = await InteractionModel.reportPost(connection, { userId, postId, postType, reason });
+            await connection.commit();
+            return result;
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const UserModel = require('../../models/user.model');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
 const emailUtils = require('../../utils/email.utils');
 const authUtils = require('../../utils/auth.utils');
 const asyncHandler = require('../../utils/asyncHandler');
@@ -62,8 +62,7 @@ const createUser = asyncHandler(async (req, res) => {
     if (!emailResult.success) throw new AppError('Failed to send verification email.', 500);
 
     const userFolderPath = path.join(__dirname, '../../public/user', userId.toString());
-    if (!fs.existsSync(userFolderPath)) fs.mkdirSync(userFolderPath, { recursive: true });
-
+    if (!fs.existsSync(userFolderPath)) await fs.mkdir(userFolderPath, { recursive: true }).catch(() => {});
     res.status(201).json({ message: 'User created successfully', userId });
 });
 
