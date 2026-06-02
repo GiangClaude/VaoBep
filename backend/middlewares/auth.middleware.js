@@ -12,8 +12,9 @@ const protect = asyncHandler(async (req, res, next) => {
         if (!decoded) {
             throw new AppError('Not authorized, token failed', 401);
         }
-
+        
         const fetchedUser = await UserModel.findAuth(decoded.id);
+        console.log('Fetched user from DB:', fetchedUser, decoded.id);
         req.user = Array.isArray(fetchedUser) ? fetchedUser[0] : fetchedUser;
         
         if (!req.user) {

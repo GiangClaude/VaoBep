@@ -260,7 +260,7 @@ class UserService {
         const offset = (page - 1) * limit;
 
         const countQuery = 'SELECT COUNT(*) as total FROM Users WHERE full_name LIKE ? OR email LIKE ?';
-        const [totalResult] = await db.promise().query(countQuery, [`%${search}%`, `%${search}%`]);
+        const [totalResult] = await db.pool.execute(countQuery, [`%${search}%`, `%${search}%`]);
         const total = totalResult[0].total;
 
         const query = `
@@ -271,7 +271,7 @@ class UserService {
             LIMIT ? OFFSET ?
         `;
 
-        const [users] = await db.promise().query(query, [`%${search}%`, `%${search}%`, parseInt(limit), parseInt(offset)]);
+        const [users] = await db.pool.execute(query, [`%${search}%`, `%${search}%`, limit.toString(), offset.toString()]);
 
         return {
             users,
@@ -285,7 +285,7 @@ class UserService {
     async getUserDetailAdmin(userId) {
         const userQuery =
             'SELECT user_id, full_name, email, avatar, bio, role, account_status, points, created_at FROM Users WHERE user_id = ?';
-        const [users] = await db.promise().query(userQuery, [userId]);
+        const [users] = await db.pool.execute(userQuery, [userId]);
 
         if (users.length === 0) {
             throw new AppError('User not found', 404);
@@ -298,7 +298,7 @@ class UserService {
                 (SELECT COUNT(*) FROM Article_Posts WHERE user_id = ?) as total_articles,
                 (SELECT COUNT(*) FROM Reports WHERE post_id IN (SELECT recipe_id FROM Recipes WHERE user_id = ?)) as total_reports_received
         `;
-        const [stats] = await db.promise().query(statsQuery, [userId, userId, userId]);
+        const [stats] = await db.pool.execute(statsQuery, [userId, userId, userId]);
 
         return {
             user: users[0],
@@ -318,7 +318,7 @@ class UserService {
         }
 
         // Cập nhật DB (Nếu bạn có UserModel.updateStatus thì nên dùng, ở đây tôi dùng raw query như code cũ của bạn)
-        const [result] = await db.promise().query(
+        const [result] = await db.pool.execute(
             `UPDATE Users SET account_status = ? WHERE user_id = ?`, 
             [status, userId]
         );
@@ -347,7 +347,7 @@ class UserService {
         }
 
         // 2. Check email tồn tại
-        const [existing] = await db.promise().query(
+        const [existing] = await db.pool.execute(
             `SELECT email FROM Users WHERE email = ?`, 
             [email]
         );
@@ -365,7 +365,7 @@ class UserService {
             INSERT INTO Users (full_name, email, password, role, account_status) 
             VALUES (?, ?, ?, ?, 'active')`;
         
-        await db.promise().query(query, [full_name, email, hashedPassword, finalRole]);
+        await db.pool.execute(query, [full_name, email, hashedPassword, finalRole]);
 
         return { message: 'Tạo tài khoản người dùng thành công' };
     }

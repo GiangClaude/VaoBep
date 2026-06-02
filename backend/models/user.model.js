@@ -59,7 +59,7 @@ class User {
                 (SELECT COUNT(*) FROM Saved_Posts s WHERE s.user_id = u.user_id) as saved_count, -- Placeholder tạm thời
                 (SELECT COUNT(*) FROM Point_Transactions pt WHERE pt.user_id = u.user_id AND pt.type = 'checkin' AND DATE(pt.created_at) = CURRENT_DATE()) as is_checked_in
             FROM users u 
-             WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'
+             WHERE u.user_id = ? AND u.account_status = 'active'
             `;
         const [rows] = await pool.execute(sql, [id]);
         
@@ -110,7 +110,7 @@ class User {
                     (SELECT COUNT(*) FROM Follows f2 WHERE f2.follower_id = ? AND f2.following_id = u.user_id) > 0 as is_following
 
                 FROM Users u 
-                WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'
+                WHERE u.user_id = ? AND u.account_status = 'active'
             `;
             
             // Params: [currentUserId (cho subquery), id (cho where clause)]
@@ -141,7 +141,7 @@ class User {
     }
 
     static async findAuth (userId){
-        const sql = "SELECT user_id, email, role, account_status FROM users u WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'";
+        const sql = "SELECT user_id, email, role, account_status FROM users u WHERE u.user_id = ? AND u.account_status = 'active'";
         const [rows] = await pool.execute(sql, [userId]);
         return rows[0];        
     }

@@ -115,7 +115,11 @@ class RecipeService {
                 const oldRecipe = await RecipeModel.findById(recipeId);
                 if (oldRecipe && oldRecipe.cover_image) {
                     const oldFilePath = path.join(__dirname, '../public/recipes', recipeId.toString(), oldRecipe.cover_image);
-                    try { await fsPromises.unlink(oldFilePath); } catch (e) {} // Soft delete
+                    try { 
+                        await fsPromises.unlink(oldFilePath); 
+                    } catch (e) {
+                        console.warn(`[File System] Không thể xóa ảnh cover cũ của recipe ${recipeId}:`, e.message);
+                    } // Soft delete
                 }
                 recipeData.cover_image = files['cover_image'][0].filename;
             }

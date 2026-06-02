@@ -2,7 +2,6 @@ const paginationHelper = require('../utils/paginationHelper');
 const { getUserIdFromToken } = require('../utils/auth.utils');
 const asyncHandler = require('../utils/asyncHandler');
 const RecipeService = require('../services/recipe.service'); 
-// ĐÃ XÓA AppError và RecipeModel ở đây vì Service sẽ lo
 
 const createRecipe = asyncHandler(async (req, res) => {
     const newRecipe = await RecipeService.createRecipe(req.savedRecipeId, req.user.user_id, req.body, req.files);

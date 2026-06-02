@@ -67,21 +67,20 @@ class MenuModel {
      * LẤY CHI TIẾT 1 MENU (Dựng lại cấu trúc cây JSON)
      */
     static async findById(menuId) {
-        const connection = await pool.getConnection();
         try {
             // 1. Lấy thông tin Menu
-            const [menus] = await connection.execute(`SELECT * FROM menus WHERE menu_id = ?`, [menuId]);
+            const [menus] = await pool.execute(`SELECT * FROM menus WHERE menu_id = ?`, [menuId]);
             if (menus.length === 0) return null;
             const menu = menus[0];
 
             // 2. Lấy danh sách Ngày
-            const [days] = await connection.execute(
+            const [days] = await pool.execute(
                 `SELECT * FROM menu_days WHERE menu_id = ? ORDER BY day_index ASC`, 
                 [menuId]
             );
 
             // 3. Lấy danh sách Bữa ăn thuộc Menu này
-            const [meals] = await connection.execute(
+            const [meals] = await pool.execute(
                 `SELECT mm.* FROM menu_meals mm 
                  JOIN menu_days md ON mm.day_id = md.day_id 
                  WHERE md.menu_id = ?
@@ -90,7 +89,7 @@ class MenuModel {
             );
 
             // 4. Lấy danh sách Món ăn (kèm thông tin hiển thị cơ bản)
-            const [recipes] = await connection.execute(
+            const [recipes] = await pool.execute(
                 `SELECT mr.*, r.title, r.cover_image, r.total_calo, r.cook_time, r.status 
                  FROM menu_recipes mr 
                  JOIN menu_meals mm ON mr.meal_id = mm.meal_id 
@@ -114,9 +113,8 @@ class MenuModel {
         } catch (error) {
             console.error('Lỗi MenuModel (findById):', error);
             throw error;
-        } finally {
-            if (connection) connection.release();
         }
+        // Đã xóa khối finally { if(connection) connection.release() } vì không dùng connection nữa
     }
 
     /**

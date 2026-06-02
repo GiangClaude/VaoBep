@@ -94,7 +94,9 @@ class ArticleService {
                 if (article.cover_image) {
                     const oldFilePath = path.join(__dirname, '../public/articles', articleId, article.cover_image);
                     // Dùng Promise không chặn luồng Node.js
-                    try { await fsPromises.unlink(oldFilePath); } catch (err) {} 
+                    try { await fsPromises.unlink(oldFilePath); } catch (err) {
+                        console.warn(`[File System] Không thể xóa ảnh cover cũ của article ${articleId}:`, err.message);
+                    } 
                 }
                 updateData.cover_image = newImageName;
             }
@@ -140,7 +142,11 @@ class ArticleService {
 
         const articleDir = path.join(__dirname, '../public/articles', articleId);
         // Dùng Promise xóa folder
-        try { await fsPromises.rm(articleDir, { recursive: true, force: true }); } catch (err) {}
+        try { 
+            await fsPromises.rm(articleDir, { recursive: true, force: true }); 
+        } catch (err) {
+            console.warn(`[File System] Không thể xóa thư mục của article ${articleId}:`, err.message);
+        }
 
         await ArticleModel.deleteById(articleId);
         addVectorSyncJob(articleId, 'article', 'delete');

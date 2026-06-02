@@ -546,16 +546,19 @@ class Recipe{
         }
     }
 
+
+    /**
+     * LẤY CHI TIẾT CÔNG THỨC NẤU ĂN
+     * Đã tối ưu: Dùng trực tiếp pool thay vì xin connection riêng
+     */
     static async findById(recipeId) {
         if (!recipeId) {
             console.log("RecipeModel: Không có recipeId");
             return null;
         }
 
-        const connection = await pool.getConnection();
         try {
             // --- Query 1: Lấy thông tin Recipe và User ---
-
             const recipeSql = `
                 SELECT 
                     R.*, 
@@ -567,18 +570,15 @@ class Recipe{
                 WHERE R.recipe_id = ? 
             `;
             
-            const sqlParams = [recipeId]; 
-
-            let [recipeRows] = await connection.execute(recipeSql, sqlParams);
+            // Dùng pool.execute thay cho connection.execute
+            let [recipeRows] = await pool.execute(recipeSql, [recipeId]);
 
             if (recipeRows.length === 0) {
-                return null; // Không tìm thấy công thức
+                return null; 
             }
-
             const recipe = recipeRows[0];
 
             // --- Query 2: Lấy thông tin Nguyên liệu ---
-
             const ingredientSql = `
                 SELECT 
                     RI.quantity, 
@@ -591,19 +591,17 @@ class Recipe{
                 WHERE RI.recipe_id = ?
             `;
             
-            let [ingredientRows] = await connection.execute(ingredientSql, [recipeId]);
-
-            // Sửa 4: Gán kết quả nguyên liệu (ngay cả khi rỗng)
-            // Không nên return null ở đây, vì công thức có thể không có nguyên liệu
+            let [ingredientRows] = await pool.execute(ingredientSql, [recipeId]);
             recipe.ingredients = ingredientRows;
 
+            // --- Query 3: Lấy thông tin Tags ---
             const tagSql = `
                 SELECT T.tag_id, T.name 
                 FROM Tags T
                 JOIN tag_post TP ON T.tag_id = TP.tag_id
                 WHERE TP.post_id = ? AND TP.post_type = 'recipe'
             `;
-            const [tagRows] = await connection.execute(tagSql, [recipeId]);
+            const [tagRows] = await pool.execute(tagSql, [recipeId]);
             recipe.tags = tagRows || [];
 
             return recipe;
@@ -611,8 +609,6 @@ class Recipe{
         } catch (error) {
             console.error('Lỗi Model (findById):', error);
             throw error;
-        } finally {
-            if (connection) connection.release();
         }
     }
 
