@@ -76,10 +76,8 @@ export default function UserProfilePage() {
                 
                 {/* Tái sử dụng MyRecipesTab nhưng ẩn các nút sửa/xóa */}
                 <MyRecipesTab
-                    recipes={recipes}
-                    isPublicView={true} // Cần sửa nhẹ MyRecipesTab để ẩn nút Edit/Delete/Hide nếu prop này true
-                    onPromote={() => {}} // Không làm gì
-                    onToggleVisibility={() => {}} // Không làm gì
+                    isPublicView={true} 
+                    publicRecipes={recipes} 
                 />
 
                 {/* HIỂN THỊ THỰC ĐƠN CỦA USER */}

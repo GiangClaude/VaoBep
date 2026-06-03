@@ -13,11 +13,12 @@ class InteractionService {
     async toggleLike(userId, postId, postType) {
         const validation = validateInteractionInput({ postId, postType });
         if (!validation.valid) throw new AppError(validation.message, 400);
+    console.log("Received toggleLike request:", { userId, postId, postType }); // Debug log
 
         const connection = await db.pool.getConnection();
         try {
             await connection.beginTransaction();
-            const result = await InteractionModel.toggleLike({ userId, postId, postType });
+            const result = await InteractionModel.toggleLike(connection,{ userId, postId, postType });
             await connection.commit();
             const typeName = (postType === 'recipe') ? 'công thức' : 
                          (postType === 'article') ? 'bài viết' : 

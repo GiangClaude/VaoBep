@@ -8,10 +8,6 @@ import CommentSection from '../component/comment/CommentSection';
 import RecipeProposalSection from '../component/dictionary/RecipeProposalSection';
 import AiSummaryBanner from "../component/common/AiSummaryBanner";
 
-// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
-import Modal from '../component/common/modal';
-import ReportModalComponent from '../component/common/ReportModal';
-
 const DishDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -120,22 +116,7 @@ const DishDetailPage = () => {
                 </div>
             </div>
 
-            {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI --- */}
-            <Modal 
-                isOpen={interaction.modalConfig.isOpen}
-                onClose={interaction.closeModal}
-                title={interaction.modalConfig.title}
-                message={interaction.modalConfig.message}
-                type={interaction.modalConfig.type}
-                actions={interaction.modalConfig.actions}
-            />
-            <ReportModalComponent
-                isOpen={interaction.reportModal.isOpen}
-                onClose={interaction.handleCancelReport}
-                onSubmit={interaction.handleSubmitReport}
-                loading={interaction.reportModal.loading}
-                serverError={interaction.reportModal.serverError}
-            />
+            {/* Modal management delegated to ModalContext via useInteraction hook */}
         </div>
     );
 };

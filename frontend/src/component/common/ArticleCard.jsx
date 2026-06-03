@@ -7,9 +7,9 @@ import Toast from '../common/Toast';
 import CommentSection from '../comment/CommentSection'; 
 import { useAuth } from '../../AuthContext';
 
-// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
-import Modal from './modal';
-import ReportModalComponent from './ReportModal'; 
+// // --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
+// import Modal from './modal';
+// import ReportModalComponent from './ReportModal'; 
 
 const renderStatusBadge = (status) => {
   switch (status) {
@@ -185,7 +185,7 @@ export default function ArticleCard({
         </div>
       )}
 
-      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI --- */}
+      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI ---
       <Modal 
           isOpen={interactionHook.modalConfig.isOpen}
           onClose={interactionHook.closeModal}
@@ -200,7 +200,7 @@ export default function ArticleCard({
           onSubmit={interactionHook.handleSubmitReport}
           loading={interactionHook.reportModal.loading}
           serverError={interactionHook.reportModal.serverError}
-      />
+      /> */}
 
       <Toast message={interactionHook.toast.message} isVisible={interactionHook.toast.show} onClose={interactionHook.closeToast} />
     </motion.article>

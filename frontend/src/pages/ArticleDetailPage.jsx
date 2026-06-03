@@ -12,10 +12,6 @@ import Toast from '../component/common/Toast';
 import CommentSection from '../component/comment/CommentSection';
 import AiSummaryBanner from "../component/common/AiSummaryBanner";
 
-// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
-import Modal from '../component/common/modal';
-import ReportModalComponent from '../component/common/ReportModal';
-
 export default function ArticleDetailPage() {
   const { articleId } = useParams();
   const navigate = useNavigate();
@@ -165,23 +161,7 @@ export default function ArticleDetailPage() {
       
       <Footer />
       
-      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI --- */}
-      <Modal 
-          isOpen={interactionHook.modalConfig.isOpen}
-          onClose={interactionHook.closeModal}
-          title={interactionHook.modalConfig.title}
-          message={interactionHook.modalConfig.message}
-          type={interactionHook.modalConfig.type}
-          actions={interactionHook.modalConfig.actions}
-      />
-      <ReportModalComponent
-          isOpen={interactionHook.reportModal.isOpen}
-          onClose={interactionHook.handleCancelReport}
-          onSubmit={interactionHook.handleSubmitReport}
-          loading={interactionHook.reportModal.loading}
-          serverError={interactionHook.reportModal.serverError}
-      />
-      
+      {/* Modal management delegated to ModalContext via useInteraction hook */}
       <Toast message={interactionHook.toast.message} isVisible={interactionHook.toast.show} onClose={interactionHook.closeToast} />
     </div>
   );

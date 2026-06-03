@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, User } from 'lucide-react';
-
+import { getAvatarUrl } from '../../utils/imageHelper';
 const MenuCard = ({ menu }) => {
     const navigate = useNavigate();
-
+    console.log('MenuCard render, menu:', menu);
     return (
         <div 
             onClick={() => navigate(`/menus/planner/${menu.menu_id}`)}
@@ -32,7 +32,7 @@ const MenuCard = ({ menu }) => {
 
                 <div className="mt-auto pt-4 border-t border-gray-50 flex items-center gap-2">
                     {menu.author_avatar ? (
-                        <img src={`http://localhost:5000/uploads/user/${menu.author_avatar}`} alt="avatar" className="w-6 h-6 rounded-full" />
+                        <img src={getAvatarUrl(menu.author_id, menu.author_avatar)} alt="avatar" className="w-6 h-6 rounded-full" />
                     ) : (
                         <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
                             <User className="w-3 h-3 text-gray-400" />

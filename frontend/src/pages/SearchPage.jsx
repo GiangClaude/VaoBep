@@ -256,7 +256,7 @@ export default function SearchPage() {
                                     </h2>
                                     <button onClick={() => setActiveTab('article')} className="text-sm text-[#ff6b35] hover:underline">Xem thêm</button>
                                 </div>
-                                <ArticleList data={articles.slice(0, 3)} />
+                                <ArticleList data={articles.slice(0, 3)} onCardClick={(id) => navigate(`/article/${id}`)} />
                             </section>
                         </>
                     )}
@@ -333,7 +333,7 @@ const ArticleList = ({ data, onCardClick }) => (
             <ArticleCard
                 key={article.id}
                 {...article}
-                onClick={() => onCardClick(article.id)}
+                onClick={() => onCardClick?.(article.id)}
             />
         ))}
     </div>

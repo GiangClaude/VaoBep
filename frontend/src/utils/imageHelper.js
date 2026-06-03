@@ -1,8 +1,8 @@
 // utils/imageHelper.js
-const API_URL = 'http://localhost:5000'; 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 export const getAvatarUrl = (userId, avatarName) => {
-    if (!avatarName) return '/assets/avatar_default.png';
+    if (!avatarName) return `/assets/avatar_default.png`;
     // [Safety Check] Nếu đã là link full hoặc blob thì trả về luôn
     if (avatarName.toString().startsWith('http') || avatarName.toString().startsWith('blob:')) {
         return avatarName;

@@ -47,6 +47,20 @@ export const AuthProvider = ({ children }) => {
   // 2. Chuyển useEffect (Check token) từ App.js sang đây
   useEffect(() => {
     fetchMyProfile();
+
+    const handleUnauthorized = () => {
+      setCurrentUser(null);
+      localStorage.removeItem('token');
+      // Lưu ý: Không dùng navigate ở đây được vì AuthProvider bọc ngoài BrowserRouter trong index.js. 
+      // Việc gán currentUser = null sẽ tự động kích hoạt ProtectedRoute đẩy user về /login
+    };
+
+     window.addEventListener('auth_unauthorized', handleUnauthorized);
+
+    // Cleanup khi component unmount
+    return () => {
+      window.removeEventListener('auth_unauthorized', handleUnauthorized);
+    };
   }, []);
 
   // 3. Hàm logout (Tiện ích thêm để dùng ở Header/Profile)

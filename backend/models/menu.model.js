@@ -257,6 +257,7 @@ class MenuModel {
                        u.full_name AS author_name, 
                        u.avatar AS author_avatar,
                        u.role AS author_role,
+                       u.user_id AS author_id,
                        (SELECT COUNT(md.day_id) FROM menu_days md WHERE md.menu_id = m.menu_id) as total_days
                 FROM menus m 
                 JOIN users u ON m.user_id = u.user_id

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Image as ImageIcon, Clock } from 'lucide-react';
-import Modal from '../common/modal';
+import { useGlobalModal } from '../../context/ModalContext';
 import useArticleAction from '../../hooks/useArticleAction';
 import useTags from '../../hooks/useTags';
 import { normalizeArticle } from '../../utils/normalizeArticle';
@@ -10,6 +10,7 @@ export default function ArticleEditorModal({ isOpen, onClose, initialData = null
   // 1. Chỉ dùng duy nhất hook này để xử lý API
   const { saveArticle, searchRecipes, loading: saving } = useArticleAction();
   const { tags: availableTags = [] } = useTags();
+  const { showModal, hideModal } = useGlobalModal();
 
   // 2. CHỈ DÙNG 1 STATE DUY NHẤT CHO FORM
   const [formData, setFormData] = useState({
@@ -29,7 +30,6 @@ export default function ArticleEditorModal({ isOpen, onClose, initialData = null
   const [recipeQuery, setRecipeQuery] = useState('');
   const [recipeResults, setRecipeResults] = useState([]);
   const [errors, setErrors] = useState({});
-  const [messageModal, setMessageModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
   const editorRef = useRef(null);
 
   // 3. Cập nhật dữ liệu khi mở Modal
@@ -153,15 +153,14 @@ export default function ArticleEditorModal({ isOpen, onClose, initialData = null
       const dataToSave = { ...formData, readTime: displayReadTime };
       const result = await saveArticle(dataToSave);   
 
-      setMessageModal({ 
-        isOpen: true, 
+      showModal({ 
         title: 'Thành công', 
         message: 'Lưu bài viết thành công.', 
         type: 'success',
-        savedData: result
+        actions: [{ label: 'Đóng', style: 'primary', onClick: () => { hideModal(); onSaved && onSaved(result); } }]
       });
     } catch (err) {
-      setMessageModal({ isOpen: true, title: 'Lỗi', message: err.response?.data?.message || 'Lỗi khi lưu', type: 'error' });
+      showModal({ title: 'Lỗi', message: err.response?.data?.message || 'Lỗi khi lưu', type: 'error' });
     }
   };
 
@@ -301,17 +300,6 @@ export default function ArticleEditorModal({ isOpen, onClose, initialData = null
             </button>
           </div>
         </div>
-
-        <Modal 
-          isOpen={messageModal.isOpen} 
-          onClose={() => {
-            setMessageModal(prev => ({ ...prev, isOpen: false }));
-            if (messageModal.type === 'success') onSaved && onSaved(messageModal.savedData);
-          }} 
-          title={messageModal.title} 
-          message={messageModal.message} 
-          type={messageModal.type} 
-        />
       </motion.div>
     </div>
   );

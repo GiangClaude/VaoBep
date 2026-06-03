@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import interactionApi from "../api/interactionApi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import { useGlobalModal } from "../context/ModalContext";
 
 const INTERACTION_EVENT = 'interaction-sync-event';
 
@@ -13,7 +14,7 @@ export default function useInteraction({
     const { currentUser } = useAuth();
     const navigate = useNavigate();
     const [toast, setToast] = useState({ show: false, message: "" });
-
+    const { showModal, showReportModal, hideModal, hideReportModal } = useGlobalModal(); 
     const [state, setState] = useState({
         liked: Boolean(initialData.liked),
         saved: Boolean(initialData.saved),
@@ -50,14 +51,14 @@ export default function useInteraction({
         initialData.commentCount
     ]);
 
-    // --- SỬA Ở ĐÂY: Export modalConfig ra ngoài thay vì render Modal trong hook ---
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        title: "",
-        message: "",
-        type: "info",
-        actions: []
-    });
+    // // --- SỬA Ở ĐÂY: Export modalConfig ra ngoài thay vì render Modal trong hook ---
+    // const [modalConfig, setModalConfig] = useState({
+    //     isOpen: false,
+    //     title: "",
+    //     message: "",
+    //     type: "info",
+    //     actions: []
+    // });
 
     const [loading, setLoading] = useState(false);
 
@@ -115,22 +116,13 @@ export default function useInteraction({
 
     const checkAuth = () => {
         if (!currentUser) {
-            setModalConfig({
-                isOpen: true,
+            showModal({
                 title: "Yêu cầu đăng nhập",
                 message: "Bạn cần đăng nhập để thực hiện thao tác này.",
                 type: "warning",
                 actions: [
-                    {
-                        label: "Hủy",
-                        onClick: () => setModalConfig(prev => ({ ...prev, isOpen: false })),
-                        style: "secondary"
-                    },
-                    {
-                        label: "Đăng nhập ngay",
-                        onClick: () => navigate("/login"),
-                        style: "primary"
-                    }
+                    { label: "Hủy", onClick: () => hideModal(), style: "secondary" },
+                    { label: "Đăng nhập ngay", onClick: () => navigate("/login"), style: "primary" }
                 ]
             });
             return false;
@@ -250,12 +242,10 @@ export default function useInteraction({
         // 2. Thay đổi chữ hiển thị cho phù hợp
         const typeText = type === 'article' ? 'bài viết' : 'công thức';
         
-        setModalConfig({
-            isOpen: true,
+        showModal({
             title: "Đã sao chép liên kết",
-            message: `Link ${typeText} đã được lưu vào bộ nhớ tạm!`,
-            type: "success",
-            actions: [] 
+            message: `Link ${type === 'article' ? 'bài viết' : 'công thức'} đã được lưu vào bộ nhớ tạm!`,
+            type: "success"
         });
     };
     // --- SỬA Ở ĐÂY: Trả về trạng thái của Report thay vì Component ---
@@ -264,31 +254,34 @@ export default function useInteraction({
     const openReportModal = (e) => {
         e && e.stopPropagation();
         if (!checkAuth()) return;
-        setReportModal({ isOpen: true, loading: false, serverError: '' });
-    };
-
-    const handleCancelReport = () => {
-        setReportModal({ isOpen: false, loading: false, serverError: '' });
-    };
-
-    const handleSubmitReport = async (reason) => {
-        if (!reason || reason.trim() === '') {
-            setReportModal(prev => ({ ...prev, serverError: 'Vui lòng chọn một lý do báo cáo' }));
-            return;
-        }
-        setReportModal(prev => ({ ...prev, loading: true, serverError: '' }));
-        try {
+        showReportModal(async (reason) => {
+            // Context sẽ lo việc set loading và error, ta chỉ cần gọi API ở đây
             await interactionApi.reportPost(String(id), reason, type);
-            setReportModal({ isOpen: false, loading: false, serverError: '' });
-            setModalConfig({ isOpen: true, title: 'Báo cáo thành công', message: 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.', type: 'success', actions: [] });
-        } catch (err) {
-            handleCancelReport();
-            setModalConfig({ isOpen: true, title: 'Báo cáo thất bại', message: err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.', type: 'error', actions: [] });
-        }
+        });
     };
+
+    // const handleCancelReport = () => {
+    //     setReportModal({ isOpen: false, loading: false, serverError: '' });
+    // };
+
+    // const handleSubmitReport = async (reason) => {
+    //     if (!reason || reason.trim() === '') {
+    //         setReportModal(prev => ({ ...prev, serverError: 'Vui lòng chọn một lý do báo cáo' }));
+    //         return;
+    //     }
+    //     setReportModal(prev => ({ ...prev, loading: true, serverError: '' }));
+    //     try {
+    //         await interactionApi.reportPost(String(id), reason, type);
+    //         setReportModal({ isOpen: false, loading: false, serverError: '' });
+    //         setModalConfig({ isOpen: true, title: 'Báo cáo thành công', message: 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.', type: 'success', actions: [] });
+    //     } catch (err) {
+    //         handleCancelReport();
+    //         setModalConfig({ isOpen: true, title: 'Báo cáo thất bại', message: err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.', type: 'error', actions: [] });
+    //     }
+    // };
 
     const closeToast = () => setToast({ ...toast, show: false });
-    const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+    // const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
 
     return {
         state,
@@ -302,13 +295,13 @@ export default function useInteraction({
         handleShare,
         
         // Trả về data cho Modal
-        modalConfig,
-        closeModal,
+        // modalConfig,
+        // closeModal,
         
         // Trả về data cho Report
         handleReport: openReportModal,
-        reportModal,
-        handleCancelReport,
-        handleSubmitReport
+        // reportModal,
+        // handleCancelReport,
+        // handleSubmitReport
     };
 }

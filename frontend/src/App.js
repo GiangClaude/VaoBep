@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import ScrollToTop from "./utils/ScrollToTop";
 // [THAY ĐỔI] Import AuthProvider và useAuth từ context đã tách
 import { AuthProvider, useAuth } from './AuthContext';
+import { ModalProvider } from './context/ModalContext';
 
 import Header from './component/common/Header';
 import { Footer } from './component/common/Footer';
@@ -81,6 +82,7 @@ function App() {
   return (
     // [THAY ĐỔI] Bọc toàn bộ ứng dụng trong AuthProvider
     <AuthProvider>
+      <ModalProvider>
       <BrowserRouter>
       <ScrollToTop />
           <Routes>
@@ -134,6 +136,7 @@ function App() {
             
           </Routes>
       </BrowserRouter>
+      </ModalProvider>
     </AuthProvider>
   );
 }

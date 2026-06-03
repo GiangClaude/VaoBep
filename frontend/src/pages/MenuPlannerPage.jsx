@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMenu } from '../hooks/useMenu';
 import { MenuProvider, useMenuState, MENU_ACTIONS } from '../context/MenuContext';
 import { Trash2, GripVertical,Copy, User, ShoppingCart,Sparkles, X, Wand2} from 'lucide-react';
-import Modal from '../component/common/modal'; // Trỏ đúng đường dẫn file modal.jsx của bạn
 import RecipeSearchModal from '../component/menu/RecipeSearchModal';
 import { getRecipeImageUrl } from '../utils/imageHelper';
 import ShoppingListModal from '../component/menu/ShoppingListModal';
 import { useAuth } from '../AuthContext';
+import { useGlobalModal } from '../context/ModalContext';
 import AiConsultModal from '../component/menu/AiConsultModal';
 import AiGeneratorModal from '../component/menu/AiGeneratorModal';
 // THAY THẾ TOÀN BỘ MenuPlannerBoard BẰNG ĐOẠN NÀY
@@ -16,10 +16,10 @@ const MenuPlannerBoard = () => {
     const navigate = useNavigate();
     const { fetchMenuDetail, updateExistingMenu, duplicateMenu, isLoading } = useMenu();
     const { menuState, dispatch } = useMenuState();
+    const { showModal } = useGlobalModal();
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
     const [isAiGenModalOpen, setIsAiGenModalOpen] = useState(false);
     // States cho UI
-    const [modalConfig, setModalConfig] = useState({ isOpen: false });
     const [searchModalTarget, setSearchModalTarget] = useState(null); // { dayId, mealId }
     
     // State lưu giữ liệu món ăn đang được Kéo (Drag)
@@ -57,16 +57,14 @@ const MenuPlannerBoard = () => {
         console.log("Saving menu with state: ", menuState);
         const result = await updateExistingMenu(menuId, menuState);
         if (result.success) {
-            setModalConfig({
-                isOpen: true,
+            showModal({
                 type: 'success',
                 title: 'Thành công',
                 message: 'Thực đơn đã được lưu an toàn!',
-                actions: [{ label: 'Tuyệt vời', style: 'primary', onClick: () => setModalConfig({ isOpen: false }) }]
+                actions: [{ label: 'Tuyệt vọng', style: 'primary' }]
             });
         } else {
-            setModalConfig({
-                isOpen: true,
+            showModal({
                 type: 'error',
                 title: 'Lỗi',
                 message: 'Lưu thất bại: ' + result.message
@@ -119,13 +117,11 @@ const MenuPlannerBoard = () => {
         }
         const result = await duplicateMenu(menuId);
         if (result.success) {
-            setModalConfig({
-                isOpen: true,
+            showModal({
                 type: 'success',
                 title: 'Nhân bản thành công',
                 message: 'Thực đơn đã được lưu vào danh sách của bạn. Bạn có thể thoải mái chỉnh sửa!',
                 actions: [{ label: 'Tới thực đơn của tôi', style: 'primary', onClick: () => {
-                    setModalConfig({ isOpen: false });
                     navigate(`/menus/planner/${result.data.menu_id}`);
                 }}]
             });
@@ -141,13 +137,6 @@ const MenuPlannerBoard = () => {
 
     return (
         <div className="flex flex-col h-screen bg-gray-50/50">
-            {/* Component Modal Thông Báo */}
-            <Modal 
-                isOpen={modalConfig.isOpen} 
-                onClose={() => setModalConfig({ isOpen: false })}
-                {...modalConfig}
-            />
-
             {/* Component Modal Tìm Món Ăn */}
             <RecipeSearchModal 
                 isOpen={!!searchModalTarget}
@@ -348,7 +337,7 @@ const MenuPlannerBoard = () => {
                                                         <div className="flex items-center gap-3 w-full">
                                                             <GripVertical className="w-4 h-4 text-gray-300" />
                                                             <img 
-                                                                src={recipe.cover_image ? `http://localhost:5000/uploads/recipes/${recipe.cover_image}` : '/default-recipe.png'} 
+                                                                src={recipe.cover_image ? getRecipeImageUrl(recipe.recipe_id,recipe.cover_image) : '/assets/recipe_placeholder.png'} 
                                                                 alt="" 
                                                                 className="w-10 h-10 object-cover rounded-lg"
                                                             />

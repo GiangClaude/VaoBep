@@ -1,7 +1,8 @@
 import axios from 'axios';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000';
 
 const apiClient = axios.create({
-    baseURL: 'http://127.0.0.1:5000/api', 
+    baseURL: `${API_BASE_URL}/api`, 
     // Do not set a fixed Content-Type here so axios can
     // correctly set multipart boundaries when sending FormData.
 });
@@ -15,5 +16,23 @@ apiClient.interceptors.request.use((config) => {
 }, (error) => {
     return Promise.reject(error);
 });
+
+// 3. [THÊM MỚI]: Response Interceptor để xử lý lỗi Global
+apiClient.interceptors.response.use(
+    (response) => {
+        return response; // Trả về data bình thường nếu thành công
+    },
+    (error) => {
+        // Bắt lỗi 401 (Unauthorized - Token hết hạn hoặc sai)
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('token'); // Xóa token cũ
+            
+            // Bắn một sự kiện ra window để AuthContext nhận diện và đẩy về Login
+            // (Giúp tránh việc phải truyền useNavigate xuống tận file cấu hình)
+            window.dispatchEvent(new Event('auth_unauthorized'));
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default apiClient;

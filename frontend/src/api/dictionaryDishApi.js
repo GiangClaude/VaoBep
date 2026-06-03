@@ -1,6 +1,6 @@
 import axios from 'axios';
 import apiClient from "./index";
-const API_URL = 'http://localhost:5000/api/dictionary-dishes';
+const API_URL = '/dictionary-dishes';
 
 const dictionaryDishApi = {
     // Lấy tóm tắt quốc gia (Zoom out)

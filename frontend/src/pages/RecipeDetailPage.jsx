@@ -11,10 +11,6 @@ import useInteraction from '../hooks/useInteraction';
 import {useAuth} from '../AuthContext';
 import AiSummaryBanner from "../component/common/AiSummaryBanner";
 
-// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
-import Modal from "../component/common/modal"; 
-import ReportModalComponent from '../component/common/ReportModal';
-
 const getAvatarUrl = (user) => {
     if (user.avatar && user.avatar.startsWith('http')) return user.avatar;
     return user.avatar 
@@ -47,20 +43,6 @@ export default function RecipeDetailPage() {
   
   return (
     <div className="min-h-screen bg-[#fff9f0]">
-      
-      {/* Modal báo lỗi đăng nhập (đến từ useRecipeDetail) */}
-      <Modal 
-        isOpen={requireLogin}
-        onClose={() => setRequireLogin(false)}
-        title="Yêu cầu đăng nhập"
-        message="Bạn cần đăng nhập để thực hiện hành động này."
-        type="warning"
-        actions={[
-            { label: "Hủy bỏ", onClick: () => setRequireLogin(false), style: "secondary" },
-            { label: "Đăng nhập ngay", onClick: () => navigate('/login'), style: "primary" }
-        ]}
-      />
-
       <main className="container mx-auto px-4 py-8">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[#ff6b35] hover:text-[#f7931e] transition-colors mb-6 font-medium">
           <ArrowLeft className="w-5 h-5" /> <span>Quay lại</span>
@@ -168,7 +150,7 @@ export default function RecipeDetailPage() {
                     </button>
                 </div>
                 <div className="space-y-6">
-                    {comments.map((cmt, idx) => (
+                    {(comments || []).map((cmt, idx) => (
                         <div key={idx} className="flex gap-4">
                             <ImageWithFallBack src={getAvatarUrl(cmt)} className="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-200" />
                             <div>
@@ -216,10 +198,11 @@ export default function RecipeDetailPage() {
                 {recipeState && (
                     <AiSummaryBanner 
                         title="✨ Nhờ AI tóm tắt mẹo nấu & lưu ý cho công thức này"
+                        // Sử dụng (biến || []) để đảm bảo luôn có mảng rỗng để chạy .map() nếu dữ liệu gốc bị undefined
                         contextText={`Tên món: ${recipeState.title}. 
-                                      Mô tả: ${recipeState.detailedDescription}. 
-                                      Nguyên liệu: ${recipeState.detailedIngredients.map(i => i.name + ' ' + i.amount).join(', ')}. 
-                                      Các bước: ${recipeState.detailedSteps.map(s => s.description).join(' ')}`} 
+                                      Mô tả: ${recipeState.detailedDescription || ''}. 
+                                      Nguyên liệu: ${(recipeState.detailedIngredients || []).map(i => i.name + ' ' + i.amount).join(', ')}. 
+                                      Các bước: ${(recipeState.detailedSteps || []).map(s => s.description).join(' ')}`} 
                     />
                 )}
             </div>
@@ -228,7 +211,7 @@ export default function RecipeDetailPage() {
       </main>
       <Footer />
       
-      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI HOOK REPORT --- */}
+      {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI HOOK REPORT ---
       <Modal 
           isOpen={interactionHook.modalConfig.isOpen}
           onClose={interactionHook.closeModal}
@@ -243,7 +226,7 @@ export default function RecipeDetailPage() {
           onSubmit={interactionHook.handleSubmitReport}
           loading={interactionHook.reportModal.loading}
           serverError={interactionHook.reportModal.serverError}
-      />
+      /> */}
     </div>
   );
 }

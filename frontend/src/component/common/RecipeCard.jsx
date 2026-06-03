@@ -5,9 +5,9 @@ import ImageWithFallBack from "../figma/ImageWithFallBack";
 import useInteraction from "../../hooks/useInteraction"; 
 import { getAvatarUrl, getRecipeImageUrl } from "../../utils/imageHelper";
 
-// --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
-import Modal from './modal';
-import ReportModalComponent from './ReportModal'; 
+// // --- THÊM IMPORT TRỰC TIẾP MODAL VÀO ĐÂY ---
+// import Modal from './modal';
+// import ReportModalComponent from './ReportModal'; 
 
 export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) {
   const {
@@ -142,7 +142,7 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
       </motion.div>
       
       {/* --- SỬA Ở ĐÂY: RENDER MODAL TỪ TRẠNG THÁI --- */}
-      <Modal 
+      {/* <Modal 
           isOpen={interactionHook.modalConfig.isOpen}
           onClose={interactionHook.closeModal}
           title={interactionHook.modalConfig.title}
@@ -156,7 +156,7 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
           onSubmit={interactionHook.handleSubmitReport}
           loading={interactionHook.reportModal.loading}
           serverError={interactionHook.reportModal.serverError}
-      />
+      /> */}
     </>
   );
 }
