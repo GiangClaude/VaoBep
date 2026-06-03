@@ -29,18 +29,16 @@ export default function Sidebar() {
   return (
     <div className="top-24 space-y-6">
       {/* Challenge Banner */}
-      <motion.div
+      {/* <motion.div
         whileHover={{ scale: 1.02, y: -4 }}
         className="relative bg-gradient-to-br from-[#ff6b35] via-[#f7931e] to-[#ffc857] rounded-[25px] overflow-hidden shadow-xl p-6 cursor-pointer group"
       >
-        {/* Animated Background */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-2xl animate-pulse" />
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
 
         <div className="relative z-10">
-          {/* Trophy Icon */}
           <motion.div
             animate={{ rotate: [0, -10, 10, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
@@ -57,7 +55,6 @@ export default function Sidebar() {
             Nấu món <span className="font-bold">"Cơm Chiên Dương Châu"</span> và nhận ngay 500 xu!
           </p>
 
-          {/* Stats */}
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
               <Users className="w-4 h-4 text-white" />
@@ -65,18 +62,15 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* CTA */}
           <button className="w-full bg-white text-[#ff6b35] py-2.5 rounded-full hover:bg-yellow-100 transition-all shadow-lg font-semibold">
             Tham gia ngay
           </button>
         </div>
 
-        {/* Decorative circles */}
         <div className="absolute -top-8 -right-8 w-24 h-24 border-4 border-white/30 rounded-full"></div>
         <div className="absolute -bottom-6 -left-6 w-20 h-20 border-4 border-white/30 rounded-full"></div>
-      </motion.div>
+      </motion.div> */}
 
-      {/* Trending Recipes */}
       <div className="bg-white rounded-[25px] shadow-lg p-6">
         <div className="flex items-center gap-2 mb-5">
           <TrendingUp className="w-6 h-6 text-[#ff6b35]" />
@@ -94,12 +88,10 @@ export default function Sidebar() {
                 onClick={() => navigate(`/recipe/${recipe.id}`)}
                 className="flex gap-3 cursor-pointer group"
               >
-                {/* Rank Badge */}
                 <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-[#ff6b35] to-[#ffc857] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
                   {index + 1}
                 </div>
 
-                {/* Thumbnail */}
                 <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
                   <ImageWithFallback
                     src={recipe.image}
@@ -108,7 +100,6 @@ export default function Sidebar() {
                   />
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm line-clamp-2 mb-1 group-hover:text-[#ff6b35] transition-colors">
                     {recipe.title}

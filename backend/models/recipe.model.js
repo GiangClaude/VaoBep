@@ -764,7 +764,7 @@ class Recipe{
 
             const sqlParams = [limit.toString()];
             
-            const [result] = await pool.execute(sql, [currentUserId, currentUserId, currentUserId]);
+            const [result] = await pool.execute(sql, [currentUserId, currentUserId, ...sqlParams]);
 
             return result.map(row => ({
                 ...row,

@@ -62,13 +62,6 @@ export default function HomePage() {
         <div className="lg:col-span-8">
           <RecipeSection title="For You" recipes={forYouRecipes} onRecipeClick={handleNavigateToDetail} onViewMoreClick={handleViewMoreRecipes}/>
 
-          {/* Article Section (featured) */}
-          {featuredLoading ? (
-            <div className="w-full h-40 flex items-center justify-center text-[#7d5a3f]">Đang tải bài viết nổi bật...</div>
-          ) : (
-            <ArticleSection articles={featuredArticles} />
-          )}
-            
 
           {latestLoading ? (
            // Skeleton loading hoặc text đơn giản
@@ -78,6 +71,15 @@ export default function HomePage() {
           ) : (
             <RecipeSection title="Latest Recipes" recipes={latestRecipes} onRecipeClick={handleNavigateToDetail} onViewMoreClick={handleViewMoreRecipes}/>
           )} 
+          
+          {/* Article Section (featured) */}
+          {featuredLoading ? (
+            <div className="w-full h-40 flex items-center justify-center text-[#7d5a3f]">Đang tải bài viết nổi bật...</div>
+          ) : (
+            <ArticleSection articles={featuredArticles} />
+          )}
+            
+
 
           {/* Menu Section Mới */}
           <MenuSection 

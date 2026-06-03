@@ -55,7 +55,7 @@ export function normalizeRecipe(r) {
     rating: r.rating_avg_score !== undefined && r.rating_avg_score !== null ? Number(r.rating_avg_score).toFixed(1) : "0.0",
     commentCount: r.comment_count !== undefined && r.comment_count !== null ? Number(r.comment_count) : 0,
     userName: r.author_name || "Thành viên Bếp",
-    userAvatar: getAvatarUrl(r.author_avatar),
+    userAvatar: getAvatarUrl(r.user_id,r.author_avatar),
     userId: r.user_id,
     isLiked: !!r.is_liked,
     isSaved: !!r.is_saved,
