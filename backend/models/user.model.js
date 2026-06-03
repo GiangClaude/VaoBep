@@ -85,6 +85,42 @@ class User {
         };
     }
 
+    // [THÊM MỚI] - Dành riêng cho Admin/System, không filter trạng thái hay role
+    static async findByIdForAdmin(id) {
+        const sql = `
+            SELECT 
+                u.user_id, u.email, u.full_name, u.avatar, u.role, u.bio, u.points,
+                u.account_status, u.created_at,
+                (SELECT COUNT(*) FROM Recipes r WHERE r.user_id = u.user_id) as recipes_count,
+                (SELECT COUNT(*) FROM Follows f WHERE f.following_id = u.user_id) as followers_count,
+                (SELECT COUNT(*) FROM Saved_Posts s WHERE s.user_id = u.user_id) as saved_count
+            FROM users u 
+            WHERE u.user_id = ?
+            -- KHÔNG CÓ filter account_status = 'active' ở đây
+        `;
+        const [rows] = await pool.execute(sql, [id]);
+        
+        if (!rows[0]) return null;
+        const user = rows[0];
+
+        return {
+            id: user.user_id,
+            fullName: user.full_name,
+            email: user.email,
+            avatar: user.avatar || 'default.png',
+            bio: user.bio,
+            role: user.role, 
+            points: user.points,
+            status: user.account_status, // Trả thêm status để admin dễ quản lý
+            stats: {
+                recipes: user.recipes_count || 0,
+                saved: user.saved_count || 0,
+                followers: user.followers_count || 0
+            },
+            joinDate: user.created_at
+        };
+    }
+
     static async findPublicProfileById(id, currentUserId = null) {
         try {
             const sql = `
@@ -110,7 +146,7 @@ class User {
                     (SELECT COUNT(*) FROM Follows f2 WHERE f2.follower_id = ? AND f2.following_id = u.user_id) > 0 as is_following
 
                 FROM Users u 
-                WHERE u.user_id = ? AND u.account_status = 'active'
+                WHERE u.user_id = ? AND u.account_status = 'active' AND u.role != 'admin'
             `;
             
             // Params: [currentUserId (cho subquery), id (cho where clause)]

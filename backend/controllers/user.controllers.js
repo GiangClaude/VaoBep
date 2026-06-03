@@ -82,38 +82,6 @@ const getUserProfile = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, data: user });
 });
 
-// Admin functions
-const getAllUsers = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, search = '' } = req.query;
-    const result = await UserService.getAllUsers(page, limit, search);
-    res.status(200).json(result);
-});
-
-const getUserDetailAdmin = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const result = await UserService.getUserDetailAdmin(id);
-    res.status(200).json(result);
-});
-
-// 3. Khóa/Mở khóa User (UC0059)
-const updateUserStatus = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body; // 'active' hoặc 'blocked'
-
-    const result = await UserService.updateUserStatus(id, status);
-    
-    res.status(200).json({ success: true, ...result });
-});
-
-// 4. Tạo tài khoản mới bởi Admin (UC0061)
-const createUserAdmin = asyncHandler(async (req, res) => {
-    // Truyền thẳng req.body sang service để xử lý
-    const result = await UserService.createUserAdmin(req.body);
-    
-    res.status(201).json({ success: true, ...result });
-});
-
-
 
 
 module.exports = {
@@ -125,8 +93,4 @@ module.exports = {
     getPointHistory,
     giftPoints,
     getUserProfile,
-    getAllUsers,
-    getUserDetailAdmin,
-    updateUserStatus,
-    createUserAdmin
 }

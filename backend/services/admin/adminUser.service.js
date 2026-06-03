@@ -76,7 +76,7 @@ class AdminUserService {
      * Lấy chi tiết User
      */
     async getUserDetail(id) {
-        const user = await UserModel.findById(id);
+        const user = await UserModel.findByIdForAdmin(id);
         if (!user) throw new AppError('User not found', 404);
         return user;
     }
