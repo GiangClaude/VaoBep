@@ -38,19 +38,21 @@ const useLeaderboard = () => {
             if (activeTab === 'recipe') {
                 res = await leaderboardApi.getTopRecipes(queryMonth, queryYear);
                 if (res.success) {
-                    const normalized = res.data.map(item => normalizeRankedRecipe(item, res.isCurrentMonth));
+                    const payload = res.data; 
+                    const normalized = payload.data.map(item => normalizeRankedRecipe(item, payload.isCurrentMonth));
                     setData(normalized);
                 }
             } else {
                 res = await leaderboardApi.getTopUsers(queryMonth, queryYear);
                 if (res.success) {
-                    const normalized = res.data.map(item => normalizeRankedUser(item, res.isCurrentMonth));
+                    const payload = res.data;
+                    const normalized = payload.data.map(item => normalizeRankedUser(item, payload.isCurrentMonth));
                     setData(normalized);
                 }
             }
         } catch (err) {
             console.error("Lỗi fetch Leaderboard:", err);
-            setError(err.response?.data?.message || "Không thể tải bảng xếp hạng");
+            setError(err.message || "Không thể tải bảng xếp hạng");
             setData([]);
         } finally {
             setLoading(false);

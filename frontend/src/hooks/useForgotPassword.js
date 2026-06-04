@@ -38,7 +38,8 @@ export const useForgotPassword = () => {
                 }
             });
         } catch (err) {
-            setError(err.response?.data?.message || err.response?.data?.error || 'Đã có lỗi xảy ra. Vui lòng thử lại.');
+            setError(err.message || 'Gửi yêu cầu thất bại');
+            return false;
         } finally {
             setLoading(false);
         }

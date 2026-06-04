@@ -42,7 +42,8 @@ export const useLogin = () => {
       try {
         // Gọi API login
         const data = await authApi.login(loginData);
-        const token = data.token;
+        console.log("Login API response:", data);
+        const token = data.data.token;
         
         // Lưu token
         localStorage.setItem('token', token);
@@ -69,11 +70,10 @@ export const useLogin = () => {
 
       } catch (error) {
         // Xử lý lỗi
-        if (error.response) {
-          const isNotVerified = error.response.status === 403;
+        if (error.status === 403) {
           setErrors({
-            api: error.response.data.error || 'Đã có lỗi xảy ra',
-            notVerified: isNotVerified // Flag để hiện link xác thực
+            api: error.message || 'Đã có lỗi xảy ra',
+            notVerified: true // Flag để hiện link xác thực
           });
         } else {
           setErrors({

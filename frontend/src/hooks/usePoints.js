@@ -21,21 +21,20 @@ export const usePoints = () => {
             
             // [SỬA LẠI ĐOẠN NÀY]
             // response là Axios object, response.data là dữ liệu Server trả về
-            const serverData = response.data; 
-
-            if (serverData.success) {
+            console.log("Response từ API điểm:", response);
+            if (response.success) {
                 // Dữ liệu thật nằm trong serverData.data.transactions
-                setHistory(serverData.data.transactions);
+                setHistory(response.data.transactions);
                 
                 setPagination({
-                    total: serverData.data.total,
-                    page: serverData.data.page,
-                    totalPages: serverData.data.totalPages
+                    total: response.data.total,
+                    page: response.data.page,
+                    totalPages: response.data.totalPages
                 });
             }
         } catch (err) {
             console.error("Lỗi lấy lịch sử điểm:", err);
-            setError(err.response?.data?.message || "Không thể tải lịch sử điểm");
+            setError(err.message || "Không thể tải lịch sử điểm");
         } finally {
             setLoading(false);
         }
@@ -49,7 +48,7 @@ export const usePoints = () => {
         } catch (err) {
             return { 
                 success: false, 
-                message: err.response?.data?.message || "Điểm danh thất bại" 
+                message: err.message || "Điểm danh thất bại" 
             };
         }
     };
@@ -62,7 +61,7 @@ export const usePoints = () => {
         } catch (err) {
             return {
                 success: false,
-                message: err.response?.data?.message || "Tặng điểm thất bại"
+                message: err.message || "Tặng điểm thất bại"
             };
         }
     };

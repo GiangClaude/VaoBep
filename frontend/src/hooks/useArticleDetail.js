@@ -13,15 +13,13 @@ export default function useArticleDetail(articleId) {
     setError(null);
     try {
       const response = await articleApi.getArticleById(id);
-      const respData = response.data;
-      const data = normalizeArticleList([respData.data || respData])[0];
+      const data = normalizeArticleList([response.data])[0];
       setArticle(data);
       setLoading(false);
       return data;
     } catch (err) {
       setLoading(false);
-      const msg = err.response?.data?.message || err.message || 'Lỗi khi lấy chi tiết bài viết';
-      setError(msg);
+      setError(err.message || 'Lỗi khi lấy chi tiết bài viết');
       throw err;
     }
   };

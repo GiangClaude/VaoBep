@@ -16,11 +16,10 @@ const useDishMap = () => {
                     dictionaryDishApi.getMapAllDishes()
                 ]);
                 
-                setSummaryData(summaryRes.data.data);
-                setAllDishes(allRes.data.data);
+                setSummaryData(summaryRes.data);
+                setAllDishes(allRes.data);
             } catch (err) {
                 setError(err.message);
-                console.error("Error fetching map data:", err);
             } finally {
                 setLoading(false);
             }

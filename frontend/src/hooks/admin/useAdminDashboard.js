@@ -29,15 +29,15 @@ const useAdminDashboard = () => {
                 const response = await adminApi.getStats();
                 
                 // Nếu API trả về data, set vào state
-                if (response && response.data) {
+                if (response.success) {
                     setStats(response.data); // Lấy cục data bên trong ra
                 } else if (response) {
                     // Trường hợp có interceptor đã xử lý trước đó
                     setStats(response);
                 }
             } catch (err) {
-                console.error("Dashboard Error:", err);
-                setError(err.response?.data?.message || "Lỗi tải thống kê");
+                console.error("Dashboard Error:", err.message);
+                setError(err.message || "Lỗi tải thống kê");
             } finally {
                 setLoading(false);
             }

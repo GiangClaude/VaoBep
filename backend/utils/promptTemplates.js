@@ -4,7 +4,7 @@ function defaultExamples() {
   return [
     {
       user: 'Tôi có cà chua và trứng, làm món gì nhanh gọn?',
-      assistant: `Dưới đây tôi sẽ gợi ý cho bạn một vài món ăn từ cà chua và trứng. Nếu bạn có dị ứng với nguyên liệu nào, hãy cho tôi biết.\n\n\`\`\`sql\nSELECT recipe_id, title, description, cook_time, cover_image FROM recipes WHERE status = 'public' AND (title LIKE '%cà chua%' OR title LIKE '%trứng%') LIMIT 5\n\`\`\``
+      assistant: `Dưới đây tôi sẽ gợi ý cho bạn một vài món ăn từ cà chua và trứng. Nếu bạn có dị ứng với nguyên liệu nào, hãy cho tôi biết.\n\n\`\`\`sql\nSELECT recipe_id, title, description, cook_time, cover_image FROM recipes WHERE status = 'public' AND (title LIKE '%cà chua%' AND title LIKE '%trứng%') LIMIT 5\n\`\`\``
     },
     {
       user: 'Cho tôi công thức món canh dưới 10 phút không có tôm',

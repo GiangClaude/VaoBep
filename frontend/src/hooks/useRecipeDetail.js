@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import recipeApi from '../api/recipeApi';
 import interactionApi from '../api/interactionApi';
 import {normalizeRecipe} from '../utils/normalizeRecipe';
-const API_BASE_URL = 'http://localhost:5000';
 
 export default function useRecipeDetail({ id, initialRecipe = null }) {
   const [recipeState, setRecipeState] = useState(initialRecipe);
@@ -22,7 +21,7 @@ export default function useRecipeDetail({ id, initialRecipe = null }) {
   // Helper check lỗi 401
   const handleError = (error) => {
     console.error("Lỗi tương tác:", error);
-    if (error.response && error.response.status === 401) {
+    if (error.status === 401) {
         setRequireLogin(true); // Bật cờ yêu cầu đăng nhập
         return true; // Đã xử lý lỗi
     }
@@ -103,20 +102,20 @@ export default function useRecipeDetail({ id, initialRecipe = null }) {
         ]);
 
         if (recipeResp.status === 'fulfilled') {
-            const rawData = recipeResp.value.data?.data || recipeResp.value.data;
+            const rawData = recipeResp.value.data; 
             setRecipeState(normalizeRecipe(rawData));
         }
-        if (interactionResp.status === 'fulfilled' && interactionResp.value.data.success) {
-            const state = interactionResp.value.data.data;
+        if (interactionResp.status === 'fulfilled' && interactionResp.value.success) {
+            const state = interactionResp.value.data;
             setIsLiked(state.liked);
             setIsSaved(state.saved);
             setUserRating(state.rated);
         }
-        if (commentsResp.status === 'fulfilled' && commentsResp.value.data.success) {
-            setComments(commentsResp.value.data.data.comments || []);
+        if (commentsResp.status === 'fulfilled' && commentsResp.value.success) {
+            setComments(commentsResp.value.data.comments || []);
         }
     } catch (err) {
-        console.error('Error fetching details:', err);
+        console.error("Lỗi khi tải chi tiết công thức:", err);
     } finally {
         setLoading(false);
     }

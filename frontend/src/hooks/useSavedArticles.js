@@ -13,11 +13,11 @@ export const useSavedArticles = () => {
         setLoading(true);
         try {
             const response = await articleApi.getSavedArticles({ page, limit: 6 });
-            if (response && response.data) {
-                const normalized = normalizeArticleList(response.data.data || []);
-                setArticles(normalized);
-                setPagination(response.data.pagination);
+            if (response.success) { 
+                setArticles(normalizeArticleList(response.data || [])); 
+                setPagination(response.meta); 
             }
+
         } catch (error) {
             console.error("Lỗi tải bài viết đã lưu:", error);
             setArticles([]);

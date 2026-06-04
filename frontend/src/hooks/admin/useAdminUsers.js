@@ -22,11 +22,12 @@ const useAdminUsers = () => {
             });
             
             // AdminController trả về: { data: users, pagination: ... }
-            const { data, pagination: pagingData } = response.data;
-            setUsers(data || []);
-            setPagination(pagingData);
+            if (response.success) {
+                setUsers(response.data || []);
+                setPagination(response.meta || { page: 1, limit: 10, total: 0, totalPages: 0 });
+            }
         } catch (err) {
-            console.error("Fetch Users Error:", err);
+            console.error("Fetch Users Error:", err.message);
         } finally {
             setLoading(false);
         }
@@ -46,7 +47,7 @@ const useAdminUsers = () => {
             ));
             return true;
         } catch (err) {
-            console.error("Toggle Status Error:", err);
+            console.error("Toggle Status Error:", err.message);
             throw err;
         }
     };
@@ -54,9 +55,9 @@ const useAdminUsers = () => {
     const getUser = async (userId) => {
         try {
             const response = await adminApi.getUserDetail(userId);
-            return response.data.data; // Trả về object user
+            return response.data; // Trả về object user
         } catch (err) {
-            console.error("Get User Detail Error:", err);
+            console.error("Get User Detail Error:", err.message);
             throw err;
         }
     };
@@ -70,6 +71,7 @@ const useAdminUsers = () => {
             ));
             return true;
         } catch (err) {
+            console.error("Update User Error:", err.message);
             throw err;
         }
     };

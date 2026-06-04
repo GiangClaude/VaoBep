@@ -35,7 +35,7 @@ export const useVerifyOTP = () => {
             await authApi.resendOTP(email);
             alert(`Mã OTP mới đã được gửi đến ${email}`);
           } catch (err) {
-            console.log("Lỗi gửi lại OTP: ", err);
+            setError(err.message || 'Không thể gửi lại mã.');
           }
       }
     };
@@ -130,7 +130,7 @@ export const useVerifyOTP = () => {
         navigate('/login'); 
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Lỗi kết nối máy chủ.');
+      setError(err.message || 'Lỗi kết nối máy chủ.');
     } finally {
       setLoading(false);
     }
@@ -149,7 +149,7 @@ export const useVerifyOTP = () => {
       const response = await authApi.resendOTP(email);
       alert(response.message);
     } catch (err) {
-      setError(err.response?.data?.error || 'Không thể gửi lại mã.');
+      setError(err.message || 'Không thể gửi lại mã.');
     }
   };
 

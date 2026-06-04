@@ -25,13 +25,12 @@ export default function usePublicArticles(page = 1, limit = 10, filters = {}) {
       };
 
       const response = await articleApi.getPublicArticles(params);
-      const respData = response.data;
-      console.log("Dữ liệu bài viết nhận được từ API:", respData);
-      setArticles(normalizeArticleList(respData.data || []));
-      setPagination(respData.pagination || null);
+      if (response.success) {
+          setArticles(normalizeArticleList(response.data || []));
+          setPagination(response.meta || null); // Gắn thẳng meta vào pagination
+      }
     } catch (err) {
-      const msg = err.response?.data?.message || err.message || 'Lỗi khi lấy danh sách bài viết';
-      setError(msg);
+      setError(err.message);
     } finally {
       setLoading(false);
     }

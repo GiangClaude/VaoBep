@@ -67,16 +67,16 @@ export const useSearchData = ({ keyword, activeTab, userSort, recipeFilter, arti
             const [userRes, recipeRes, articleRes] = await Promise.all(promises);
 
             // --- CHUẨN HÓA DỮ LIỆU USER ---
-            if (userRes) setUsers(userRes.data.data || []);
-            if (recipeRes) setRecipes(normalizeRecipeList(recipeRes.data.data || []));
+           if (userRes && userRes.success) setUsers(userRes.data || []);
             
-            if (articleRes) {
-                setArticles(normalizeArticleList(articleRes.data.data || []));
-                // Lưu thông tin phân trang từ Backend trả về
-                setPagination(articleRes.data.pagination || {});
+            if (recipeRes && recipeRes.success) setRecipes(normalizeRecipeList(recipeRes.data || []));
+            
+            if (articleRes && articleRes.success) {
+                setArticles(normalizeArticleList(articleRes.data || []));
+                setPagination(articleRes.meta || {});
             }
       } catch (error) {
-        console.error("Search Error:", error);
+        console.error("Search Error:", error.message);
       } finally {
         setLoading(false);
       }

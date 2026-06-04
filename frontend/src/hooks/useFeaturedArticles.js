@@ -11,10 +11,11 @@ export default function useFeaturedArticles(limit = 3) {
     setError(null);
     try {
       const response = await articleApi.getFeaturedArticles({ limit: l });
-      const respData = response.data;
-      setArticles(normalizeArticleList(respData.data || []));
+      if (response.success) { 
+        setArticles(normalizeArticleList(response.data || [])); 
+      }
       setLoading(false);
-      return normalizeArticleList(respData.data || []);
+      return normalizeArticleList(response.data || []);
     } catch (err) {
       setLoading(false);
       const msg = err.response?.data?.message || err.message || 'Lỗi khi lấy bài viết nổi bật';

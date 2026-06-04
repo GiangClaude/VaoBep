@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authApi from '../api/authApi';
-
 export const useRegister = () => {
   const [registerData, setRegisterData] = useState({
     fullName: '',
@@ -72,11 +71,7 @@ export const useRegister = () => {
         });
 
       } catch (error) {
-        if (error.response && error.response.data) {
-          setErrors({ api: error.response.data.error });
-        } else {
-          setErrors({ api: 'Không thể kết nối tới máy chủ.' });
-        }
+        setErrors({ api: error.message || 'Không thể kết nối tới máy chủ.' });
       } finally {
         setLoading(false);
       }

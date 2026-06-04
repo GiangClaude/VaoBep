@@ -34,14 +34,14 @@ export const useUserProfile = (userId) => {
 
             // [FIX LỖI] Kiểm tra xem response có bọc trong .data không (do axios)
             // Nếu có interceptor thì response là data, nếu không thì response.data mới là data
-            const actualData = response.data && response.data.success !== undefined ? response.data : response;
 
-            if (actualData.success) {
-                setUser(actualData.data);
+            if (response.success) {
+                setUser(response.data);
                 setMenus(userMenusData);
             } else {
-                setError(actualData.message || "Lỗi không xác định từ server");
+                setError(response.message);
             }
+
 
             // const API_BASE_URL = "http://localhost:5000";
             // const normalizedRecipes = (recipe.data.data || []).map(r => ({
@@ -63,13 +63,13 @@ export const useUserProfile = (userId) => {
             //       ? `${API_BASE_URL}/public/user/${r.user_id}/${r.author_avatar}`
             //       : "/assets/avatar_default.png"
             // }));
-            setRecipes(normalizeRecipeList(recipe.data.data || []));
+             if (recipe.success) {
+                setRecipes(normalizeRecipeList(recipe.data || []));
+            }
 
         } catch (err) {
             console.error("❌ Error fetching user profile:", err);
-            // Ưu tiên lấy message từ response server nếu có
-            const errorMessage = err.response?.data?.message || err.message || "Không thể tải thông tin người dùng.";
-            setError(errorMessage);
+            setError(err.message || "Không thể tải thông tin người dùng.");
         } finally {
             setLoading(false);
         }

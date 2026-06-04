@@ -7,7 +7,7 @@ export const leaderboardApi = {
             url += `?month=${month}&year=${year}`;
         }
         const response = await apiClient.get(url);
-        return response.data;
+        return response;
     },
 
     getTopUsers: async (month, year) => {
@@ -16,6 +16,6 @@ export const leaderboardApi = {
             url += `?month=${month}&year=${year}`;
         }
         const response = await apiClient.get(url);
-        return response.data;
+        return response;
     }
 };

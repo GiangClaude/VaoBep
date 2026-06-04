@@ -29,16 +29,17 @@ export const AuthProvider = ({ children }) => {
       const response = await apiClient.get('/user/me', { 
           headers: { 'Authorization': `Bearer ${token}` } 
       });
-      const data = response.data;
-      setCurrentUser(data.data); 
+       if (response.success) {
+            setCurrentUser(response.data); 
+       } else {
+            setCurrentUser(null);
+            localStorage.removeItem('token');
+        }
     } catch (error) {
       // Xử lý lỗi
-      if (error.response && error.response.status !== 401) {
-          console.error("Lỗi hệ thống:", error);
-      }
-      // Nếu lỗi xác thực -> logout
-      setCurrentUser(null);
-      localStorage.removeItem('token');
+        console.error("Lỗi xác thực:", error.message);
+        setCurrentUser(null);
+        localStorage.removeItem('token');
     } finally {
       setIsLoading(false);
     }

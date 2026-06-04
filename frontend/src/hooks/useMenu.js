@@ -12,7 +12,7 @@ export const useMenu = () => {
             const result = await menuApi.getMyMenus();
             return result.data; // Trả về mảng menus
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+           setError(err.message);
             return [];
         } finally {
             setIsLoading(false);
@@ -26,7 +26,7 @@ export const useMenu = () => {
             const result = await menuApi.getMenuById(menuId);
             return result.data; // Trả về object menu chi tiết
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            setError(err.message);
             return null;
         } finally {
             setIsLoading(false);
@@ -40,9 +40,8 @@ export const useMenu = () => {
             const result = await menuApi.createMenu(menuData);
             return { success: true, data: result.data };
         } catch (err) {
-            const errMsg = err.response?.data?.message || err.message;
-            setError(errMsg);
-            return { success: false, message: errMsg };
+            setError(err.message);
+            return { success: false, message: err.message };
         } finally {
             setIsLoading(false);
         }
@@ -55,9 +54,8 @@ export const useMenu = () => {
             await menuApi.updateMenu(menuId, menuData);
             return { success: true };
         } catch (err) {
-            const errMsg = err.response?.data?.message || err.message;
-            setError(errMsg);
-            return { success: false, message: errMsg };
+            setError(err.message);
+            return { success: false, message: err.message };
         } finally {
             setIsLoading(false);
         }
@@ -70,9 +68,8 @@ export const useMenu = () => {
             await menuApi.deleteMenu(menuId);
             return { success: true };
         } catch (err) {
-            const errMsg = err.response?.data?.message || err.message;
-            setError(errMsg);
-            return { success: false, message: errMsg };
+            setError(err.message);
+            return { success: false, message: err.message };
         } finally {
             setIsLoading(false);
         }
@@ -87,8 +84,7 @@ export const useMenu = () => {
             const result = await menuApi.getShoppingList(menuId);
             return result.data; // Trả về object đã group theo category
         } catch (err) {
-            const errMsg = err.response?.data?.message || err.message;
-            setError(errMsg);
+            setError(err.message);
             return null;
         } finally {
             setIsLoading(false);
@@ -104,7 +100,7 @@ export const useMenu = () => {
             const result = await menuApi.getPublicMenus();
             return result.data;
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            setError(err.message);
             return [];
         } finally {
             setIsLoading(false);
@@ -118,9 +114,8 @@ export const useMenu = () => {
             const result = await menuApi.cloneMenu(menuId);
             return { success: true, data: result.data };
         } catch (err) {
-            const errMsg = err.response?.data?.message || err.message;
-            setError(errMsg);
-            return { success: false, message: errMsg };
+            setError(err.message);
+            return { success: false, message: err.message };
         } finally {
             setIsLoading(false);
         }
@@ -133,7 +128,7 @@ export const useMenu = () => {
             const result = await menuApi.getPublicMenusByUser(userId);
             return result.data;
         } catch (err) {
-            console.error("Lỗi fetch menus by user:", err);
+            setError(err.message);
             return [];
         } finally {
             setIsLoading(false);
@@ -148,7 +143,7 @@ export const useMenu = () => {
             const result = await menuApi.consultAI(menuState);
             return result.data; // Trả về đoạn text của AI
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            setError(err.message);
             return null;
         } finally {
             setIsLoading(false);
@@ -162,9 +157,8 @@ export const useMenu = () => {
             const result = await menuApi.generateMenuAuto(prompt);
             return { success: true, data: result.data };
         } catch (err) {
-            const errMsg = err.response?.data?.message || err.message;
-            setError(errMsg);
-            return { success: false, message: errMsg };
+            setError(err.message);
+            return { success: false, message: err.message };
         } finally {
             setIsLoading(false);
         }

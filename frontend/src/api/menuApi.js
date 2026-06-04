@@ -3,57 +3,57 @@ import apiClient from "./index";
 const menuApi = {
     createMenu: async (menuData) => {
         const response = await apiClient.post('/menus/create', menuData);
-        return response.data;
+        return response;
     },
 
     getMyMenus: async () => {
         const response = await apiClient.get('/menus/me');
-        return response.data;
+        return response;
     },
 
     getMenuById: async (menuId) => {
         const response = await apiClient.get(`/menus/${menuId}`);
-        return response.data;
+        return response;
     },
 
     updateMenu: async (menuId, menuData) => {
         const response = await apiClient.put(`/menus/update/${menuId}`, menuData);
-        return response.data;
+        return response;
     },
 
     deleteMenu: async (menuId) => {
         const response = await apiClient.delete(`/menus/delete/${menuId}`);
-        return response.data;
+        return response;
     },
 
     getShoppingList: async (menuId) => {
         const response = await apiClient.get(`/menus/${menuId}/shopping-list`);
-        return response.data;
+        return response;
     },
 
     getPublicMenus: async () => {
         const response = await apiClient.get('/menus/public');
-        return response.data;
+        return response;
     },
 
     cloneMenu: async (menuId) => {
         const response = await apiClient.post(`/menus/clone/${menuId}`);
-        return response.data;
+        return response;
     },
 
     getPublicMenusByUser: async (userId) => {
         const response = await apiClient.get(`/menus/user/${userId}`);
-        return response.data;
+        return response;
     },
 
     consultAI: async (menuState) => {
         const response = await apiClient.post('/menus/ai/consult', menuState);
-        return response.data;
+        return response;
     },
 
     generateMenuAuto: async (prompt) => {
         const response = await apiClient.post('/menus/ai/generate', { prompt });
-        return response.data;
+        return response;
     },
 };
 

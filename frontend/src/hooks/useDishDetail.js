@@ -13,10 +13,10 @@ const useDishDetail = (id) => {
             if (!dish) setLoading(true); 
             
             const response = await dictionaryDishApi.getDishDetail(id);
-            setDish(response.data.data);
+            setDish(response.data);
             setError(null);
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            setError(err.message);
         } finally {
             setLoading(true); // Đảm bảo trạng thái loading kết thúc
             setLoading(false);

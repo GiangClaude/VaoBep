@@ -10,11 +10,10 @@ const useAdminRecipes = () => {
         try {
             setLoading(true);
             const response = await adminApi.getRecipes({ page, limit, search, sortKey, sortOrder });
-            const { data, pagination: pagingData } = response.data;
-            setRecipes(data || []);
-            setPagination(pagingData);
+            setRecipes(response.data);
+            setPagination(response.meta);
         } catch (err) {
-            console.error("Fetch Recipes Error:", err);
+            console.error("Fetch Recipes Error:", err.message);
         } finally {
             setLoading(false);
         }
@@ -37,8 +36,9 @@ const useAdminRecipes = () => {
     const getRecipe = async (id) => {
         try {
             const response = await adminApi.getRecipeDetail(id);
-            return response.data.data;
+            return response.data;
         } catch (err) {
+            console.error("Get Recipe Error:", err.message);
             throw err;
         }
     };
@@ -49,6 +49,7 @@ const useAdminRecipes = () => {
             fetchRecipes(1, pagination.limit); // Refresh list
             return true;
         } catch (err) {
+            console.error("Create Recipe Error:", err.message);
             throw err;
         }
     };
@@ -62,6 +63,7 @@ const useAdminRecipes = () => {
             ));
             return true;
         } catch (err) {
+            console.error("Update Recipe Error:", err.message);
             throw err;
         }
     };

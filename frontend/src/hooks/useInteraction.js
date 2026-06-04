@@ -81,8 +81,8 @@ export default function useInteraction({
         if (id && currentUser && shouldFetch) { 
             interactionApi.getInteractionState(id, type)
                 .then(res => {
-                    if (mounted && res.data && res.data.success) {
-                        const apiData = res.data.data; 
+                    if (mounted && res.success) {
+                        const apiData = res.data; 
                         setState(prev => ({
                             ...prev,
                             liked: !!apiData.liked,
@@ -174,7 +174,7 @@ export default function useInteraction({
 
         try {
             const res = await interactionApi.toggleSave(id, type);
-            setToast({ show: true, message: res.data.message });
+            setToast({ show: true, message: res.message });
         } catch (error) {
             console.error("Lỗi save:", error);
             broadcastUpdate({ saved: oldState.saved });
@@ -185,13 +185,13 @@ export default function useInteraction({
         if (!checkAuth()) return null;
         try {
             const res = await interactionApi.postComment(id, content, type, parentId);
-            if (res.data.success) {
+            if (res.success) {
                 broadcastUpdate({ commentCount: state.commentCount + 1 });
-                return res.data.newComment;
+                return res.data;
             }
         } catch (error) {
             console.error("Lỗi gửi bình luận:", error);
-            setToast({ show: true, message: error.response?.data?.message || "Không thể gửi bình luận" });
+            setToast({ show: true, message: error.message || "Không thể gửi bình luận" });
             return null;
         }
     };
@@ -200,7 +200,7 @@ export default function useInteraction({
         if (!checkAuth()) return false;
         try {
             const res = await interactionApi.deleteComment(commentId);
-            if (res.data.success) {
+            if (res.success) {
                 const totalToRemove = 1 + Number(replyCount);
                 broadcastUpdate({
                     commentCount: Math.max(0, state.commentCount - totalToRemove)
@@ -219,9 +219,9 @@ export default function useInteraction({
         if (!checkAuth()) return null;
         try {
             const res = await interactionApi.updateComment(commentId, content);
-            if (res.data.success) {
+            if (res.success) {
                 setToast({ show: true, message: "Đã cập nhật bình luận" });
-                return res.data.data;
+                return res.data;
             }
         } catch (error) {
             console.error("Lỗi sửa bình luận:", error);

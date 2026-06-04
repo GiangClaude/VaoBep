@@ -65,21 +65,24 @@ export default function useChatbot() {
                 currentContext: currentContext 
             });
 
-            const data = response.data; // Axios tự parse JSON
-            
-            if (data.sql) {
-                // Xử lý khi AI tìm kiếm Database
-                let cleanText = (data.text || 'Gợi ý món ăn:').split('```sql')[0].trim();
-                let responseText = cleanText;
+            if (response.success) {
 
-                if (!data.data || data.data.length === 0) {
-                    responseText += `\n\n(Chưa tìm thấy dữ liệu phù hợp trong hệ thống. Bạn thử hỏi khác đi nhé!)`;
+                const data = response.data; // Axios tự parse JSON
+                console.log("AI API response data:", data);
+                if (data.sql) {
+                    // Xử lý khi AI tìm kiếm Database
+                    let cleanText = (data.text || 'Gợi ý món ăn:').split('```sql')[0].trim();
+                    let responseText = cleanText;
+
+                    if (!data.data || data.data.length === 0) {
+                        responseText += `\n\n(Chưa tìm thấy dữ liệu phù hợp trong hệ thống. Bạn thử hỏi khác đi nhé!)`;
+                    }
+                    setMessages(m => [...m, { from: 'bot', text: responseText, recipeData: data.data }]);
+                } else {
+                    // Xử lý text bình thường
+                    const botText = data.text || 'Tôi không hiểu ý bạn.';
+                    setMessages(m => [...m, { from: 'bot', text: botText }]);
                 }
-                setMessages(m => [...m, { from: 'bot', text: responseText, recipeData: data.data }]);
-            } else {
-                // Xử lý text bình thường
-                const botText = data && (data.text || data.message || JSON.stringify(data));
-                setMessages(m => [...m, { from: 'bot', text: botText }]);
             }
         } catch (err) {
             console.error("Lỗi Chatbot:", err);

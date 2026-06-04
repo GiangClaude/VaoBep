@@ -62,7 +62,7 @@ export const useResetPassword = () => {
 
                 setSuccessMessage(response.message || 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
             } catch (err) {
-                setErrors({ api: err.response?.data?.error || 'OTP không hợp lệ hoặc đã hết hạn.' });
+                setErrors({ api: err.message || 'OTP không hợp lệ hoặc đã hết hạn.' });
             } finally {
                 setLoading(false);
             }

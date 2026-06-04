@@ -19,7 +19,7 @@ const RegisterPage = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+ 
   return (
     <div className="min-h-screen flex flex-col bg-[#fff9f0]">
       <Header />
@@ -45,7 +45,7 @@ const RegisterPage = () => {
                   placeholder="Nguyễn Văn A"
                 />
               </div>
-              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
+              {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
             </div>
 
             {/* Email */}

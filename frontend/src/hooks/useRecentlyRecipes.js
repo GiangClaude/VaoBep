@@ -16,12 +16,9 @@ export const useRecentlyRecipes = () => {
       try {
         setLoading(true);
         const response = await recipeApi.getRecentlyRecipes();
-        
-        // Backend trả về: { message: "...", data: [...] }
-        const dataFromServer = response.data?.data || [];
-
-        // Sử dụng hàm normalizeRecipeList để chuẩn hóa toàn bộ danh sách recipe
-        setRecipes(normalizeRecipeList(dataFromServer));
+        if (response.success) { 
+          setRecipes(normalizeRecipeList(response.data || [])); 
+        }
       } catch (err) {
         console.error("Lỗi khi tải Recently recipes:", err);
         setError(err);

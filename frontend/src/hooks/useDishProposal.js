@@ -28,7 +28,7 @@ export default function useDishProposal(dishId, initialRecipes = [], onVoteSucce
         setIsSearching(true);
         try {
             const resp = await recipeApi.searchSimple(keyword);
-            const data = resp.data?.data || [];
+            const data = resp.data || [];
             setSearchResults(data);
         } catch (err) {
             console.error("Lỗi tìm kiếm công thức:", err);
@@ -41,7 +41,7 @@ export default function useDishProposal(dishId, initialRecipes = [], onVoteSucce
     const handleVote = async (recipeId) => {
         try {
             const resp = await dictionaryDishApi.voteRecipe(dishId, recipeId);
-            if (resp.data.success) {
+            if (resp.success) {
                 // Sau khi vote thành công, gọi callback để load lại dữ liệu từ trang Detail
                 if (onVoteSuccess) onVoteSuccess();
                 setSearchTerm('');
@@ -53,11 +53,11 @@ export default function useDishProposal(dishId, initialRecipes = [], onVoteSucce
                 //     type: 'success',
                 //     actions: [{ label: 'Đóng', onClick: closeModal, style: 'primary' }]
                 // });
-                return { success: true, message: resp.data.message };
+                return { success: true, message: resp.message };
             }
         } catch (err) {
-            const status = err.response?.status;
-            const message = err.response?.data?.message || "Đã có lỗi xảy ra.";
+            const status = err.statusCode;
+            const message = err.message || "Đã có lỗi xảy ra.";
             if (status === 401) {
                 setModalConfig({
                     isOpen: true,
@@ -81,7 +81,7 @@ export default function useDishProposal(dishId, initialRecipes = [], onVoteSucce
 
             return { 
                 success: false, 
-                message: err.response?.data?.message || "Không thể thực hiện bình chọn" 
+                message: err.message || "Không thể thực hiện bình chọn" 
             };
         }
     };

@@ -12,8 +12,9 @@ export const useOwnerRecipes = () => {
     try {
       setLoading(true);
       const response = await recipeApi.getOwnerRecipe();
-      
-      const dataFromServer = response.data?.data || [];
+      if (response.success) { 
+        setRecipes(normalizeRecipeList(response.data || [])); 
+      }
 
       // --- LOGIC MAPPING DỮ LIỆU ---
       // const formattedRecipes = dataFromServer.map((recipe) => {
@@ -86,9 +87,6 @@ export const useOwnerRecipes = () => {
       //     commentCount: recipe.comment_count || 0,
       //   };
       // });
-
-      setRecipes(normalizeRecipeList(dataFromServer));
-
       // setRecipes(formattedRecipes);
     } catch (err) {
       console.error("Lỗi khi tải recipe cá nhân:", err);

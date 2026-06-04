@@ -9,9 +9,9 @@ const useAdminIngredients = () => {
         try {
             setLoading(true);
             const response = await adminApi.getPendingIngredients();
-            setIngredients(response.data.data || []);
+            setIngredients(response.data || []);
         } catch (err) {
-            console.error("Fetch Ingredients Error:", err);
+            console.error("Fetch Ingredients Error:", err.message);
         } finally {
             setLoading(false);
         }
@@ -28,7 +28,7 @@ const useAdminIngredients = () => {
             setIngredients(prev => prev.filter(ing => ing.ingredient_id !== id));
             return true;
         } catch (err) {
-            console.error("Process Ingredient Error:", err);
+            console.error("Process Ingredient Error:", err.message);
             throw err;
         }
     };
@@ -44,10 +44,10 @@ const useAdminIngredients = () => {
         setErrorMsg(null);
         try {
             const res = await adminApi.getAllIngredients(page, limit, search, sortKey, sortOrder);
-            setAllIngredients(res.data.data);
-            setAllPagination(res.data.pagination);
+            setAllIngredients(res.data);
+            setAllPagination(res.meta);
         } catch (err) {
-            setErrorMsg(err.response?.data?.message || "Lỗi khi tải danh sách nguyên liệu");
+            setErrorMsg(err.message || "Lỗi khi tải danh sách nguyên liệu");
         } finally {
             setIsLoadingAll(false);
         }
@@ -61,7 +61,7 @@ const useAdminIngredients = () => {
             await fetchAllIngredients(1, allPagination.limit);
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi thêm nguyên liệu" };
+            return { success: false, message: err.message || "Lỗi khi thêm nguyên liệu" };
         }
     };
 
@@ -73,7 +73,7 @@ const useAdminIngredients = () => {
             await fetchAllIngredients(allPagination.page, allPagination.limit);
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi cập nhật nguyên liệu" };
+            return { success: false, message: err.message || "Lỗi khi cập nhật nguyên liệu" };
         }
     };
 
@@ -89,7 +89,7 @@ const useAdminIngredients = () => {
             await fetchAllIngredients(targetPage, allPagination.limit);
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi xóa nguyên liệu" };
+            return { success: false, message: err.message || "Lỗi khi xóa nguyên liệu" };
         }
     };
 

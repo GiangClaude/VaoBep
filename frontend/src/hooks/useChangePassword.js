@@ -61,9 +61,8 @@ export const useChangePassword = () => {
                 return { success: true, message: response.message };
             } catch (err) {
                 setLoading(false);
-                const apiError = err.response?.data?.error || 'Mật khẩu cũ không chính xác hoặc có lỗi xảy ra.';
-                setErrors({ api: apiError });
-                return { success: false, message: apiError };
+                setErrors({ api: err.message });
+                return { success: false, message: err.message };
             }
         }
         return { success: false, validation: true };

@@ -9,9 +9,9 @@ const useAdminReports = () => {
         try {
             setLoading(true);
             const response = await adminApi.getReports();
-            setReports(response.data.data || []);
+            setReports(response.data || []);
         } catch (err) {
-            console.error("Fetch Reports Error:", err);
+            console.error("Fetch Reports Error:", err.message);
         } finally {
             setLoading(false);
         }

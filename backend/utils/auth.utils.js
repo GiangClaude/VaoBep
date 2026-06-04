@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const UserModel = require('../models/user.model');
 const JWT_SECRET = process.env.JWT_SECRET;
 const SALT_ROUNDS = 10; // Độ phức tạp của thuật toán hash
+const { sendResponse } = require('./responseHelper');
+const AppError = require('./AppError');
 
 const hashPassword = async (password) => {
     return await bcrypt.hash(password, SALT_ROUNDS);
@@ -70,14 +72,14 @@ const verifyAdminMiddleware = async (req, res, next) => {
         // 1. Lấy token
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ message: "Authentication required" });
+            throw new AppError('Vui lòng đăng nhập để tiếp tục.', 401);
         }
         const token = authHeader.split(' ')[1];
 
         // 2. Verify token
         const decoded = jwt.verify(token, JWT_SECRET);
         if (!decoded || !decoded.id) {
-            return res.status(403).json({ message: "Invalid or expired token" });
+            throw new AppError('Phiên đăng nhập không hợp lệ hoặc đã hết hạn.', 403);
         }
 
         // 3. Query DB để lấy Role (Tuân thủ nguyên tắc Clean Code: Logic DB nằm trong Model)
@@ -85,7 +87,7 @@ const verifyAdminMiddleware = async (req, res, next) => {
         const user = await UserModel.findById(decoded.id); 
 
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            throw new AppError('Không tìm thấy người dùng.', 404);
         }
 
         // 4. Check Role
@@ -93,12 +95,12 @@ const verifyAdminMiddleware = async (req, res, next) => {
             req.user = user; // Gán user vào req để dùng ở controller sau nếu cần
             return next();
         } else {
-            return res.status(403).json({ message: "Access denied. Admin resources only." });
+            throw new AppError('Truy cập bị từ chối. Chỉ dành cho Quản trị viên.', 403);
         }
 
     } catch (error) {
         console.error("Admin Auth Error:", error);
-        return res.status(403).json({ message: "Unauthorized access" });
+        throw new AppError(error.message || 'Không có quyền truy cập.', 403);
     }
 };
 
@@ -109,13 +111,13 @@ const verifyProMiddleware = async (req, res, next) => {
         const userId = req.user?.user_id || req.user?.id; // Tùy thuộc vào payload JWT của bạn
         
         if (!userId) {
-            return res.status(401).json({ message: "Vui lòng đăng nhập" });
+            throw new AppError('Vui lòng đăng nhập để tiếp tục.', 401);
         }
 
         const user = await UserModel.findById(userId);
 
         if (!user) {
-            return res.status(404).json({ message: "Không tìm thấy người dùng" });
+            throw new AppError('Không tìm thấy người dùng.', 404);
         }
 
         // Chỉ cho phép pro hoặc admin
@@ -123,11 +125,11 @@ const verifyProMiddleware = async (req, res, next) => {
             req.user = user; 
             return next();
         } else {
-            return res.status(403).json({ message: "Truy cập bị từ chối. Chỉ dành cho Chuyên gia hoặc Admin." });
+            throw new AppError('Truy cập bị từ chối. Chỉ dành cho Chuyên gia hoặc Admin.', 403);
         }
     } catch (error) {
         console.error("Pro Auth Error:", error);
-        return res.status(500).json({ message: "Lỗi phân quyền chuyên gia" });
+        throw new AppError('Lỗi phân quyền chuyên gia', 500);
     }
 };
 

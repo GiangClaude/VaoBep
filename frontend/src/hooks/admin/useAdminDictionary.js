@@ -13,8 +13,10 @@ export const useAdminDictionary = () => {
         setErrorMsg(null);
         try {
             const res = await adminApi.getDictionaryDishes(page, limit, search, sortKey, sortOrder);
-            setDishes(res.data.data);
-            setPagination(res.data.pagination);
+            if(res.success) {
+                setDishes(res.data);
+                setPagination(res.meta);
+            }
         } catch (err) {
             setErrorMsg(err.response?.data?.message || "Lỗi khi tải danh sách món ăn");
         } finally {
@@ -29,7 +31,7 @@ export const useAdminDictionary = () => {
             await fetchDishes(1, pagination.limit); // Load lại trang 1
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi thêm món ăn" };
+            return { success: false, message: err.message || "Lỗi khi thêm món ăn" };
         }
     };
 
@@ -40,7 +42,7 @@ export const useAdminDictionary = () => {
             await fetchDishes(pagination.page, pagination.limit); // Load lại trang hiện tại
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi cập nhật món ăn" };
+            return { success: false, message: err.message || "Lỗi khi cập nhật món ăn" };
         }
     };
 
@@ -55,7 +57,7 @@ export const useAdminDictionary = () => {
             await fetchDishes(targetPage, pagination.limit);
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi xóa món ăn" };
+            return { success: false, message: err.message || "Lỗi khi xóa món ăn" };
         }
     };
 

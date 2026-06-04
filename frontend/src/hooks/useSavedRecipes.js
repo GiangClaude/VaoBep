@@ -20,10 +20,8 @@ export const useSavedRecipes = () => {
             
             // [SỬA LỖI TẠI ĐÂY]: Kiểm tra kỹ cấu trúc response
             // Nếu dùng axios chuẩn: response.data là body, body.data là mảng recipes
-            if (response && response.data) {
-                // Nếu backend trả về { success: true, data: [...] }
-                const dataList = response.data.data || []; 
-                setRecipes(dataList);
+            if (response.success) { 
+                setRecipes(response.data || []); 
             }
         } catch (error) {
             console.error("Lỗi tải saved recipes:", error);

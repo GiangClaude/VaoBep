@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const TagModel = require('../models/tag.model'); 
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
-
+const { sendResponse } = require('../utils/responseHelper');
 let cachedTags = null;
 
 async function fetchAllTagsFromDB() {
@@ -48,20 +48,20 @@ const handleChat = asyncHandler(async (req, res) => {
         if (sqlToRun) {
             const validation = sqlValidator.validateSQL(sqlToRun);
             if (!validation.valid) {
-                return res.status(200).json({ success: true, text: aiResult.text, sql: aiResult.sql, validation });
+                return sendResponse(res, 200, true, 'Validation failed', { text: aiResult.text, sql: aiResult.sql, validation });
             }
 
             const rows = await sqlExecutor.execute(sqlToRun, { timeout: 2000, maxRows: 200 });
             try {
                 await aiService.logSqlExecution({ userId, sessionId, sql: sqlToRun, rowCount: rows.length || 0, clientIp, userAgent, retrievalCount: aiResult.retrievalCount || 0 });
             } catch (e) { }
-            return res.status(200).json({ success: true, text: aiResult.text, sql: aiResult.sql, data: rows });
+            return sendResponse(res, 200, true, null, { text: aiResult.text, sql: aiResult.sql, data: rows });
         }
-        return res.status(200).json({ success: true, text: aiResult.text, sql: aiResult.sql, executeRecommended: true });
+        return sendResponse(res, 200, true, null, { text: aiResult.text, sql: aiResult.sql, executeRecommended: true });
     }
 
     // Trả về Text thường (Khi trả lời ngữ cảnh công thức hoặc trò chuyện thường)
-    return res.status(200).json({ success: true, text: aiResult.text });
+    return sendResponse(res, 200, true, 'Chat thành công', { text: aiResult.text });
 });
 
 const summarizeContext = asyncHandler(async (req, res) => {
@@ -69,13 +69,13 @@ const summarizeContext = asyncHandler(async (req, res) => {
     if (!contextText) throw new AppError('Thiếu dữ liệu văn bản cần tóm tắt (contextText)', 400);
 
     const summary = await aiService.generateSummary(contextText);
-    return res.status(200).json({ success: true, data: summary });
+    return sendResponse(res, 200, true, null, { data: summary });
 });
 
 const clearHistory = asyncHandler(async (req, res) => {
     const { sessionId, userId } = req.body;
     if (sessionId || userId) await aiService.clearChatHistory(sessionId, userId);
-    return res.status(200).json({ success: true, message: 'Đã xóa lịch sử' });
+    return sendResponse(res, 200, true, 'Đã xóa lịch sử', null);
 });
 
 module.exports = { handleChat, summarizeContext, clearHistory };

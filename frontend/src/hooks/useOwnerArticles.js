@@ -11,12 +11,11 @@ export default function useOwnerArticles() {
     setError(null);
     try {
       const response = await articleApi.getOwnerArticles();
-      const respData = response.data;
-      setArticles(normalizeArticleList(respData.data || []));
+      if (response.success) { 
+        setArticles(normalizeArticleList(response.data || [])); 
+      }
       setLoading(false);
-      console.log("Debug fetchOwnerArticles response:", respData);
-      console.log("Debug fetchOwnerArticles normalized articles:",articles);
-      return respData;
+      return response.data;
     } catch (err) {
       setLoading(false);
       const msg = err.response?.data?.message || err.message || 'Lỗi khi lấy bài viết của chuyên gia';

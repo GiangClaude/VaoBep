@@ -15,9 +15,10 @@ const protect = asyncHandler(async (req, res, next) => {
     let token;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
-
+        console.log("Token received in protect middleware:", token); // Debug log
         // 1. Giải mã Token
         const decoded = authUtils.verifyToken(token);
+        
         if (!decoded) {
             throw new AppError('Xác thực thất bại, token không hợp lệ', 401);
         }

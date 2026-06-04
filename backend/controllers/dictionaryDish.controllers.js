@@ -2,7 +2,7 @@ const DictionaryDishService = require('../services/dictionaryDish.service');
 const { createPagination } = require('../utils/paginationHelper');
 const { getUserIdFromToken } = require('../utils/auth.utils');
 const asyncHandler = require('../utils/asyncHandler');
-
+const {sendResponse} = require('../utils/responseHelper');
 const getAllDishes = asyncHandler(async (req, res) => {
     // 1. Nhận data từ request
     const page = parseInt(req.query.page) || 1;

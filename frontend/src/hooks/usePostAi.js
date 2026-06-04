@@ -14,14 +14,14 @@ export default function usePostAi() {
         
         try {
             const response = await aiApi.summarize({ contextText });
-            if (response.data && response.data.success) {
-                setSummary(response.data.data);
+            if (response.success) {
+                setSummary(response.data);
             } else {
                 setErrorSummary('Không thể tạo tóm tắt lúc này.');
             }
         } catch (error) {
             console.error("Lỗi AI Summary:", error);
-            setErrorSummary(error.response?.data?.message || 'Lỗi kết nối đến Trợ lý AI.');
+            setErrorSummary(error.message || 'Lỗi kết nối đến Trợ lý AI.');
         } finally {
             setLoadingSummary(false);
         }

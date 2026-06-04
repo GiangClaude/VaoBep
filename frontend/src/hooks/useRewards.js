@@ -11,8 +11,8 @@ export const useRewards = () => {
         setLoading(true);
         try {
             const response = await rewardApi.getMyRewards();
-            if (response.data.success) {
-                setRewards(response.data.data);
+            if (response.success) {
+                setRewards(response.data);
             }
         } catch (err) {
             setError(err.response?.data?.message || "Không thể tải danh sách phần thưởng");
@@ -30,13 +30,13 @@ export const useRewards = () => {
         setLoading(true);
         try {
             const response = await rewardApi.claimReward(userRewardId);
-            if (response.data.success) {
+            if (response.success) {
                 // Refresh lại danh sách sau khi mở
                 await fetchRewards();
-                return { success: true, items: response.data.data };
+                return { success: true, items: response.data };
             }
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi mở quà" };
+            return { success: false, message: err.message || "Lỗi khi mở quà" };
         } finally {
             setLoading(false);
         }

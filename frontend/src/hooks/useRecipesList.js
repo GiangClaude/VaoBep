@@ -99,24 +99,19 @@ export default function useRecipesList({ initialRecipes = [] } = {}) {
 
       const resp = await recipeApi.getAllRecipes(params); // Sử dụng hàm API đã định nghĩa trong recipeApi.js
       
-      const responseData = resp.data?.data || [];
-      console.log('API response data:', responseData); // Log để check dữ liệu thô từ API
-      const paginationData = resp.data?.pagination || {};
-
-      const normalizedData = normalizeRecipeList(responseData);
-      console.log('Normalized recipe data:', normalizedData); // Log để check dữ liệu sau khi chuẩn hóa
-      setRecipes(normalizedData);
-      setPagination(prev => ({
-        ...prev,
-        page: pageIdx,
-        totalItems: paginationData.totalItems || 0,
-        totalPages: paginationData.totalPages || 1
-      }));
-      
+      if (resp.success) {
+          setRecipes(normalizeRecipeList(resp.data || []));
+          setPagination(prev => ({
+            ...prev,
+            page: pageIdx,
+            totalItems: resp.meta?.totalItems || 0,
+            totalPages: resp.meta?.totalPages || 1
+          }));
+      }
       setError(null);
     } catch (err) {
       console.error('Fetch error:', err);
-      setError(err);
+      setError(err.message || "Có lỗi xảy ra khi tải danh sách công thức");
     } finally {
       setLoading(false);
     }

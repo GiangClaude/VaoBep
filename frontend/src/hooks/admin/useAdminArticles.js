@@ -3,7 +3,7 @@ import adminApi from '../../api/adminApi'; // Chỉnh lại đường dẫn impo
 
 export const useAdminArticles = () => {
     const [articles, setArticles] = useState([]);
-    const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+    const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0});
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
 
@@ -13,10 +13,13 @@ export const useAdminArticles = () => {
         setErrorMsg(null);
         try {
             const res = await adminApi.getArticles(page, limit, search, status, sortKey, sortOrder);
-            setArticles(res.data.data);
-            setPagination(res.data.pagination);
+            if (res.success) {
+                setArticles(res.data);
+                setPagination(res.meta);
+            }
+
         } catch (err) {
-            setErrorMsg(err.response?.data?.message || "Lỗi khi tải danh sách bài viết");
+            setErrorMsg(err.message || "Lỗi khi tải danh sách bài viết");
         } finally {
             setIsLoading(false);
         }
@@ -28,7 +31,8 @@ export const useAdminArticles = () => {
             const res = await adminApi.getArticleDetail(id);
             return { success: true, data: res.data.data };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi tải chi tiết bài viết" };
+            setErrorMsg(err.message || "Lỗi khi tải chi tiết bài viết");
+            return { success: false, message: err.message };
         }
     };
 
@@ -40,7 +44,7 @@ export const useAdminArticles = () => {
             await fetchArticles(pagination.page, pagination.limit); 
             return { success: true };
         } catch (err) {
-            return { success: false, message: err.response?.data?.message || "Lỗi khi cập nhật trạng thái" };
+            return { success: false, message: err.message || "Lỗi khi cập nhật trạng thái" };
         }
     };
 

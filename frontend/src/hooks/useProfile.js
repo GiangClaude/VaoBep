@@ -27,7 +27,7 @@ export const useProfile = (userId, currentUserId) => {
         const response = await userApi.getMyProfile();
         
         // Backend trả về: { message: "...", data: [...] }
-        const data = response.data?.data || [];
+        const data = response.data || [];
         // ---------------------------------------------------
 
         setUser(data);
@@ -75,19 +75,16 @@ export const useUpdateProfile = () => {
             // Gọi API
             const response = await userApi.updateProfile(formData);
 
-            if (response.data && response.data.success) {
+            if (response.success) {
                 // Logic quan trọng: Cập nhật Global State (Context) ngay lập tức
-                setCurrentUser(response.data.data);
+                setCurrentUser(response.data);
                 return { success: true, message: "Cập nhật hồ sơ thành công!" };
             } else {
-                const msg = response.data?.message || "Cập nhật thất bại";
-                return { success: false, message: msg };
+                return { success: false, message: "Cập nhật thất bại" };
             }
         } catch (err) {
-            console.error("Update Profile Error:", err);
-            const msg = err.response?.data?.message || "Lỗi kết nối server";
-            setError(msg);
-            return { success: false, message: msg };
+            setError(err.message);
+            return { success: false, message: err.message };
         } finally {
             setLoading(false);
         }

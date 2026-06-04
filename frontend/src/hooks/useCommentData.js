@@ -30,7 +30,7 @@ export default function useCommentData() {
         setLoading(true);
         try {
             const res = await interactionApi.getReplies(parentId);
-            const data = res.data.data;
+            const data = res.data;
             repliesCache[parentId] = data; // Lưu vào cache
             return data;
         } catch (err) {

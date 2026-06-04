@@ -80,32 +80,10 @@ app.use('/api/interaction', interactionRoutes);
 app.use('/api/dictionary-dishes', dictionaryDishRoutes);
 // Chatbot route
 app.use('/api/ai', AiRoutes);
-// app.use('/api/chat', chatbotRoutes);
-// app.use('/api/recipe-ai', recipeAiRoutes);
 
-
-app.get('/api/users', async (req, res) => {
-    try {
-        const users = await db.getAllUsers();
-        res.json(users);
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
-app.post('/api/users/:id', async (req, res) => {
-    try {
-        const user = await db.getUserById(req.params.id);
-        if (user) {
-            res.json(user);
-        } else {
-            res.status(404).json({ error: 'User not found' });
-        }
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+// Function xử lý hiển thị lời chào ở trang gốc của server
+app.get('/', (req, res) => {
+    res.status(200).json({ message: "Chào mừng bạn đến với Backend VaoBep!" });
 });
 
 app.use((req, res, next) => {
