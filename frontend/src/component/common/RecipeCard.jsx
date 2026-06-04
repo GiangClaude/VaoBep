@@ -33,13 +33,11 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
     <>
       <motion.div
         initial={false}
-        animate={{ width: isHovered ? "640px" : "320px", y: isHovered ? -8 : 0 }}
+        animate={{ width: "640px", y:-8 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="cursor-pointer flex-shrink-0 relative mb-4"
-        style={{ minWidth: isHovered ? "640px" : "320px", zIndex: isHovered ? 50 : 1, position: 'relative' }}
+        style={{ minWidth: "640px", zIndex: 50, position: 'relative' }}
         onClick={() => onClick && onClick()}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <div className="bg-white rounded-[25px] overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-[330px] relative">
           <div className="flex h-full">
@@ -62,10 +60,10 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
                     <span className="text-sm font-medium text-[#7d5a3f]">{interactionState.likeCount}</span>
                   </button>
 
-                  <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-1 shadow-md">
+                  {/* <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-1 shadow-md">
                     <Star className="w-4 h-4 text-[#ffc857]" />
                     <span className="text-sm font-medium text-[#7d5a3f]">{Math.round(rating*100)/100}</span>
-                  </div>
+                  </div> */}
 
                   <button onClick={(e) => { e.stopPropagation(); handleReport(e); }} className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md" title="Báo cáo bài viết">
                     <AlertCircle className="w-4 h-4 text-red-500" />
@@ -73,6 +71,9 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
                 </div>
 
                 {/* SAVE BUTTON */}
+
+                
+              
                 <button onClick={(e) => { e.stopPropagation(); handleToggleSave(e); }} className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md z-10" title="Lưu công thức">
                     <Bookmark className={`w-4 h-4 ${interactionState.saved ? "text-[#ff6b35] fill-[#ff6b35]" : "text-[#7d5a3f]"}`} />
                 </button>
@@ -90,6 +91,7 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
                 <div className="flex items-center gap-3 text-sm text-[#7d5a3f]">
                   <div className="flex items-center gap-1"><Clock className="w-4 h-4 text-[#ff6b35]" /><span>{cookTime}</span></div>
                   <div className="flex items-center gap-1"><Users className="w-4 h-4 text-[#ff6b35]" /><span>{servings}</span></div>
+                  <div className="flex items-center gap-1"><Star className="w-4 h-4 text-[#ff6b35]" /><span>{Math.round(rating*100)/100}</span></div>
                 </div>
               </div>
             </div>
@@ -97,7 +99,7 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
             {/* Right Side - Expanded Content */}
             <motion.div
               initial={false}
-              animate={{ width: isHovered ? "320px" : "0px", opacity: isHovered ? 1 : 0 }}
+              animate={{ width: "320px", opacity: 1}}
               transition={{ duration: 0.3 }}
               className={`overflow-hidden border-l border-[#ffc857]/30 bg-white flex-shrink-0 ${expandDirection === 'left' ? 'order-first border-r border-l-0' : ''}`}
             >
@@ -134,7 +136,7 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
 
           <motion.div
             initial={false}
-            animate={{ rotate: isHovered ? 6 : 3, scale: isHovered ? 1 : 0.98 }}
+            animate={{ rotate: 6, scale: 1}}
             className="absolute inset-0 bg-gradient-to-br from-[#ffc857] to-[#ff6b35] rounded-[25px] mt-2 mb-2 -z-10"
             style={{ transform: "translate(6px, 6px)" }}
           />
