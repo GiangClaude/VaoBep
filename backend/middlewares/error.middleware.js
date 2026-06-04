@@ -1,5 +1,5 @@
 // VỊ TRÍ: backend/middlewares/error.middleware.js
-
+const { sendResponse } = require('../utils/responseHelper');
 const errorHandler = (err, req, res, next) => {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
@@ -36,14 +36,17 @@ const errorHandler = (err, req, res, next) => {
         }
     }
 
+    const metaData = process.env.NODE_ENV === 'development' ? { stack: err.stack } : null;
+
     // Trả về response chuẩn
-    res.status(err.statusCode).json({
-        success: false,
-        status: err.status,
-        message: err.message,
-        // Có thể mở comment dòng dưới để trả stack trace về cho FE nếu đang ở môi trường DEV
-        // stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-    });
+   sendResponse(
+        res, 
+        err.statusCode, 
+        false,          // success luôn là false đối với lỗi
+        err.message,    // Lấy message từ AppError
+        null,           // Lỗi thì không có data trả về
+        metaData        // Meta data (nếu có)
+    );
 };
 
 module.exports = errorHandler;

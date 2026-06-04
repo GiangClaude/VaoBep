@@ -1,6 +1,7 @@
 // VỊ TRÍ: backend/controllers/admin/adminDictionary.controller.js
 const adminDictionaryService = require('../../services/admin/adminDictionary.service');
 const asyncHandler = require('../../utils/asyncHandler');
+const { sendResponse } = require('../../utils/responseHelper');
 
 const getDictionaryDishes = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
@@ -11,10 +12,7 @@ const getDictionaryDishes = asyncHandler(async (req, res) => {
 
     const result = await adminDictionaryService.getDictionaryDishes(page, limit, search, sortKey, sortOrder);
 
-    res.status(200).json({ 
-        data: result.dishes, 
-        pagination: { page, limit, total: result.total, totalPages: result.totalPages } 
-    });
+    sendResponse(res, 200, true, 'Success', result.dishes, { page, limit, totalItems: result.total, totalPages: result.totalPages });
 });
 
 const createDictionaryDish = asyncHandler(async (req, res) => {
@@ -22,21 +20,21 @@ const createDictionaryDish = asyncHandler(async (req, res) => {
     // Chuyển toàn bộ req.body và thông tin file xuống Service
     const dishId = await adminDictionaryService.createDictionaryDish(adminId, req.body, req.file);
 
-    res.status(201).json({ message: 'Tạo món ăn thành công', dishId });
+    sendResponse(res, 201, true, 'Tạo món ăn thành công', { dishId });
 });
 
 const updateDictionaryDish = asyncHandler(async (req, res) => {
     const { id } = req.params;
     await adminDictionaryService.updateDictionaryDish(id, req.body, req.file);
 
-    res.status(200).json({ message: 'Cập nhật món ăn thành công' });
+    sendResponse(res, 200, true, 'Cập nhật món ăn thành công');
 });
 
 const deleteDictionaryDish = asyncHandler(async (req, res) => {
     const { id } = req.params;
     await adminDictionaryService.deleteDictionaryDish(id);
     
-    res.status(200).json({ message: 'Xóa món ăn thành công' });
+    sendResponse(res, 200, true, 'Xóa món ăn thành công');
 });
 
 module.exports = { getDictionaryDishes, createDictionaryDish, updateDictionaryDish, deleteDictionaryDish };

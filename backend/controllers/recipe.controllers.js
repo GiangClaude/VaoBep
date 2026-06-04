@@ -1,26 +1,27 @@
 const paginationHelper = require('../utils/paginationHelper');
 const { getUserIdFromToken } = require('../utils/auth.utils');
 const asyncHandler = require('../utils/asyncHandler');
-const RecipeService = require('../services/recipe.service'); 
+const RecipeService = require('../services/recipe.service');
+const { sendResponse } = require('../utils/responseHelper'); 
 
 const createRecipe = asyncHandler(async (req, res) => {
     const newRecipe = await RecipeService.createRecipe(req.savedRecipeId, req.user.user_id, req.body, req.files);
-    res.status(201).json({ message: "Tạo công thức thành công!", data: newRecipe });
+    sendResponse(res, 201, true, "Tạo công thức thành công!", newRecipe);
 });
 
 const updateRecipe = asyncHandler(async (req, res) => {
     const result = await RecipeService.updateRecipe(req.params.recipeId, req.user.user_id, req.body, req.files);
-    res.status(200).json({ success: true, message: result.message || "Cập nhật công thức thành công", notification: result.notification });
+    sendResponse(res, 200, true, result.message || "Cập nhật công thức thành công", { notification: result.notification });
 });
 
 const deleteRecipe = asyncHandler(async (req, res) => {
     const result = await RecipeService.deleteRecipe(req.params.recipeId, req.user.user_id);
-    res.status(200).json({ success: true, message: "Xóa công thức thành công" });
+    sendResponse(res, 200, true, "Xóa công thức thành công");
 });
 
 const getRecipeById = asyncHandler(async (req, res) => {
     const recipeData = await RecipeService.getRecipeById(req.params.recipeId);
-    res.status(200).json({ success: true, data: recipeData });
+    sendResponse(res, 200, true, 'Success', recipeData);
 });
 
 const getRecipes = asyncHandler(async (req, res) => {
@@ -40,54 +41,51 @@ const getRecipes = asyncHandler(async (req, res) => {
     const { recipes, totalItems } = await RecipeService.getRecipes(page, limit, filters, currentUserId);
     const pagination = paginationHelper.createPagination(page, limit, totalItems);
 
-    res.status(200).json({ message: 'Lấy danh sách công thức thành công', data: recipes, pagination });
+    sendResponse(res, 200, true, 'Lấy danh sách công thức thành công', recipes, pagination);
 });
 
 const getRecentlyRecipes = asyncHandler(async (req, res) => {
     const currentUserId = getUserIdFromToken(req);
     console.log('Current User ID:', currentUserId);
     const recipes = await RecipeService.getRecentlyRecipes(req.query.category, req.query.tag, currentUserId);
-    res.status(200).json({ message: 'Lấy danh sách thành công', data: recipes });
+    sendResponse(res, 200, true, 'Lấy danh sách thành công', recipes);
 });
 
 const getFeatureRecipes = asyncHandler(async (req, res) => {
     const recipes = await RecipeService.getFeatureRecipes();
-    res.status(200).json({ message: 'Đã lấy được recipe đặc biệt!', data: recipes, count: recipes.length });
+    sendResponse(res, 200, true, 'Đã lấy được recipe đặc biệt!', recipes, { count: recipes.length });
 });
 
 const getOwnerRecipe = asyncHandler(async (req, res) => {
     const recipes = await RecipeService.getOwnerRecipe(req.user.user_id);
-    res.status(200).json({ success: true, data: recipes });
+    sendResponse(res, 200, true, 'Success', recipes);
 });
 
 const getUserRecipe = asyncHandler(async (req, res) => {
     const recipes = await RecipeService.getUserRecipe(req.params.userId);
-    res.status(200).json({ success: true, data: recipes });
+    sendResponse(res, 200, true, 'Success', recipes);
 });
 
 const getPreviewComments = asyncHandler(async (req, res) => {
     const comments = await RecipeService.getPreviewComments(req.params.recipeId);
-    res.status(200).json({ success: true, data: comments });
+    sendResponse(res, 200, true, 'Success', comments);
 });
 
 const changeRecipeStatus = asyncHandler(async (req, res) => {
     const newStatus = await RecipeService.changeRecipeStatus(req.params.recipeId, req.user.user_id, req.body.status);
-    res.status(200).json({ success: true, message: `Đã chuyển trạng thái sang "${newStatus}" thành công!`, newStatus });
+    sendResponse(res, 200, true, `Đã chuyển trạng thái sang "${newStatus}" thành công!`, { newStatus });
 });
 
 const getSavedRecipes = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const result = await RecipeService.getSavedRecipes(req.user.user_id, req.query.sortKey, req.query.sortOrder, limit, page);
-    res.status(200).json({ 
-        success: true, message: 'Lấy danh sách đã lưu thành công', 
-        data: result.recipes, pagination: paginationHelper.createPagination(page, limit, result.total) 
-    });
+    sendResponse(res, 200, true, 'Lấy danh sách đã lưu thành công', result.recipes, paginationHelper.createPagination(page, limit, result.total));
 });
 
 const searchSimpleRecipes = asyncHandler(async (req, res) => {
     const recipes = await RecipeService.searchSimpleRecipes(req.query.keyword, req.user.user_id);
-    res.status(200).json({ success: true, message: 'Tìm kiếm công thức thành công', data: recipes });
+    sendResponse(res, 200, true, 'Tìm kiếm công thức thành công', recipes);
 });
 
 module.exports = {

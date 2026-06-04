@@ -1,6 +1,7 @@
 // backend/controllers/reward.controllers.js
 const asyncHandler = require('../utils/asyncHandler');
 const RewardService = require('../services/reward.service');
+const { sendResponse } = require('../utils/responseHelper');
 
 /**
  * Lấy danh sách hộp quà của người dùng hiện tại
@@ -10,10 +11,7 @@ const getMyRewards = asyncHandler(async (req, res) => {
     const userId = req.user.user_id;
     const boxes = await RewardService.getMyRewards(userId);
     
-    res.status(200).json({ 
-        success: true, 
-        data: boxes 
-    });
+    sendResponse(res, 200, true, 'Success', boxes);
 });
 
 /**
@@ -25,11 +23,7 @@ const claimReward = asyncHandler(async (req, res) => {
 
     const result = await RewardService.claimReward(userRewardId, userId);
 
-    res.status(200).json({ 
-        success: true, 
-        message: result.message, 
-        data: result.data 
-    });
+    sendResponse(res, 200, true, result.message, result.data);
 });
 
 // Export theo dạng object thống nhất với toàn bộ dự án

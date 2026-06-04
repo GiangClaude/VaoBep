@@ -11,12 +11,10 @@ const getAllDishes = asyncHandler(async (req, res) => {
 
     // 2. Chuyển qua Service xử lý
     const { totalItems, dishes } = await DictionaryDishService.getAllDishes(page, limit, search);
+    
 
     // 3. Trả về format chuẩn
-    res.status(200).json({
-        success: true,
-        data: { dishes, pagination: createPagination(page, limit, totalItems) }
-    });
+    sendResponse(res, 200, true, 'Success', { dishes, pagination: createPagination(page, limit, totalItems) });
 });
 
 const getDishDetail = asyncHandler(async (req, res) => {
@@ -25,19 +23,19 @@ const getDishDetail = asyncHandler(async (req, res) => {
 
     const dishData = await DictionaryDishService.getDishDetail(id, userId);
 
-    res.status(200).json({ success: true, data: dishData });
+    sendResponse(res, 200, true, 'Success', dishData);
 });
 
 const getMapSummary = asyncHandler(async (req, res) => {
     // Không gọi Model nữa, gọi Service
     const rows = await DictionaryDishService.getMapSummary();
-    res.status(200).json({ success: true, data: rows });
+    sendResponse(res, 200, true, 'Success', rows);
 });
 
 const getMapAllDishes = asyncHandler(async (req, res) => {
     // Không gọi Model nữa, gọi Service
     const rows = await DictionaryDishService.getMapAllDishes();
-    res.status(200).json({ success: true, data: rows });
+    sendResponse(res, 200, true, 'Success', rows);
 });
 
 const voteRecipeForDish = asyncHandler(async (req, res) => {
@@ -47,7 +45,7 @@ const voteRecipeForDish = asyncHandler(async (req, res) => {
 
     const action = await DictionaryDishService.voteRecipeForDish(dishId, recipeId, userId);
 
-    res.status(200).json({ success: true, message: 'Bình chọn thành công!', action });
+    sendResponse(res, 200, true, 'Bình chọn thành công!', action);
 });
 
 module.exports = { getAllDishes, getDishDetail, getMapSummary, getMapAllDishes, voteRecipeForDish };

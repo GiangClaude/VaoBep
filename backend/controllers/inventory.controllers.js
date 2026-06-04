@@ -1,5 +1,6 @@
 const InventoryService = require('../services/inventory.service');
 const asyncHandler = require('../utils/asyncHandler');
+const { sendResponse } = require('../utils/responseHelper');
 
 /**
  * Lấy túi đồ của chính mình (Lấy tất cả)
@@ -11,10 +12,7 @@ const getMyInventory = asyncHandler(async (req, res) => {
     // Giao phó logic lấy dữ liệu cho Service
     const inventory = await InventoryService.getMyInventory(userId);
 
-    return res.status(200).json({
-        success: true,
-        data: inventory
-    });
+    sendResponse(res, 200, true, 'Success', inventory);
 });
 
 /**
@@ -28,10 +26,7 @@ const getPublicInventory = asyncHandler(async (req, res) => {
 
     const inventory = await InventoryService.getPublicInventory(userId, itemType);
 
-    return res.status(200).json({
-        success: true,
-        data: inventory
-    });
+    sendResponse(res, 200, true, 'Success', inventory);
 });
 
 module.exports = {

@@ -1,10 +1,11 @@
 // VỊ TRÍ: backend/controllers/admin/adminReport.controller.js
 const adminReportService = require('../../services/admin/adminReport.service');
 const asyncHandler = require('../../utils/asyncHandler');
+const { sendResponse } = require('../../utils/responseHelper');
 
 const getReports = asyncHandler(async (req, res) => {
     const reports = await adminReportService.getReports();
-    res.status(200).json({ data: reports });
+    sendResponse(res, 200, true, 'Success', reports);
 });
 
 const processReport = asyncHandler(async (req, res) => {
@@ -12,7 +13,7 @@ const processReport = asyncHandler(async (req, res) => {
     
     const message = await adminReportService.processReport(report_id, action, post_id, post_type);
     
-    res.status(200).json({ message });
+    sendResponse(res, 200, true, message);
 });
 
 module.exports = { getReports, processReport };

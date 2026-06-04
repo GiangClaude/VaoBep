@@ -18,11 +18,11 @@ export const useIngredientData = () => {
           unitApi.getAll()
         ]);
 
-        setDbIngredients(ingredientsRes.data);
-        setDbUnits(unitsRes.data);
+        if (ingredientsRes.success) setDbIngredients(ingredientsRes.data);
+        if (unitsRes.success) setDbUnits(unitsRes.data);
       } catch (err) {
-        console.error("Lỗi khi tải dữ liệu nguyên liệu/đơn vị:", err);
-        setError(err);
+        console.error("Lỗi:", err.message);
+        setError(err.message);
       } finally {
         setIsLoading(false);
       }

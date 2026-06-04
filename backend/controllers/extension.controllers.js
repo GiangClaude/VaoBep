@@ -4,6 +4,7 @@ const db = require('../config/db'); // Dùng pool DB hiện có của bạn
 const extensionAiService = require('../services/extensionAi.service');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
+const { sendResponse } = require('../utils/responseHelper');
 
 // 1. Lấy 3 món ăn ngẫu nhiên (Cho màn hình chính của Extension)
 const suggestRecipes = asyncHandler(async (req, res) => {
@@ -15,7 +16,7 @@ const suggestRecipes = asyncHandler(async (req, res) => {
     LIMIT 3
   `;
   const [rows] = await db.pool.execute(sql);
-  return res.status(200).json({ success: true, data: rows });
+  sendResponse(res, 200, true, 'Success', rows);
 });
 
 // 2. Tìm kiếm theo text bôi đen (Không dùng AI, query LIKE trực tiếp)
@@ -33,7 +34,7 @@ const searchRecipes = asyncHandler(async (req, res) => {
   const searchTerm = `%${query.trim()}%`;
   const [rows] = await db.pool.execute(sql, [searchTerm]);
 
-  return res.status(200).json({ success: true, data: rows });
+  sendResponse(res, 200, true, 'Success', rows);
 });
 
 // 3. Phân tích ảnh -> Lấy tên món -> Truy vấn DB (Kết hợp AI + DB trong 1 lần gọi)
@@ -57,11 +58,7 @@ const identifyImage = asyncHandler(async (req, res) => {
   const searchTerm = `%${dishName.replace(/["']/g, '').trim()}%`; 
   const [recipes] = await db.pool.execute(sql, [searchTerm]);
 
-  return res.status(200).json({ 
-    success: true, 
-    dishName: dishName, // Trả về tên món để UI hiện "Có phải là: Phở bò?"
-    data: recipes       // Trả về danh sách món nấu luôn
-  });
+  sendResponse(res, 200, true, 'Success', { dishName, recipes }, null);
 });
 
 // 4. Trả lời câu hỏi dựa trên text bóc từ Web
@@ -71,7 +68,7 @@ const askContext = asyncHandler(async (req, res) => {
 
   // Gọi AI (Gửi cả text bóc được từ web và câu hỏi)
   const answer = await extensionAiService.answerContextQuestion(context, question);
-  return res.status(200).json({ success: true, text: answer });
+  sendResponse(res, 200, true, 'Success', { text: answer });
 });
 
 module.exports = { suggestRecipes, searchRecipes, identifyImage, askContext };

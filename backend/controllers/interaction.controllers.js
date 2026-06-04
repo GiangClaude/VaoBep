@@ -1,5 +1,6 @@
 const InteractionService = require('../services/interaction.service');
 const asyncHandler = require('../utils/asyncHandler');
+const { sendResponse } = require('../utils/responseHelper');
 
 const toggleLike = asyncHandler(async (req, res) => {
     const userId = req.user.user_id;
@@ -7,11 +8,7 @@ const toggleLike = asyncHandler(async (req, res) => {
 
     const result = await InteractionService.toggleLike(userId, postId, postType);
                     
-    res.status(200).json({
-        success: true,
-        message: result.message,
-        data: { isLiked: result.isLiked }
-    });
+    sendResponse(res, 200, true, result.message, { isLiked: result.isLiked });
 });
 
 const toggleSave = asyncHandler(async (req, res) => {
@@ -20,11 +17,7 @@ const toggleSave = asyncHandler(async (req, res) => {
 
     const result = await InteractionService.toggleSave(userId, postId, postType);
 
-    res.status(200).json({
-        success: true,
-        message: result.message,
-        data: { isSaved: result.isSaved }
-    });
+    sendResponse(res, 200, true, result.message, { isSaved: result.isSaved });
 });
 
 const postComment = asyncHandler(async (req, res) => {
@@ -33,11 +26,7 @@ const postComment = asyncHandler(async (req, res) => {
 
     const result = await InteractionService.postComment(userId, postId, postType, content, parentId);
 
-    res.status(201).json({ 
-        success: true, 
-        message: result.message,
-        newComment: result.newComment
-    });
+    sendResponse(res, 201, true, result.message, result.newComment);
 });
 
 const editComment = asyncHandler(async (req, res) => {
@@ -47,7 +36,7 @@ const editComment = asyncHandler(async (req, res) => {
 
     await InteractionService.editComment(userId, commentId, content);
 
-    res.status(200).json({ success: true, message: "Cập nhật bình luận thành công" });
+    sendResponse(res, 200, true, "Cập nhật bình luận thành công");
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
@@ -56,7 +45,7 @@ const deleteComment = asyncHandler(async (req, res) => {
 
     await InteractionService.deleteComment(userId, commentId);
     
-    res.status(200).json({ success: true, message: "Xóa bình luận thành công" });
+    sendResponse(res, 200, true, "Xóa bình luận thành công");
 });
 
 const getComments = asyncHandler(async (req, res) => {
@@ -65,13 +54,13 @@ const getComments = asyncHandler(async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
 
     const data = await InteractionService.getComments(postId, postType, page, limit);
-    res.status(200).json({ success: true, data });
+    sendResponse(res, 200, true, 'Success', data);
 });
 
 const getReplies = asyncHandler(async (req, res) => {
     const { parentId } = req.params;
     const replies = await InteractionService.getReplies(parentId);
-    res.status(200).json({ success: true, data: replies });
+    sendResponse(res, 200, true, 'Success', replies);
 });
 
 const ratePost = asyncHandler(async (req, res) => {
@@ -79,7 +68,7 @@ const ratePost = asyncHandler(async (req, res) => {
     const { postId, postType, score } = req.body;
 
     const result = await InteractionService.ratePost(userId, postId, postType, score);
-    res.status(200).json({ success: true, message: 'Đánh giá thành công', data: result });
+    sendResponse(res, 200, true, 'Đánh giá thành công', result);
 });
 
 const followUser = asyncHandler(async (req, res) => {
@@ -87,11 +76,7 @@ const followUser = asyncHandler(async (req, res) => {
     const { followingId } = req.body;
     
     const result = await InteractionService.followUser(followerId, followingId);
-    res.status(200).json({ 
-        success: true, 
-        message: result.message, 
-        data: { isFollowing: result.isFollowing } 
-    });
+    sendResponse(res, 200, true, result.message, { isFollowing: result.isFollowing });
 });
 
 const getInteractionState = asyncHandler(async (req, res) => {
@@ -99,7 +84,7 @@ const getInteractionState = asyncHandler(async (req, res) => {
     const { postId, postType } = req.query;
 
     const state = await InteractionService.getInteractionState(userId, postId, postType);
-    res.status(200).json({ success: true, data: state });
+    sendResponse(res, 200, true, 'Success', state);
 });
 
 const reportPost = asyncHandler(async (req, res) => {
@@ -107,7 +92,7 @@ const reportPost = asyncHandler(async (req, res) => {
     const { postId, postType, reason } = req.body;
 
     const result = await InteractionService.reportPost(userId, postId, postType, reason);
-    res.status(201).json({ success: true, message: 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.', data: result });
+    sendResponse(res, 201, true, 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét.', result);
 });
 
 module.exports = {

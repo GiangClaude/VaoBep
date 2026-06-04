@@ -3,25 +3,19 @@ const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const AuthService = require('../services/auth.service');
 const UserModel = require('../models/user.model');
+const { sendResponse } = require('../utils/responseHelper');
 
 // Đăng ký người dùng mới
 const register = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
     const user = await AuthService.register(name, email, password);
-    res.status(201).json({
-        message: 'User registered successfully. Please check your email for verification OTP.',
-        user
-    });
+    sendResponse(res, 201, true, 'User registered successfully. Please check your email for verification OTP.', { user });
 });
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     const result = await AuthService.login(email, password);
-    res.json({
-        message: 'Login successful',
-        token: result.token,
-        user: result.user
-    });
+    sendResponse(res, 200, true, 'Login successful', { token: result.token, user: result.user });
 });
 
 // const protect = asyncHandler(async (req, res, next) => {
@@ -52,33 +46,26 @@ const login = asyncHandler(async (req, res) => {
 const verifyOTP = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
     await AuthService.verifyOTP(email, otp);
-    res.status(200).json({
-        success: true,
-        message: 'OTP hợp lệ.'
-    });
+    sendResponse(res, 200, true, 'OTP hợp lệ.');
 });
 
 const activateAccount = asyncHandler(async (req, res) => {
     const { email, otp } = req.body;
     const result = await AuthService.activateAccount(email, otp);
-    res.status(200).json({
-        message: 'Account verified successfully. You are now logged in.',
-        token: result.token,
-        user: result.user
-    });
+    sendResponse(res, 200, true, 'Account verified successfully. You are now logged in.', { token: result.token, user: result.user });
 });
 
 const resendOTP = asyncHandler(async (req, res) => {
     const { email } = req.body;
     const result = await AuthService.resendOTP(email);
-    res.status(200).json(result);
+    sendResponse(res, 200, true, result.message || 'OTP sent successfully', null);
 });
 
 // Yêu cầu đặt lại mật khẩu (gửi OTP về email)
 const requestPasswordReset = asyncHandler(async (req, res) => {
     const { email } = req.body;
     const result = await AuthService.requestPasswordReset(email);
-    res.status(200).json({ success: true, message: result.message });
+    sendResponse(res, 200, true, result.message || 'Password reset OTP sent successfully');
 });
 
 // // Xử lý đổi mật khẩu cho user đang đăng nhập bằng mật khẩu cũ
@@ -93,7 +80,7 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
 const resetPassword = asyncHandler(async (req, res) => {
     const { email, otp, newPassword } = req.body;
     const result = await AuthService.resetPassword(email, otp, newPassword);
-    res.status(200).json(result);
+    sendResponse(res, 200, true, result.message || 'Password reset successful');
 });
 
 module.exports = {

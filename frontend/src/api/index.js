@@ -20,18 +20,21 @@ apiClient.interceptors.request.use((config) => {
 // 3. [THÊM MỚI]: Response Interceptor để xử lý lỗi Global
 apiClient.interceptors.response.use(
     (response) => {
-        return response; // Trả về data bình thường nếu thành công
+        return response.data; // Trả về data bình thường nếu thành công
     },
     (error) => {
         // Bắt lỗi 401 (Unauthorized - Token hết hạn hoặc sai)
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('token'); // Xóa token cũ
-            
+            // return Promise.reject(error.response.data);
             // Bắn một sự kiện ra window để AuthContext nhận diện và đẩy về Login
             // (Giúp tránh việc phải truyền useNavigate xuống tận file cấu hình)
             window.dispatchEvent(new Event('auth_unauthorized'));
         }
-        return Promise.reject(error);
+        return Promise.reject({
+            success: false,
+            message: error.message || 'Không thể kết nối đến máy chủ.'
+        });
     }
 );
 

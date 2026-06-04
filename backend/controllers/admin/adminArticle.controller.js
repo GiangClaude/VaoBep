@@ -1,6 +1,7 @@
 // VỊ TRÍ: backend/controllers/admin/adminArticle.controller.js
 const adminArticleService = require('../../services/admin/adminArticle.service');
 const asyncHandler = require('../../utils/asyncHandler');
+const { sendResponse } = require('../../utils/responseHelper');
 
 // Controller giờ đây rất mỏng (Thin Controller), chỉ nhận Request và gọi Service
 const getArticles = asyncHandler(async (req, res) => {
@@ -13,17 +14,14 @@ const getArticles = asyncHandler(async (req, res) => {
 
     const result = await adminArticleService.getArticles(page, limit, search, statusFilter, sortKey, sortOrder);
 
-    res.status(200).json({ 
-        data: result.articles, 
-        pagination: { page, limit, total: result.total, totalPages: result.totalPages } 
-    });
+    sendResponse(res, 200, true, 'Success', result.articles, { page, limit, totalItems: result.total, totalPages: result.totalPages });
 });
 
 const getAdminArticleDetail = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const article = await adminArticleService.getArticleDetail(id);
     
-    res.status(200).json({ data: article });
+    sendResponse(res, 200, true, 'Success', article);
 });
 
 const updateArticleStatus = asyncHandler(async (req, res) => {
@@ -32,7 +30,7 @@ const updateArticleStatus = asyncHandler(async (req, res) => {
     
     const newStatus = await adminArticleService.updateArticleStatus(id, status);
     
-    res.status(200).json({ message: `Đã cập nhật trạng thái bài viết thành: ${newStatus}` });
+    sendResponse(res, 200, true, `Đã cập nhật trạng thái bài viết thành: ${newStatus}`);
 });
 
 const deleteArticle = asyncHandler(async (req, res) => {
@@ -40,7 +38,7 @@ const deleteArticle = asyncHandler(async (req, res) => {
     
     await adminArticleService.deleteArticle(id);
     
-    res.status(200).json({ message: 'Xóa bài viết thành công' });
+    sendResponse(res, 200, true, 'Xóa bài viết thành công');
 });
 
 module.exports = { 
