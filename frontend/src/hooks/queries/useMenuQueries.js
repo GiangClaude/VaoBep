@@ -46,3 +46,14 @@ export const usePublicMenusQuery = () => {
         }
     });
 };
+
+export const usePublicMenusByUserQuery = (userId) => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.MENUS, 'public', userId],
+        queryFn: async () => {
+            const response = await menuApi.getPublicMenusByUser(userId);
+            return response.success ? response.data : [];
+        },
+        enabled: !!userId // Chỉ chạy khi có userId
+    });
+};

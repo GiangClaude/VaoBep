@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, ChefHat, Plus, Eye, PenLine, Ban, CheckCircle, Flame, Lock, Unlock } from 'lucide-react'; // [MỚI]
-import useAdminRecipes from '../../hooks/admin/useAdminRecipes';
 import AdminTable from '../../component/admin/AdminTable';
 import StatusBadge from '../../component/admin/StatusBadge';
 import ConfirmModal from '../../component/admin/ConfirmModal';
@@ -8,46 +7,63 @@ import RecipeModal from '../../component/admin/RecipeModal';
 import debounce from 'lodash.debounce';
 import { toast } from 'react-toastify';
 
+// import useAdminRecipes from '../../hooks/admin/useAdminRecipes';
+import { useAdminRecipesQuery, useAdminFetchDetails } from '../../hooks/queries/useAdminQueries';
+import { useAdminRecipeMutations } from '../../hooks/mutations/useAdminMutations';
+
 const AdminRecipePage = () => {
     // [CẬP NHẬT] Lấy thêm create/update/get từ hook
-    const { recipes, loading, pagination, fetchRecipes, hideRecipe, createRecipe, updateRecipe, getRecipe } = useAdminRecipes();
-    
+    // const { recipes, loading, pagination, fetchRecipes, hideRecipe, createRecipe, updateRecipe, getRecipe } = useAdminRecipes();
+    const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'created_at', order: 'DESC' });
-    
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
     // Modal State
     const [modalMode, setModalMode] = useState('create');
     const [selectedRecipe, setSelectedRecipe] = useState(null);
     const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
-
     // Confirm Modal (Cho nút ẩn nhanh)
     const [targetRecipe, setTargetRecipe] = useState(null);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-    const loadData = (keyword, page, sortKey, sortOrder) => {
-        fetchRecipes(page, pagination.limit, keyword, sortKey, sortOrder);
-    };
+    const { data, isLoading: loading } = useAdminRecipesQuery({
+        page, limit: 10, search: debouncedSearch, sortKey: sortConfig.key, sortOrder: sortConfig.order
+    });
+    const recipes = data?.data || [];
+    const pagination = data?.pagination || { page: 1, totalPages: 1 };
 
-    const debouncedSearch = useCallback(
-        debounce((keyword) => {
-            loadData(keyword, 1, sortConfig.key, sortConfig.order);
-        }, 500),
-        [sortConfig]
+    const { hideRecipe, createRecipe, updateRecipe } = useAdminRecipeMutations();
+    const { fetchRecipeDetail } = useAdminFetchDetails();
+
+    // const loadData = (keyword, page, sortKey, sortOrder) => {
+    //     fetchRecipes(page, pagination.limit, keyword, sortKey, sortOrder);
+    // };
+
+    // const debouncedSearch = useCallback(
+    //     debounce((keyword) => {
+    //         loadData(keyword, 1, sortConfig.key, sortConfig.order);
+    //     }, 500),
+    //     [sortConfig]
+    // );
+
+    const debouncedSearchAction = useCallback(
+        debounce((keyword) => { setDebouncedSearch(keyword); setPage(1); }, 500), []
     );
 
-    useEffect(() => {
-        loadData('', 1, 'created_at', 'DESC');
-    }, []);
+    // useEffect(() => {
+    //     loadData('', 1, 'created_at', 'DESC');
+    // }, []);
 
     // --- Handlers ---
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value);
-        debouncedSearch(e.target.value);
+        debouncedSearchAction(e.target.value);
     };
 
     const handleSort = (key, order) => {
         setSortConfig({ key, order });
-        loadData(searchTerm, pagination.page, key, order);
+        setPage(1);
     };
 
     // Modal Actions
@@ -59,7 +75,7 @@ const AdminRecipePage = () => {
 
     const openViewModal = async (recipe) => {
         try {
-            const data = await getRecipe(recipe.recipe_id);
+            const data = await fetchRecipeDetail(recipe.recipe_id);
             setModalMode('view');
             setSelectedRecipe(data);
             setIsRecipeModalOpen(true);
@@ -158,7 +174,7 @@ const AdminRecipePage = () => {
             <AdminTable 
                 columns={columns}
                 pagination={pagination}
-                onPageChange={(page) => loadData(searchTerm, page, sortConfig.key, sortConfig.order)}
+                onPageChange={setPage}
                 onSort={handleSort}
                 currentSort={sortConfig}
                 loading={loading}

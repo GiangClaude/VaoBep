@@ -8,42 +8,64 @@ import UserModal from '../../component/admin/UserModal';
 import { toast } from 'react-toastify'; 
 import debounce from 'lodash.debounce';
 
+import { useAdminUsersQuery, useAdminFetchDetails} from '../../hooks/queries/useAdminQueries';
+import { useAdminUserMutations } from '../../hooks/mutations/useAdminMutations';
+import adminApi from '../../api/adminApi';
+
 const AdminUserPage = () => {
-    const { users, loading, pagination, fetchUsers, toggleStatus, createUser, getUser, updateUser } = useAdminUsers();
+    // const { users, loading, pagination, fetchUsers, toggleStatus, createUser, getUser, updateUser } = useAdminUsers();
+    const [page, setPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'created_at', order: 'DESC' });
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    
+
+    // const loadData = (keyword, page, sortKey, sortOrder) => {
+    //     fetchUsers(page, pagination.limit, keyword, sortKey, sortOrder);
+    // };
+
+    const { data, isLoading: loading } = useAdminUsersQuery({
+        page, limit: 10, search: debouncedSearch, sortKey: sortConfig.key, sortOrder: sortConfig.order
+    });
+
+    const users = data?.data || [];
+    const pagination = data?.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 };
+
+    const { toggleStatus, createUser, updateUser } = useAdminUserMutations();
+    const { fetchUserDetail } = useAdminFetchDetails();
+
     const [selectedUser, setSelectedUser] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create'); // 'create', 'view', 'edit'
     const [selectedUserData, setSelectedUserData] = useState(null);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
-    const loadData = (keyword, page, sortKey, sortOrder) => {
-        fetchUsers(page, pagination.limit, keyword, sortKey, sortOrder);
-    };
 
+    // const debouncedSearch = useCallback(
+    //     debounce((keyword) => {
+    //         loadData(keyword, 1, sortConfig.key, sortConfig.order);
+    //     }, 500),
+    //     [sortConfig] 
+    // );
 
-
-    const debouncedSearch = useCallback(
-        debounce((keyword) => {
-            loadData(keyword, 1, sortConfig.key, sortConfig.order);
-        }, 500),
-        [sortConfig] 
+    const debounceSearchAction = useCallback(
+        debounce((keyword) => { setDebouncedSearch(keyword); setPage(1); }, 500), []
     );
 
-    useEffect(() => {
-        loadData('', 1, 'created_at', 'DESC');
-    }, []); 
+    // useEffect(() => {
+    //     loadData('', 1, 'created_at', 'DESC');
+    // }, []); 
 
     const handleSearchChange = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
-        debouncedSearch(value);
+        debounceSearchAction(value);
     };
 
     const handleSort = (key, order) => {
         setSortConfig({ key, order });
-        loadData(searchTerm, pagination.page, key, order); // Giữ nguyên trang hiện tại khi sort nếu muốn
+        setPage(1);
     };
 
     const onBlockClick = (user) => {
@@ -58,7 +80,7 @@ const AdminUserPage = () => {
     const confirmBlock = async () => {
         if (!selectedUser) return;
         try {
-            await toggleStatus(selectedUser.user_id, selectedUser.account_status);
+           await toggleStatus.mutateAsync({ userId: selectedUser.user_id, status: selectedUser.account_status });
             setIsModalOpen(false);
             toast.success(`Đã cập nhật trạng thái user: ${selectedUser.full_name}`);
         } catch (error) {
@@ -74,9 +96,9 @@ const AdminUserPage = () => {
 
     const openViewModal = async (user) => {
         try {
-            const fullData = await getUser(user.user_id); // Fetch detail
+            const res = await fetchUserDetail(user.user_id);
             setModalMode('view');
-            setSelectedUserData(fullData);
+            setSelectedUserData(res.data);
             setIsUserModalOpen(true);
         } catch (error) {
             toast.error("Không tải được thông tin chi tiết");
@@ -95,14 +117,11 @@ const AdminUserPage = () => {
     const handleModalSubmit = async (formData) => {
         try {
             if (modalMode === 'create') {
-                await createUser(formData);
+                await createUser.mutateAsync(formData);
                 toast.success("Tạo người dùng thành công");
             } else if (modalMode === 'edit') {
                 // Chỉ gửi role và status
-                await updateUser(selectedUserData.user_id, {
-                    role: formData.role,
-                    account_status: formData.account_status
-                });
+                 await updateUser.mutateAsync({ userId: selectedUserData.user_id, data: { role: formData.role, account_status: formData.account_status }});
                 toast.success("Cập nhật người dùng thành công");
             }
             setIsUserModalOpen(false);
@@ -162,7 +181,7 @@ const AdminUserPage = () => {
             <AdminTable 
                 columns={columns}
                 pagination={pagination}
-                onPageChange={(page) => loadData(searchTerm, page, sortConfig.key, sortConfig.order)}
+                onPageChange={setPage}
                 onSort={handleSort}
                 currentSort={sortConfig}
                 loading={loading}

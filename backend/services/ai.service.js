@@ -132,7 +132,7 @@ async function generateMenuWithRAG(prompt) {
 }
 
 async function generateSummary(contextText) {
-    const systemInstruction = `Bạn là chuyên gia dinh dưỡng. Tóm tắt nội dung ngắn gọn bằng Markdown.`;
+    const systemInstruction = `Bạn là chuyên gia dinh dưỡng. Tóm tắt nội dung ngắn gọn bằng Markdown. Đọc kỹ và dựa vào thêm các thông tin bên ngoài, đưa ra các lưu ý cần chú ý khi áp dụng công thức.`;
     const contents = [{ role: 'user', parts: [{ text: `Văn bản:\n${contextText}` }] }];
     
     return await llmProvider.callGemini(contents, systemInstruction, { 

@@ -1,21 +1,37 @@
 import React from 'react';
-import { Flag, EyeOff, Archive, MessageSquareWarning, FileText, User } from 'lucide-react'; // [MỚI]
-import useAdminReports from '../../hooks/admin/useAdminReports';
+import { Flag, EyeOff, Archive, MessageSquareWarning, FileText, User } from 'lucide-react'; 
 import AdminTable from '../../component/admin/AdminTable';
+import { toast } from 'react-toastify';
+
+// [MỚI] Import hooks kiến trúc mới
+import { useAdminReportsQuery } from '../../hooks/queries/useAdminQueries';
+import { useAdminReportMutations } from '../../hooks/mutations/useAdminMutations';
 
 const AdminReportPage = () => {
-    const { reports, loading, processReport } = useAdminReports();
+    // KẾT NỐI API
+    const { data: reports = [], isLoading: loading } = useAdminReportsQuery();
+    const { processReport } = useAdminReportMutations();
 
     const handleResolve = async (report, action) => {
-        // action: 'hide_content' hoặc 'ignore'
         if (action === 'hide_content') {
             const confirm = window.confirm("Bạn chắc chắn muốn ẩn nội dung bị báo cáo này?");
             if (!confirm) return;
         }
-        await processReport(report.report_id, action, report.post_id, report.post_type);
+        
+        try {
+            await processReport.mutateAsync({
+                report_id: report.report_id,
+                action: action,
+                post_id: report.post_id,
+                post_type: report.post_type
+            });
+            toast.success(action === 'ignore' ? "Đã bỏ qua báo cáo" : "Đã ẩn nội dung vi phạm");
+        } catch (error) {
+            toast.error(error.message || "Lỗi khi xử lý báo cáo");
+        }
     };
 
-const columns = [
+    const columns = [
         { label: 'Người báo cáo', className: 'w-[20%]' },
         { label: 'Lý do', className: 'w-[35%]' },
         { label: 'Loại nội dung', className: 'w-[15%]' },
@@ -55,7 +71,6 @@ const columns = [
                 ) : (
                     reports.map(report => (
                         <tr key={report.report_id} className="group hover:bg-red-50/10 transition-colors border-b border-gray-100 last:border-none">
-                            {/* Reporter Column */}
                             <td className="px-5 py-4">
                                 <div className="flex items-start gap-2">
                                     <User size={16} className="text-gray-400 mt-1 shrink-0" />
@@ -66,7 +81,6 @@ const columns = [
                                 </div>
                             </td>
 
-                            {/* Reason Column */}
                             <td className="px-5 py-4">
                                 <div className="flex items-start gap-2 text-sm text-gray-700">
                                     <MessageSquareWarning size={16} className="text-orange-500 shrink-0 mt-0.5" />
@@ -76,7 +90,6 @@ const columns = [
                                 </div>
                             </td>
 
-                            {/* Type Column */}
                             <td className="px-5 py-4">
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${
                                     report.post_type === 'recipe' 
@@ -88,12 +101,10 @@ const columns = [
                                 </span>
                             </td>
 
-                            {/* Date Column */}
                             <td className="px-5 py-4 text-sm text-gray-500 font-medium">
                                 {new Date(report.created_at).toLocaleDateString('vi-VN')}
                             </td>
 
-                            {/* Actions Column */}
                             <td className="px-5 py-4">
                                 <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                     <button 

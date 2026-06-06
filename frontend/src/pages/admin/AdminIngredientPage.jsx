@@ -1,41 +1,56 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Carrot, Check, X, Edit, Trash2, Plus, Search } from 'lucide-react';
-import  useAdminIngredients from '../../hooks/admin/useAdminIngredients';
+import debounce from 'lodash.debounce'; // Import thêm thư viện debounce
 import AdminTable from '../../component/admin/AdminTable';
 import StatusBadge from '../../component/admin/StatusBadge';
 
+import { useAdminIngredientsQuery } from '../../hooks/queries/useAdminQueries';
+import { useAdminIngredientMutations, useAdminProcessIngredientMutation } from '../../hooks/mutations/useAdminMutations';
+
 const AdminIngredientPage = () => {
-    // 1. Lấy state và function từ Hook
-    const { 
-        allIngredients, allPagination, isLoadingAll, fetchAllIngredients,
-        handleCreateIngredient, handleUpdateIngredient, handleDeleteIngredient,
-        processIngredient // Giữ hàm cũ để duyệt nhanh
-    } = useAdminIngredients();
-    
-    // 2. Local State
-    const [caloInputs, setCaloInputs] = useState({});
-    const [searchQuery, setSearchQuery] = useState('');
+    // 1. Local State
+    const [page, setPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState(''); // Text đang hiển thị ở UI
+    const [debouncedSearch, setDebouncedSearch] = useState(''); // Text dùng để fetch API
     const [currentSort, setCurrentSort] = useState({ key: 'name', order: 'ASC' });
+    const [caloInputs, setCaloInputs] = useState({});
     
     // State Modal Form (Thêm/Sửa)
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({ name: '', calo_per_100g: '', status: 'approved' });
 
-    // 3. Khởi tạo data lần đầu
-    useEffect(() => {
-        fetchAllIngredients(1, 10, '', currentSort.key, currentSort.order);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    // 2. Logic Debounce Search
+    const debouncedSearchAction = useCallback(
+        debounce((keyword) => { 
+            setDebouncedSearch(keyword); 
+            setPage(1); 
+        }, 500), []
+    );
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        debouncedSearchAction(e.target.value);
+    };
+
+    // 3. Tích hợp Queries & Mutations
+    const { data, isLoading: isLoadingAll } = useAdminIngredientsQuery({
+        page, 
+        limit: 10, 
+        search: debouncedSearch, // Gọi API theo giá trị đã debounce
+        sortKey: currentSort.key, 
+        sortOrder: currentSort.order
+    });
+    
+    const allIngredients = data?.data || [];
+    const allPagination = data?.pagination || { page: 1, limit: 10, totalPages: 1 };
+
+    const { createIngredient, updateIngredient, deleteIngredient } = useAdminIngredientMutations();
+    const processIngredientMutation = useAdminProcessIngredientMutation();
 
     // 4. Các hàm xử lý giao diện
     const handleCaloChange = (id, value) => {
         setCaloInputs(prev => ({ ...prev, [id]: value }));
-    };
-
-    const handleSearch = (e) => {
-        e.preventDefault();
-        fetchAllIngredients(1, allPagination.limit, searchQuery, currentSort.key, currentSort.order);
     };
 
     // Hàm Duyệt / Từ chối nhanh
@@ -47,23 +62,22 @@ const AdminIngredientPage = () => {
             return;
         }
 
-        const result = await processIngredient(id, action, calo);
-        // Sau khi duyệt xong, load lại trang hiện tại
-        if(result?.success !== false) {
-             fetchAllIngredients(allPagination.page, allPagination.limit, searchQuery);
-        } else {
-             alert(result?.message || "Có lỗi xảy ra");
+        try {
+            await processIngredientMutation.mutateAsync({ 
+                ingredientId: id, 
+                data: { action, calo_per_100g: calo } 
+            });
+        } catch (error) {
+            alert(error.message || "Có lỗi xảy ra");
         }
     };
 
-    // Mở Form Thêm Mới
     const openCreateModal = () => {
         setEditingItem(null);
         setFormData({ name: '', calo_per_100g: '', status: 'approved' });
         setIsFormOpen(true);
     };
 
-    // Mở Form Sửa
     const openEditModal = (item) => {
         setEditingItem(item);
         setFormData({ 
@@ -74,29 +88,30 @@ const AdminIngredientPage = () => {
         setIsFormOpen(true);
     };
 
-    // Xử lý Lưu Form
     const submitForm = async (e) => {
         e.preventDefault();
-        let result;
-        if (editingItem) {
-            result = await handleUpdateIngredient(editingItem.ingredient_id, formData);
-        } else {
-            result = await handleCreateIngredient(formData);
-        }
-
-        if (result.success) {
+        try {
+            if (editingItem) {
+                await updateIngredient.mutateAsync({ id: editingItem.ingredient_id, data: formData });
+            } else {
+                await createIngredient.mutateAsync(formData);
+                setPage(1);
+            }
             setIsFormOpen(false);
-        } else {
-            alert(result.message);
+        } catch (error) {
+            alert(error.message || "Lỗi khi lưu nguyên liệu");
         }
     };
 
-    // Xử lý Xóa
     const confirmDelete = async (item) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa nguyên liệu "${item.name}"?`)) {
-            const result = await handleDeleteIngredient(item.ingredient_id);
-            if (!result.success) {
-                alert(result.message);
+            try {
+                await deleteIngredient.mutateAsync(item.ingredient_id);
+                if (allIngredients.length === 1 && page > 1) {
+                    setPage(prev => prev - 1);
+                }
+            } catch (error) {
+                alert(error.message || "Lỗi khi xóa nguyên liệu");
             }
         }
     };
@@ -124,17 +139,17 @@ const AdminIngredientPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <form onSubmit={handleSearch} className="relative">
+                    {/* Bỏ thẻ <form> đi vì giờ không cần submit enter nữa */}
+                    <div className="relative">
                         <input 
                             type="text" 
                             placeholder="Tìm nguyên liệu..." 
                             className="pl-10 pr-4 py-2 rounded-lg border focus:border-[#ff6b35] focus:outline-none"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            value={searchTerm}
+                            onChange={handleSearchChange} // Gọi hàm debounce
                         />
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <button type="submit" className="hidden"></button>
-                    </form>
+                    </div>
                     <button 
                         onClick={openCreateModal}
                         className="flex items-center gap-2 px-4 py-2 bg-[#ff6b35] text-white rounded-lg hover:bg-[#e55a2b] transition-colors"
@@ -151,10 +166,10 @@ const AdminIngredientPage = () => {
                 loading={isLoadingAll}
                 onSort={(key, order) => {
                     setCurrentSort({ key, order });
-                    fetchAllIngredients(1, allPagination.limit, searchQuery, key, order);
+                    setPage(1);
                 }}
                 currentSort={currentSort}
-                onPageChange={(newPage) => fetchAllIngredients(newPage, allPagination.limit, searchQuery, currentSort.key, currentSort.order)}
+                onPageChange={setPage}
             >
                 {allIngredients.length === 0 && !isLoadingAll ? (
                     <tr>
@@ -170,19 +185,16 @@ const AdminIngredientPage = () => {
                 ) : (
                     allIngredients.map(ing => (
                         <tr key={ing.ingredient_id} className="group hover:bg-orange-50/30 transition-colors border-b border-gray-100 last:border-none">
-                            {/* Name */}
                             <td className="px-5 py-4">
                                 <span className="font-bold text-gray-800 text-sm" title={ing.name}>
                                     {ing.name}
                                 </span>
                             </td>
 
-                            {/* Status */}
                             <td className="px-5 py-4">
                                 <StatusBadge status={ing.status} />
                             </td>
 
-                            {/* Calo */}
                             <td className="px-5 py-4">
                                 {ing.status === 'pending' ? (
                                     <div className="relative max-w-[120px]">
@@ -202,10 +214,8 @@ const AdminIngredientPage = () => {
                                 )}
                             </td>
 
-                            {/* Actions */}
                             <td className="px-5 py-4">
                                 <div className="flex items-center gap-2 opacity-100 sm:opacity-100 sm:group-hover:opacity-100 transition-opacity">
-                                    {/* Nút Duyệt chỉ hiện khi Pending */}
                                     {ing.status === 'pending' && (
                                         <>
                                             <button 
@@ -223,7 +233,6 @@ const AdminIngredientPage = () => {
                                         </>
                                     )}
 
-                                    {/* Nút Sửa & Xóa luôn hiện */}
                                     <button 
                                         onClick={() => openEditModal(ing)}
                                         className="flex items-center gap-1 p-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200" title="Chỉnh sửa"
@@ -248,7 +257,7 @@ const AdminIngredientPage = () => {
                 <div className="flex justify-end items-center gap-4 mt-4">
                     <button 
                         disabled={allPagination.page === 1}
-                        onClick={() => fetchAllIngredients(allPagination.page - 1, allPagination.limit, searchQuery, currentSort.key, currentSort.order)}
+                        onClick={() => setPage(allPagination.page - 1)}
                         className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Trang trước
@@ -258,7 +267,7 @@ const AdminIngredientPage = () => {
                     </span>
                     <button 
                         disabled={allPagination.page >= allPagination.totalPages}
-                        onClick={() => fetchAllIngredients(allPagination.page + 1, allPagination.limit, searchQuery, currentSort.key, currentSort.order)}
+                        onClick={() => setPage(allPagination.page + 1)}
                         className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Trang sau

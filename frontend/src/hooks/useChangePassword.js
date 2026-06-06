@@ -1,6 +1,7 @@
 // hooks/useChangePassword.js
 import { useState } from 'react';
 import authApi from '../api/authApi';
+import userApi from '../api/userApi';
 
 export const useChangePassword = () => {
     const [passwords, setPasswords] = useState({ 
@@ -53,9 +54,10 @@ export const useChangePassword = () => {
             setLoading(true);
             try {
                 // Gọi API đổi mật khẩu (endpoint chủ động đổi)
-                const response = await authApi.changePassword({
+                const response = await userApi.changePassword({
                     oldPassword: passwords.oldPassword,
-                    newPassword: passwords.newPassword
+                    newPassword: passwords.newPassword,
+                    confirmPassword: passwords.confirmPassword
                 });
                 setLoading(false);
                 return { success: true, message: response.message };

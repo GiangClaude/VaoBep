@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getRecipeImageUrl } from '../../utils/imageHelper';
 import useChatbot from '../../hooks/useChatbot';
-
+import { useChatbotUI } from '../../hooks/ui/chatbot/useChatbotUI';
 function Chatbot() {
   const navigate = useNavigate();
   
@@ -11,7 +11,7 @@ function Chatbot() {
       input, setInput, 
       messages, loading, currentContext, quicks, 
       sendMessage, handleClearChat 
-  } = useChatbot();
+  } = useChatbotUI();
 
   const handleRecipeClick = (recipeId) => {
     navigate(`/recipe/${recipeId}`);

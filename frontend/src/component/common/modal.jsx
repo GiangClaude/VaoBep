@@ -75,7 +75,11 @@ export default function Modal({
                   key={index}
                   onClick={(e) => {
                     e.stopPropagation(); // Chặn click nút bấm làm nhảy trang detail
-                    action.onClick();
+                    if (action.onClick) {
+                        action.onClick();
+                    } else {
+                        onClose(); 
+                    }
                   }}
                   className={`flex-1 px-5 py-3 rounded-2xl font-bold transition-all transform active:scale-95 text-sm ${
                     action.style === 'primary' 

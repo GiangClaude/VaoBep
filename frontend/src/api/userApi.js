@@ -43,6 +43,11 @@ const userApi = {
         const response = await apiClient.get(`/user/${id}`);
         return response;
     },
+
+    changePassword: async (data) => {
+        const response = await apiClient.put('/user/change-password', data);
+        return response;
+    },
     
 }
 export default userApi;

@@ -13,10 +13,13 @@ import { ClaimRewardModal } from "../component/profile/rewards/ClaimRewardModal"
 
 import { useAuth } from "../AuthContext";
 import { useGlobalModal } from "../context/ModalContext";
+
+// Hooks
 import { useUpdateProfile } from "../hooks/useProfile";
 import { usePoints } from "../hooks/usePoints";
-import { useChangePassword } from "../hooks/useChangePassword"; 
 import { useRewards } from "../hooks/useRewards"; 
+// [MỚI] Import hook UI mới tạo
+import { useProfileUI } from "../hooks/ui/profile/useProfileUI"; 
 
 const mockSidebarStats = { totalLikes: 15420, totalViews: 48900, totalComments: 1234, totalFollowers: 2340 };
 const mockBadges = [{ id: "1", name: "Đầu bếp xuất sắc", icon: "🏆", color: "#FFD700" }];
@@ -25,23 +28,30 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("my-recipes");
   const { currentUser, refreshProfile } = useAuth();
   const { showModal } = useGlobalModal();
+  
   const { updateProfile, loading: isUpdatingProfile } = useUpdateProfile();
-
   const { rewards, openBox } = useRewards();
+  
+  // Tách riêng fetchHistory ra vì checkIn giờ đã được useProfileUI lo
+  const { history: pointsHistory, fetchHistory, loading: pointsLoading } = usePoints();
+
+  // [MỚI] Sử dụng useProfileUI để quản lý Đổi mật khẩu và Điểm danh
+  const { 
+      passwords, setPasswords, errors, resetFields, isChangingPass, 
+      handleChangePassword, handleCheckIn: checkInMutation 
+  } = useProfileUI();
+
   const [selectedBox, setSelectedBox] = useState(null);
   const [receivedItems, setReceivedItems] = useState([]);
   const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
-
-  const { history: pointsHistory, fetchHistory, checkIn: checkInPoint, loading: pointsLoading } = usePoints();
-  const { passwords, setPasswords, errors, loading: isChangingPass, handleChangePassword, resetFields } = useChangePassword();
-
   const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
 
   useEffect(() => {
     if (activeTab === "points") fetchHistory();
   }, [activeTab, fetchHistory]);
 
+  // Hàm xử lý lưu thông tin profile
   const handleSaveProfile = async (data) => {
       const formData = new FormData();
       if (data.fullName) formData.append('fullName', data.fullName);
@@ -57,32 +67,56 @@ export default function ProfilePage() {
       });
   };
 
+  // Hàm gọi API điểm danh và hiển thị thông báo
   const handleCheckIn = async () => {
-    const result = await checkInPoint();
-    showModal({
-      type: result.success ? 'success' : 'warning',
-      title: result.success ? 'Thành công!' : 'Thông báo',
-      message: result.message,
-      actions: [{ label: 'Đóng', style: 'primary' }]
-    });
-    if (result.success) await refreshProfile(); 
+    try {
+      // Gọi mutation từ useProfileUI
+      const result = await checkInMutation(); 
+      showModal({
+        type: 'success',
+        title: 'Thành công!',
+        message: result.message || 'Điểm danh thành công!',
+        actions: [{ label: 'Đóng', style: 'primary' }]
+      });
+      await refreshProfile(); 
+    } catch (error) {
+      showModal({
+        type: 'warning',
+        title: 'Thông báo',
+        message: error.message || 'Hôm nay bạn đã điểm danh rồi.',
+        actions: [{ label: 'Đóng', style: 'primary' }]
+      });
+    }
   };
 
+  // Hàm xử lý đổi mật khẩu và đóng modal khi thành công
   const handleSubmitChangePass = async () => {
       const result = await handleChangePassword();
       if (result.success) {
           setIsChangePassModalOpen(false);
-          showModal({ type: 'success', title: 'Thành công!', message: 'Mật khẩu đã được cập nhật.', actions: [{ label: 'OK', style: 'primary' }]});
+          showModal({ 
+              type: 'success', 
+              title: 'Thành công!', 
+              message: 'Mật khẩu đã được cập nhật.', 
+              actions: [{ label: 'OK', style: 'primary' }]
+          });
       }
   };
 
+  // Hàm mở hộp quà phần thưởng
   const handleOpenReward = async (reward) => {
-    setSelectedBox(reward); setIsRewardModalOpen(true); setIsOpening(true);
+    setSelectedBox(reward); 
+    setIsRewardModalOpen(true); 
+    setIsOpening(true);
+    
     const result = await openBox(reward.user_reward_id);
     if (result.success) {
-      setReceivedItems(result.items); setIsOpening(false); await refreshProfile();
+      setReceivedItems(result.items); 
+      setIsOpening(false); 
+      await refreshProfile();
     } else {
-      alert(result.message); setIsRewardModalOpen(false);
+      alert(result.message); 
+      setIsRewardModalOpen(false);
     }
   };
 
@@ -101,7 +135,6 @@ export default function ProfilePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8">
-            {/* COMPONENT ĐÃ ĐƯỢC LÀM GỌN, KHÔNG TRUYỀN PROP THỪA */}
             {activeTab === "my-recipes" && <MyRecipesTab isPublicView={false} />}
             {activeTab === "my-articles" && <MyArticlesTab />}
             {activeTab === "saved" && <SavedRecipeTab />}

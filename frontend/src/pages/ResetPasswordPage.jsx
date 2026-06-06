@@ -6,7 +6,7 @@ import Header from '../component/common/Header';
 import { Footer } from '../component/common/Footer';
 import Modal from '../component/common/modal';
 
-import { useResetPasswordForm } from '../hooks/useResetPassword';
+import { useResetPasswordForm } from '../hooks/ui/auth/useAuthForms';
 
 const ResetPasswordPage = () => {
     const { passwords, setPasswords, errors, loading, handleSubmit, email, successMessage, clearSuccess, navigate } = useResetPasswordForm();

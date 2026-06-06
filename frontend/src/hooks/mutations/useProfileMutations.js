@@ -15,7 +15,7 @@ export const useUpdateProfileMutation = () => {
 
 export const useChangePasswordMutation = () => {
     return useMutation({
-        mutationFn: (data) => authApi.changePassword(data)
+        mutationFn: (data) => userApi.changePassword(data)
     });
 };
 

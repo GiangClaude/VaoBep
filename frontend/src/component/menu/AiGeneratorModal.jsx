@@ -1,30 +1,38 @@
+// VỊ TRÍ: frontend/src/component/menu/AiGeneratorModal.jsx
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Wand2 } from 'lucide-react';
-import { useMenu } from '../../hooks/useMenu';
 import { useMenuState, MENU_ACTIONS } from '../../context/MenuContext';
+// [MỚI] Dùng Mutation mới tạo
+import { useAutoGenerateMenuMutation } from '../../hooks/mutations/useMenuMutations';
 
 export default function AiGeneratorModal({ isOpen, onClose }) {
-    const { autoGenerateMenu } = useMenu();
     const { dispatch } = useMenuState();
     const [prompt, setPrompt] = useState('');
-    const [isThinking, setIsThinking] = useState(false);
+    
+    // 1. KẾT NỐI MUTATION
+    const generateMutation = useAutoGenerateMenuMutation();
+    const isThinking = generateMutation.isPending; // Tự động có state loading từ React Query
 
     const handleGenerate = async () => {
         if (!prompt.trim()) return;
-        setIsThinking(true);
         
-        const result = await autoGenerateMenu(prompt);
-        if (result.success && result.data) {
-            // Ném kết quả JSON thẳng vào Context để Kanban tự động render
-            dispatch({ type: MENU_ACTIONS.OVERRIDE_DAYS, payload: result.data });
-            alert("✨ AI đã lên xong thực đơn! Hãy kiểm tra bảng Kanban và bấm 'Lưu Thực Đơn' để lưu vào database nhé.");
-            onClose();
-        } else {
-            alert("Lỗi sinh thực đơn: " + result.message);
+        try {
+            // Gọi Mutation
+            const result = await generateMutation.mutateAsync(prompt);
+            
+            if (result.success && result.data) {
+                // Đẩy vào Context Kanban
+                dispatch({ type: MENU_ACTIONS.OVERRIDE_DAYS, payload: result.data });
+                alert("✨ AI đã lên xong thực đơn! Hãy kiểm tra bảng Kanban và bấm 'Lưu Thực Đơn' để lưu vào database nhé.");
+                onClose();
+            } else {
+                alert("Lỗi sinh thực đơn: " + (result.message || "Có lỗi xảy ra"));
+            }
+        } catch (error) {
+            alert("Lỗi kết nối AI: " + error.message);
         }
-        
-        setIsThinking(false);
     };
 
     if (!isOpen) return null;

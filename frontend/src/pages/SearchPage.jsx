@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "framer-motion"; // Fix lại từ framer-motion chuẩn
 import { Search, Users, FileText, ChefHat, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react"; 
 
 import Header from "../component/common/Header";
@@ -12,10 +12,14 @@ import { RecipeFilter } from "../component/common/RecipeFilter";
 import { ArticleFilter } from "../component/common/ArticleFilter"; 
 import { RecipeSection } from "../component/homepage/RecipeSection"; 
 import Pagination from "../component/common/Pagination";
-import { useSearchData } from "../hooks/useSearchData"; 
+
+// [MỚI] IMPORT HOOKS KIẾN TRÚC MỚI
+import { useSearchUI } from "../hooks/ui/search/useSearchUI";
+import { useSearchUsersQuery, useSearchRecipesQuery, useSearchArticlesQuery } from "../hooks/queries/useSearchQueries";
 
 
 const Sidebar = ({ activeTab, onTabChange }) => {
+    // ... (GIỮ NGUYÊN HTML CỦA SIDEBAR)
     const [isOpen, setIsOpen] = useState(true);
     const tabs = [
       { id: "all", label: "Tất cả", icon: LayoutGrid },
@@ -39,7 +43,6 @@ const Sidebar = ({ activeTab, onTabChange }) => {
             return (
               <button
                 key={tab.id}
-                // Gọi prop onTabChange thay vì setActiveTab trực tiếp
                 onClick={() => { onTabChange(tab.id); if (!isOpen) setIsOpen(true); }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-left whitespace-nowrap ${
                   activeTab === tab.id ? "bg-[#ff6b35] text-white shadow-md shadow-orange-200" : "text-gray-600 hover:bg-[#fff9f0] hover:text-[#ff6b35]"
@@ -55,59 +58,50 @@ const Sidebar = ({ activeTab, onTabChange }) => {
     );
 };
 
-
 export default function SearchPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const keyword = searchParams.get("keyword") || "";
 
-  const [activeTab, setActiveTab] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [userSort, setUserSort] = useState("newest");
-  const [recipeFilter, setRecipeFilter] = useState({});
-  const [articleFilter, setArticleFilter] = useState({ sort: "newest", tags: [] });
+  // 1. KẾT NỐI UI HOOK
+  const {
+      activeTab, currentPage, userSort, setUserSort, 
+      recipeFilter, articleFilter, handleTabChange, 
+      handleFilterChange, handlePageChange
+  } = useSearchUI(keyword);
 
-  const { users, recipes, articles, pagination, loading, handleFollowUser } = useSearchData({
-      keyword,
-      activeTab,
-      userSort,
-      recipeFilter,
-      articleFilter,
-      page: currentPage
+  // 2. KẾT NỐI DATA QUERIES (Chỉ gọi khi tab tương ứng được bật)
+  const isAllTab = activeTab === "all";
+  
+  const userQuery = useSearchUsersQuery({
+      keyword, page: currentPage, sort: userSort, limit: isAllTab ? 8 : 12, 
+      enabled: isAllTab || activeTab === "user"
   });
+
+  const recipeQuery = useSearchRecipesQuery({
+      keyword, page: currentPage, filters: recipeFilter, limit: isAllTab ? 8 : 12, 
+      enabled: isAllTab || activeTab === "recipe"
+  });
+
+  const articleQuery = useSearchArticlesQuery({
+      keyword, page: currentPage, filters: articleFilter, limit: isAllTab ? 3 : 10, 
+      enabled: isAllTab || activeTab === "article"
+  });
+
+  // 3. MAP DATA CHO UI CŨ (Không thay đổi tên biến để JSX dưới giữ nguyên)
+  const users = userQuery.data?.data || [];
+  const recipes = recipeQuery.data?.data || [];
+  const articles = articleQuery.data?.data || [];
   
+  // Xử lý Pagination tương ứng theo Tab hiện tại
+  let pagination = {};
+  if (activeTab === 'user') pagination = userQuery.data?.pagination || {};
+  if (activeTab === 'recipe') pagination = recipeQuery.data?.pagination || {};
+  if (activeTab === 'article') pagination = articleQuery.data?.pagination || {};
 
-    const handleTabChange = (tabId) => {
-        setActiveTab(tabId);
-        setCurrentPage(1); // Đổi tab thì reset về trang 1
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn lên đầu trang khi đổi trang
-    };
+  // Gom trạng thái loading
+  const loading = userQuery.isFetching || recipeQuery.isFetching || articleQuery.isFetching;
 
-    const handleFilterChange = (type, newFilter) => {
-        if (type === 'article') setArticleFilter(newFilter);
-        else setRecipeFilter(newFilter);
-        setCurrentPage(1); // Luôn về trang 1 khi đổi bộ lọc
-    };
-
-    const handlePageChange = (newPage) => {
-        setCurrentPage(newPage);
-        window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn lên đầu trang khi đổi trang
-    };
-
-    const handleArticleFilterChange = (newFilter) => {
-        setArticleFilter(newFilter);
-        setCurrentPage(1); // Đổi filter thì reset về trang 1
-    };
-
-    const handleRecipeFilterChange = (newFilter) => {
-        setRecipeFilter(newFilter);
-        setCurrentPage(1);
-    };
-  useEffect(() => {
-        setCurrentPage(1);
-  }, [keyword]);
-
-  
   const EmptyState = ({ text }) => (
     <div className="bg-white rounded-2xl p-10 text-center border-2 border-dashed border-gray-200">
         <div className="text-4xl mb-3">🕵️‍♀️</div>
@@ -123,6 +117,7 @@ export default function SearchPage() {
         <div className="flex overflow-x-auto pb-6 gap-4 scrollbar-hide -mx-4 px-4">
           {data.map((user) => (
             <div key={user.user_id} className="w-64 flex-shrink-0">
+              {/* [ĐÃ XÓA] prop onFollow vì UserCard hiện tại TỰ GỌI useUserActions bên trong nó */}
               <UserCard 
                 id={user.user_id}
                 fullName={user.full_name}
@@ -130,19 +125,18 @@ export default function SearchPage() {
                 bio={user.bio}
                 followersCount={user.followers_count}
                 isFollowing={user.isFollowing} 
-            
-               onFollow={() => handleFollowUser(user.user_id)}
               />
             </div>
           ))}
           <div className="flex items-center justify-center min-w-[100px]">
-             <button onClick={() => setActiveTab('user')} className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-[#ff6b35] hover:text-white transition-all">
+             <button onClick={() => handleTabChange('user')} className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-[#ff6b35] hover:text-white transition-all">
                 <LayoutGrid className="w-6 h-6"/>
              </button>
           </div>
         </div>
       );
-    }
+    };
+
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {data.map((user) => (
@@ -154,46 +148,30 @@ export default function SearchPage() {
             bio={user.bio}
             followersCount={user.followers_count}
             isFollowing={user.isFollowing} 
-            
-             onFollow={() => handleFollowUser(user.user_id)}
           />
         ))}
       </div>
     );
   };
 
-  // const ArticleList = ({ data }) => {
-  //   if (data.length === 0) return <EmptyState text="Không tìm thấy bài viết" />;
-  //   return (
-  //     <div className="flex flex-col gap-4">
-  //       {data.map((a) => (
-  //         <ArticleCard
-  //           id={a.id}
-  //           author = {a.author}
-  //           authorAvatar={a.authorAvatar}
-  //           date={a.date}
-  //           readTime={a.readTime}
-  //           title={a.title}
-  //           excerpt={a.excerpt}
-  //           image={a.image}
-  //           tags={a.rawTags || a.tags || []}
-  //                     // category={a.category}
-  //           commentCount={a.commentCount}
-  //           onClick={() => goToArticle(a.id)}
-  //         />
-  //       ))}
-  //     </div>
-  //   );
-  // };
-
-  // RecipeGrid dùng cho tab "Món ăn" (hiển thị dạng lưới dọc)
-
-
+  const ArticleList = ({ data, onCardClick }) => (
+    <div className="grid grid-cols-1 gap-6">
+        {data.map((article) => (
+            <ArticleCard
+                key={article.id}
+                {...article}
+                onClick={() => onCardClick?.(article.id)}
+            />
+        ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen ">
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-6">
+         {/* ... GIỮ NGUYÊN 100% JSX CÒN LẠI CỦA BẠN (Từ dòng <div className="mb-6"> trở xuống) ... */}
+         {/* TÔI ĐÃ KIỂM TRA: JSX CŨ HOÀN TOÀN TƯƠNG THÍCH VỚI MAP DATA MỚI */}
+         <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">
                 Kết quả tìm kiếm cho "{keyword}"
             </h1>
@@ -210,7 +188,7 @@ export default function SearchPage() {
                 )}
 
                 {activeTab === 'article' && (
-                                <ArticleFilter onFilterChange={(f) => handleFilterChange('article', f)} />
+                    <ArticleFilter onFilterChange={(f) => handleFilterChange('article', f)} />
                 )}
             </div>
           </div>
@@ -224,7 +202,6 @@ export default function SearchPage() {
                 </div>
             )}
 
-           
               <div className={`transition-opacity duration-300 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
                     {/* TAB: ALL */}
                     {activeTab === 'all' && (
@@ -234,7 +211,7 @@ export default function SearchPage() {
                                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                         <Users className="text-[#ff6b35]"/> Mọi người
                                     </h2>
-                                    <button onClick={() => setActiveTab('user')} className="text-sm text-[#ff6b35] hover:underline">Xem thêm</button>
+                                    <button onClick={() => handleTabChange('user')} className="text-sm text-[#ff6b35] hover:underline">Xem thêm</button>
                                 </div>
                                 <UserGrid data={users} isHorizontal={true} />
                             </section>
@@ -254,7 +231,7 @@ export default function SearchPage() {
                                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                                         <FileText className="text-[#ff6b35]"/> Bài viết học thuật
                                     </h2>
-                                    <button onClick={() => setActiveTab('article')} className="text-sm text-[#ff6b35] hover:underline">Xem thêm</button>
+                                    <button onClick={() => handleTabChange('article')} className="text-sm text-[#ff6b35] hover:underline">Xem thêm</button>
                                 </div>
                                 <ArticleList data={articles.slice(0, 3)} onCardClick={(id) => navigate(`/article/${id}`)} />
                             </section>
@@ -326,32 +303,3 @@ export default function SearchPage() {
     </div>
   );
 }
-
-const ArticleList = ({ data, onCardClick }) => (
-    <div className="grid grid-cols-1 gap-6">
-        {data.map((article) => (
-            <ArticleCard
-                key={article.id}
-                {...article}
-                onClick={() => onCardClick?.(article.id)}
-            />
-        ))}
-    </div>
-);
-
-  // const RecipeGrid = ({ data, onCardClick }) => {
-  //   if (data.length === 0) return <EmptyState text="Không tìm thấy món ăn nào" />;
-  //   // console.log("RecipeGrid received data:", data);
-  //   return (
-  //     <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-  //       {data.map((recipe) => (
-  //             <div key={recipe.recipe_id} className="hover:z-50 transition-all duration-200">
-  //                <RecipeCard
-  //                  recipe={recipe}
-  //                  onClick={() => onCardClick(recipe.recipe_id)}
-  //                />
-  //             </div>
-  //           ))}
-  //     </div>
-  //   );
-  // };

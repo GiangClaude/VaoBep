@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { BookOpen, Plus, Search, Edit, Trash2, X, Upload, MapPin } from 'lucide-react';
-import { useAdminDictionary } from '../../hooks/admin/useAdminDictionary';
+import debounce from 'lodash.debounce';
+
 import AdminTable from '../../component/admin/AdminTable';
 import { getDishImageUrl } from '../../utils/imageHelper';
-const AdminDictionaryPage = () => {
-    const { 
-        dishes, pagination, isLoading, fetchDishes,
-        handleCreateDish, handleUpdateDish, handleDeleteDish
-    } = useAdminDictionary();
 
-    const [searchQuery, setSearchQuery] = useState('');
+// [MỚI] Import hooks kiến trúc mới
+import { useAdminDictionaryQuery } from '../../hooks/queries/useAdminQueries';
+import { useAdminDictionaryMutations } from '../../hooks/mutations/useAdminMutations';
+
+const AdminDictionaryPage = () => {
+    // 1. Local State UI & Filter
+    const [page, setPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [currentSort, setCurrentSort] = useState({ key: 'created_at', order: 'DESC' });
     
     // State Form Modal
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -26,22 +31,32 @@ const AdminDictionaryPage = () => {
     const [imagePreview, setImagePreview] = useState(null);
 
     // Quán ăn (Eateries)
-    const [editEateries, setEditEateries] = useState(false); // Bật/tắt chế độ sửa quán ăn
+    const [editEateries, setEditEateries] = useState(false);
     const [eateries, setEateries] = useState([]);
 
-    // 1. Khởi tạo data
-    const [currentSort, setCurrentSort] = useState({ key: 'created_at', order: 'DESC' });
-    useEffect(() => {
-        fetchDishes(1, 10, '', currentSort.key, currentSort.order);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    // 2. KẾT NỐI API QUA HOOKS MỚI
+    const { data, isLoading } = useAdminDictionaryQuery({
+        page, limit: 10, search: debouncedSearch, sortKey: currentSort.key, sortOrder: currentSort.order
+    });
+    const dishes = data?.data || [];
+    const pagination = data?.pagination || { page: 1, limit: 10, totalPages: 1 };
 
-    // 2. Các hàm xử lý giao diện
-    const handleSearch = (e) => {
-        e.preventDefault();
-        fetchDishes(1, pagination.limit, searchQuery, currentSort.key, currentSort.order);
+    const { createDish, updateDish, deleteDish } = useAdminDictionaryMutations();
+
+    // 3. Logic Debounce Search
+    const debouncedSearchAction = useCallback(
+        debounce((keyword) => { 
+            setDebouncedSearch(keyword); 
+            setPage(1); 
+        }, 500), []
+    );
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        debouncedSearchAction(e.target.value);
     };
 
+    // 4. Các hàm xử lý Modal & Form
     const openCreateModal = () => {
         setEditingItem(null);
         setFormData({
@@ -50,7 +65,7 @@ const AdminDictionaryPage = () => {
         });
         setImageFile(null);
         setImagePreview(null);
-        setEditEateries(true); // Tạo mới thì auto bật nhập quán ăn
+        setEditEateries(true);
         setEateries([]);
         setIsFormOpen(true);
     };
@@ -68,25 +83,22 @@ const AdminDictionaryPage = () => {
         });
         
         setImageFile(null);
-        // Hiển thị ảnh cũ nếu có (Cấu trúc URL tùy vào server backend của bạn)
         if (item.image_url) {
-            // VD: process.env.REACT_APP_API_URL + ...
             setImagePreview(getDishImageUrl(item.dish_id, item.image_url));
         } else {
             setImagePreview(null);
         }
 
-        setEditEateries(false); // Mặc định ẩn để không vô tình ghi đè mất quán cũ
+        setEditEateries(false);
         setEateries([]);
         setIsFormOpen(true);
     };
 
-    // Hàm xử lý ảnh
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setImageFile(file);
-            setImagePreview(URL.createObjectURL(file)); // Preview ảnh Local
+            setImagePreview(URL.createObjectURL(file));
         }
     };
 
@@ -99,47 +111,49 @@ const AdminDictionaryPage = () => {
     };
     const removeEatery = (index) => setEateries(eateries.filter((_, i) => i !== index));
 
-    // 3. Xử lý Submit (Dùng FormData vì có File)
+    // Xử lý Submit
     const submitForm = async (e) => {
         e.preventDefault();
         const submitData = new FormData();
         
-        // Append text fields
         Object.keys(formData).forEach(key => {
             if (formData[key]) submitData.append(key, formData[key]);
         });
 
-        // Append file
         if (imageFile) {
             submitData.append('image_url', imageFile);
         }
 
-        // Append eateries (Chỉ gửi nếu bật cờ editEateries, giúp bảo vệ dữ liệu cũ)
         if (editEateries) {
-            // Lọc bỏ các dòng quán ăn bị trống tên
             const validEateries = eateries.filter(e => e.name.trim() !== '');
             submitData.append('eateries', JSON.stringify(validEateries));
         }
 
-        let result;
-        if (editingItem) {
-            result = await handleUpdateDish(editingItem.dish_id, submitData);
-        } else {
-            result = await handleCreateDish(submitData);
-        }
-
-        if (result.success) {
+        try {
+             if (editingItem) {
+                await updateDish.mutateAsync({ id: editingItem.dish_id, formData: submitData });
+            } else {
+                await createDish.mutateAsync(submitData);
+                setPage(1); // Thêm mới thì nhảy về trang 1
+            }
             setIsFormOpen(false);
-        } else {
-            alert(result.message);
+        } catch (error) {
+             alert(error.message || "Lỗi khi lưu thông tin");
         }
     };
 
-    // 4. Xử lý Xóa
+    // Xử lý Xóa
     const confirmDelete = async (item) => {
         if (window.confirm(`Xóa món "${item.original_name}" sẽ xóa cả các địa điểm ăn uống kèm theo. Bạn có chắc chắn?`)) {
-            const result = await handleDeleteDish(item.dish_id);
-            if (!result.success) alert(result.message);
+            try {
+                 await deleteDish.mutateAsync(item.dish_id);
+                 // Logic lùi trang nếu xóa phần tử cuối cùng
+                 if (dishes.length === 1 && page > 1) {
+                     setPage(prev => prev - 1);
+                 }
+            } catch (error) {
+                 alert(error.message || "Lỗi khi xóa món ăn");
+            }
         }
     };
 
@@ -165,15 +179,15 @@ const AdminDictionaryPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <form onSubmit={handleSearch} className="relative">
+                    <div className="relative">
                         <input 
                             type="text" placeholder="Tìm tên món..." 
                             className="pl-10 pr-4 py-2 rounded-lg border focus:border-blue-500 focus:outline-none"
-                            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                            value={searchTerm} 
+                            onChange={handleSearchChange}
                         />
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <button type="submit" className="hidden"></button>
-                    </form>
+                    </div>
                     <button 
                         onClick={openCreateModal}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -189,10 +203,10 @@ const AdminDictionaryPage = () => {
                 loading={isLoading}
                 onSort={(key, order) => {
                     setCurrentSort({ key, order });
-                    fetchDishes(1, pagination.limit, searchQuery, key, order);
+                    setPage(1);
                 }}
                 currentSort={currentSort}
-                onPageChange={(newPage) => fetchDishes(newPage, pagination.limit, searchQuery, currentSort.key, currentSort.order)}
+                onPageChange={setPage}
             >
                 {dishes.length === 0 && !isLoading ? (
                     <tr><td colSpan="4" className="text-center p-8 text-gray-500">Không tìm thấy món ăn nào.</td></tr>
@@ -205,7 +219,7 @@ const AdminDictionaryPage = () => {
                                         src={getDishImageUrl(dish.dish_id, dish.image_url)} 
                                         alt={dish.original_name} 
                                         className="w-12 h-12 rounded object-cover border"
-                                        onError={(e) => e.target.src = '/default-dish.png'} // Đường dẫn ảnh default
+                                        onError={(e) => e.target.src = '/default-dish.png'} 
                                     />
                                 ) : (
                                     <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">Trống</div>
@@ -234,13 +248,13 @@ const AdminDictionaryPage = () => {
             {/* PAGINATION */}
             {pagination.totalPages > 1 && (
                 <div className="flex justify-end items-center gap-4 mt-4">
-                    <button disabled={pagination.page === 1} onClick={() => fetchDishes(pagination.page - 1, pagination.limit, searchQuery, currentSort.key, currentSort.order)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang trước</button>
+                    <button disabled={pagination.page === 1} onClick={() => setPage(pagination.page - 1)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang trước</button>
                     <span className="text-sm">Trang {pagination.page} / {pagination.totalPages}</span>
-                    <button disabled={pagination.page >= pagination.totalPages} onClick={() => fetchDishes(pagination.page + 1, pagination.limit, searchQuery, currentSort.key, currentSort.order)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang sau</button>
+                    <button disabled={pagination.page >= pagination.totalPages} onClick={() => setPage(pagination.page + 1)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang sau</button>
                 </div>
             )}
 
-            {/* MODAL FORM THÊM / SỬA */}
+            {/* MODAL FORM THÊM / SỬA (GIỮ NGUYÊN HOÀN TOÀN TỪ CODE CỦA BẠN) */}
             {isFormOpen && (
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">

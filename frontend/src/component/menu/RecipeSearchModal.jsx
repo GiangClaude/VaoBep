@@ -1,53 +1,57 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Search } from 'lucide-react';
-import recipeApi from '../../api/recipeApi';
-import Pagination from '../common/Pagination'; // Nhớ check lại đường dẫn file này
+import Pagination from '../common/Pagination'; 
 import { getRecipeImageUrl } from '../../utils/imageHelper';
 
+// [MỚI] Import trực tiếp các queries
+import { 
+    useRecipesListQuery, 
+    useSavedRecipesQuery, 
+    useOwnerRecipesQuery 
+} from '../../hooks/queries/useRecipesQueries';
+
 export default function RecipeSearchModal({ isOpen, onClose, onSelectRecipe }) {
-    const [activeTab, setActiveTab] = useState('explore'); // explore, saved, mine
-    const [keyword, setKeyword] = useState('');
-    const [recipes, setRecipes] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [pagination, setPagination] = useState(null);
+    const [activeTab, setActiveTab] = useState('explore'); 
+    
+    // State cho tìm kiếm & phân trang
+    const [searchInput, setSearchInput] = useState(''); // Text lúc đang gõ trên ô input
+    const [keyword, setKeyword] = useState(''); // Text chốt để gọi API (khi ấn Enter)
+    const [page, setPage] = useState(1);
 
-    // Tách riêng logic fetch API
-    const fetchRecipes = useCallback(async (page = 1) => {
-        setIsLoading(true);
-        try {
-            let res;
-            if (activeTab === 'explore') {
-                res = await recipeApi.getAllRecipes({ page, limit: 6, keyword });
-            } else if (activeTab === 'saved') {
-                res = await recipeApi.getSavedRecipes({ page, limit: 6 });
-            } else if (activeTab === 'mine') {
-                // Lấy ID user từ token hoặc context (Giả sử gọi api getUserRecipes)
-                const user = JSON.parse(localStorage.getItem('user'));
-                res = (await recipeApi.getOwnerRecipe()).data;
-                // Vì API owner của bạn trả về data trực tiếp, ta fake pagination
-                setRecipes(res.data || []);
-                setPagination(null);
-                setIsLoading(false);
-                return;
-            }
-
-            if (res?.data) {
-                // API của bạn trả về { data: [...], pagination: {...} }
-                setRecipes(res.data.data ? res.data.data : res.data);
-                setPagination(res.data.pagination || null);
-            }
-        } catch (error) {
-            console.error("Lỗi tìm món ăn:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [activeTab, keyword]);
-
-
+    // Tự động reset về trang 1 khi đổi tab
     useEffect(() => {
-        if (isOpen) fetchRecipes(1);
-    }, [isOpen, activeTab, fetchRecipes]);
+        setPage(1);
+    }, [activeTab]);
+
+    // 1. SỬ DỤNG REACT QUERY HOOKS TỪ useRecipesQueries.js
+    // React Query sẽ tự động cache và không gọi lại API nếu dữ liệu không đổi
+    const { data: exploreData, isFetching: loadingExplore } = useRecipesListQuery({ page, limit: 6, keyword });
+    const { data: savedData, isFetching: loadingSaved } = useSavedRecipesQuery({ page, limit: 6 });
+    const { data: mineData, isFetching: loadingMine } = useOwnerRecipesQuery();
+
+    // 2. GÁN DỮ LIỆU ĐỘNG THEO TAB ĐANG CHỌN
+    let recipes = [];
+    let pagination = null;
+    let isLoading = false;
+    console.log("Explore Data:", exploreData);
+    if (activeTab === 'explore') {
+        recipes = exploreData?.data || [];
+        pagination = exploreData?.meta || null;
+        isLoading = loadingExplore;
+    } else if (activeTab === 'saved') {
+        recipes = savedData || [];
+        isLoading = loadingSaved;
+    } else if (activeTab === 'mine') {
+        recipes = mineData || [];
+        isLoading = loadingMine;
+    }
+
+    // Xử lý sự kiện khi ấn Enter trên ô tìm kiếm
+    const handleSearch = () => {
+        setKeyword(searchInput);
+        setPage(1); // Cập nhật lại keyword và nhảy về trang 1 để trigger React Query fetch lại
+    };
 
     if (!isOpen) return null;
 
@@ -89,9 +93,9 @@ export default function RecipeSearchModal({ isOpen, onClose, onSelectRecipe }) {
                         <input 
                             type="text" 
                             placeholder="Tìm kiếm món ăn (Gà, bò, salad...)"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && fetchRecipes(1)}
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                             className="w-full bg-gray-100 border-none rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-[#f7931e] outline-none"
                         />
                         <Search className="w-5 h-5 text-gray-400 absolute left-10 top-7" />
@@ -109,7 +113,7 @@ export default function RecipeSearchModal({ isOpen, onClose, onSelectRecipe }) {
                             {recipes.map(recipe => (
                                 <div key={recipe.recipe_id} className="bg-white p-3 rounded-2xl border border-gray-100 flex gap-4 items-center hover:shadow-md transition">
                                     <img 
-                                        src={getRecipeImageUrl(recipe.recipe_id, recipe.cover_image)} 
+                                        src={recipe.image} 
                                         alt={recipe.title} 
                                         className="w-20 h-20 object-cover rounded-xl"
                                     />
@@ -130,7 +134,7 @@ export default function RecipeSearchModal({ isOpen, onClose, onSelectRecipe }) {
 
                     {/* Phân trang */}
                     {pagination && (
-                        <Pagination pagination={pagination} onPageChange={(page) => fetchRecipes(page)} />
+                        <Pagination pagination={pagination} onPageChange={(newPage) => setPage(newPage)} />
                     )}
                 </div>
             </div>

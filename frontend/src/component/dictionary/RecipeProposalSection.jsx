@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import { Search, ThumbsUp, Plus, Loader2 } from 'lucide-react';
-import useDishProposal from '../../hooks/useDishProposal';
+import {useDishProposalUI} from '../../hooks/ui/dictionary/useDishProposalUI';
 import { getRecipeImageUrl } from '../../utils/imageHelper';
 import Pagination from '../common/Pagination';
 import ImageWithFallBack from '../figma/ImageWithFallBack';
@@ -14,7 +14,7 @@ export default function RecipeProposalSection({ dishId, initialRecipes, onRefres
         paginatedRecipes, paginationInfo,
         setCurrentPage, handleSearchRecipes, handleVote,
         modalConfig, closeModal
-    } = useDishProposal(dishId, initialRecipes, onRefresh);
+    } = useDishProposalUI(dishId, initialRecipes, onRefresh);
 
     const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
 

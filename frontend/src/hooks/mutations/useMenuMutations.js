@@ -38,3 +38,15 @@ export const useCloneMenuMutation = () => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MENUS] })
     });
 };
+
+export const useAiConsultationMutation = () => {
+    return useMutation({
+        mutationFn: (menuState) => menuApi.consultAI(menuState)
+    });
+};
+
+export const useAutoGenerateMenuMutation = () => {
+    return useMutation({
+        mutationFn: (prompt) => menuApi.generateMenuAuto(prompt)
+    });
+};

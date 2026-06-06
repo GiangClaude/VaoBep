@@ -27,7 +27,7 @@ class User {
     static async findByEmail(email) {
         try {
             const [rows] = await pool.execute(
-                    'SELECT user_id, full_name, email, password, account_status FROM users u WHERE email = ?',
+                    'SELECT user_id, full_name, email, password, account_status, role FROM users u WHERE email = ?',
                     [email]
                 );
                 return rows[0];

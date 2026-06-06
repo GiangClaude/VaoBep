@@ -7,6 +7,8 @@ import { useGlobalModal } from '../../../context/ModalContext';
 import { 
     useLoginMutation, 
     useRegisterMutation,
+    useForgotPasswordMutation,
+    useResetPasswordMutation,
     useVerifyOTPMutation, // Dùng để kích hoạt tài khoản (Register)
     useVerifyOTPOnlyMutation, // Dùng để check OTP (Forgot Password)
     useResendOTPMutation  
@@ -29,8 +31,16 @@ export const useLoginForm = () => {
 
         try {
             const res = await loginMutation.mutateAsync(loginData);
+            console.log("Login API response:", res);
             if (res.success) {
-                navigate('/homepage');
+                if (res.data.user.role === 'admin') {
+                    console.log("Admin logged in, navigating to dashboard");
+                    setTimeout(() => {
+                        navigate('/admin/dashboard');
+                    }, 1000);
+                } else {
+                    navigate('/homepage');
+                }
             } else {
                 setErrors({ 
                     api: res.message, 
