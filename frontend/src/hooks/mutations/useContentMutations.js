@@ -64,3 +64,30 @@ export const useDeleteArticleMutation = () => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OWNER_ARTICLES] })
     });
 };
+
+// Thêm vào frontend/src/hooks/mutations/useContentMutations.js
+
+export const useChangeArticleStatusMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        // Tùy theo API của bà, có thể là articleApi.changeStatus hoặc articleApi.updateArticle
+        mutationFn: ({ articleId, status }) => articleApi.updateArticle(articleId, { status }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OWNER_ARTICLES] });
+        }
+    });
+};
+
+// Thêm Mutation để cập nhật toàn bộ thông tin bài viết (Title, Content, Cover,...)
+export const useUpdateArticleMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        // Gửi formData lên để update tương tự recipe
+        mutationFn: ({ articleId, formData }) => articleApi.updateArticle(articleId, formData),
+        onSuccess: (data, variables) => {
+            // Refetch lại chi tiết bài viết và danh sách của tôi sau khi update
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ARTICLE_DETAIL, variables.articleId] });
+            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.OWNER_ARTICLES] });
+        }
+    });
+};

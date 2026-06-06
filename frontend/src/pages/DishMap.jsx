@@ -6,14 +6,18 @@ import useDishMap from '../hooks/useDishMap';
 import DishPopupCard from '../component/dictionary/DishPopupCard';
 import { getDishImageUrl } from '../utils/imageHelper';
 
+import { useDishMapSummaryQuery, useDishMapAllQuery } from '../hooks/queries/useDictionaryQueries';
+
 mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 
 const DishMap = () => {
-    console.log("MAPBOX TOKEN:", process.env.REACT_APP_MAPBOX_ACCESS_TOKEN); // Debug log để kiểm tra token
     const mapContainer = useRef(null);
     const map = useRef(null);
-    const { summaryData, allDishes, loading } = useDishMap();
+    const { data: summaryData = [], isLoading: loadingSummary } = useDishMapSummaryQuery();
+    const { data: allDishes = [], isLoading: loadingAll } = useDishMapAllQuery();
 
+    const loading = loadingSummary || loadingAll;
+    
     useEffect(() => {
         if (map.current || loading) return;
 

@@ -81,6 +81,38 @@ class DictionaryDishService {
             connection.release();
         }
     }
+
+    /**
+     * Lấy tọa độ trung tâm quốc gia từ DB và tạo độ lệch ngẫu nhiên (jitter) phục vụ hiển thị bản đồ
+     */
+    async generateJitteredCoordinates(countryName) {
+        const [rows] = await db.pool.execute(
+            'SELECT lat, lng FROM Countries_Coordinates WHERE country_name = ?',
+            [countryName]
+        );
+
+        if (rows.length > 0) {
+            const { lat, lng } = rows[0];
+            const jitter = 0.8; 
+            return {
+                latitude: lat + (Math.random() - 0.5) * jitter * 2,
+                longitude: lng + (Math.random() - 0.5) * jitter * 2
+            };
+        }
+        return { latitude: null, longitude: null };
+    }
+
+    /**
+     * Tính toán lại điểm tổng hợp (point) của món ăn dựa trên số lượng tương tác (like, comment, report...)
+     */
+    async recalculatePoint(dishId) {
+        const query = `
+            UPDATE Dictionary_Dishes 
+            SET point = (like_count * 1) + (comment_count * 2) + (eatery_count * 3) + (recipe_link_count * 5) - (report_count * 10)
+            WHERE dish_id = ?
+        `;
+        await db.pool.execute(query, [dishId]);
+    }
 }
 
 module.exports = new DictionaryDishService();

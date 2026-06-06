@@ -53,7 +53,7 @@ export const useSavedRecipesQuery = (sortParams) => {
         queryFn: async () => {
             const response = await recipeApi.getSavedRecipes(sortParams);
             // Dữ liệu Saved trả về cần check xem Backend có bọc trong data.data không
-            return response.success ? normalizeRecipeList(response.data.data || response.data) : [];
+            return response.success ? normalizeRecipeList(response.data) : [];
         }
     });
 };
@@ -64,6 +64,7 @@ export const useFeaturedRecipesQuery = () => {
         queryKey: [QUERY_KEYS.FEATURED_RECIPES],
         queryFn: async () => {
             const response = await recipeApi.getFeatureRecipes();
+            console.log("API Response for Featured Recipes:", response); // Debug log để kiểm tra dữ liệu
             return response.success ? normalizeRecipeList(response.data) : [];
         }
     });

@@ -1,53 +1,47 @@
-import { useState } from 'react';
-import { Edit, Trash2, Eye, EyeOff, FileText, Plus } from 'lucide-react';
-import ArticleEditorModal from '../article/ArticleEditorModal';
+// VỊ TRÍ: frontend/src/component/article/MyArticlesTab.jsx
+
+import { useState, useMemo } from 'react';
+import { Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+
+import ArticleEditorModal from '../article/ArticleEditorModal';
 import ArticleCard from '../common/ArticleCard';
-import ImageWithFallBack from '../figma/ImageWithFallBack';
-import Modal from '../common/modal';
-import useOwnerArticles from '../../hooks/useOwnerArticles';
-import useArticleAction from '../../hooks/useArticleAction';
+import { useGlobalModal } from '../../context/ModalContext'; // Dùng Global Modal chuẩn
 
-export function MyArticlesTab({ isPublicView = false }) {
+// [MỚI] Import Hooks chuẩn của React Query
+import { useOwnerArticlesQuery } from '../../hooks/queries/useArticlesQueries';
+import { useDeleteArticleMutation, useChangeArticleStatusMutation } from '../../hooks/mutations/useContentMutations';
+
+export function MyArticlesTab({ isPublicView = false, publicArticles = [] }) {
   const navigate = useNavigate();
-  const { articles, loading, fetchOwnerArticles } = useOwnerArticles();
-
-  const { removeArticle, updateExistingArticle } = useArticleAction();
+  const { showModal } = useGlobalModal();
 
   const [filter, setFilter] = useState('public');
-  const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', type: 'info', actions: [] });
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorInitial, setEditorInitial] = useState(null);
 
-  const closeModal = () => setModalConfig(prev => ({ ...prev, isOpen: false }));
+  // 1. Lấy Data từ React Query (Tự động cache, loading)
+  const { data: ownerArticles = [], isLoading } = useOwnerArticlesQuery();
 
-  const filtered = (articles || []).filter(a => {
-    if (filter === 'all') return true;
-    return (a.status || 'public') === filter;
-  });
+  // 2. Khởi tạo Mutations để gọi API xóa/cập nhật
+  const deleteMutation = useDeleteArticleMutation();
+  const statusMutation = useChangeArticleStatusMutation();
 
+  // 3. Lọc mượt mà tại client với useMemo (Giống MyRecipesTab)
+  const displayArticles = useMemo(() => {
+    let result = isPublicView ? publicArticles : ownerArticles;
 
+    if (isPublicView) {
+        result = result.filter(a => a.status === 'public');
+    } else if (filter !== 'all') {
+        result = result.filter(a => (a.status || 'public') === filter);
+    }
+    return result;
+  }, [isPublicView, publicArticles, ownerArticles, filter]);
+
+  // --- ACTIONS ---
   const goToArticle = (id) => navigate(`/article/${id}`);
-
-  const confirmDelete = (id) => {
-    setModalConfig({
-      isOpen: true,
-      title: 'Xác nhận xóa',
-      message: 'Bạn chắc chắn muốn xóa bài viết này? Hành động không thể hoàn tác.',
-      type: 'warning',
-      actions: [
-        { label: 'Hủy', onClick: closeModal, style: 'secondary' },
-        { label: 'Xóa', onClick: async () => { await removeArticle(id); await fetchOwnerArticles(); closeModal(); }, style: 'danger' }
-      ]
-    });
-  };
-
-  const toggleVisibility = async (article) => {
-    const newStatus = article.status === 'hidden' ? 'public' : 'hidden';
-    await updateExistingArticle(article.id || article.article_id, { status: newStatus });
-    await fetchOwnerArticles();
-  };
 
   const openCreate = () => {
     setEditorInitial(null);
@@ -55,10 +49,9 @@ export function MyArticlesTab({ isPublicView = false }) {
   };
 
   const openEdit = (id) => {
-    const art = (articles || []).find(a => (a.id || a.article_id) === id);
+    const art = ownerArticles.find(a => (a.id || a.article_id) === id);
     if (!art) return;
-    // prepare initial data mapping expected by the editor
-    console.log("Debug openEdit article:", art);
+    
     const initial = {
       id: art.id || art.article_id,
       title: art.title,
@@ -74,52 +67,75 @@ export function MyArticlesTab({ isPublicView = false }) {
     setEditorOpen(true);
   };
 
-  const onEditorSaved = async () => {
+  const handleConfirmDelete = (id) => {
+    showModal({
+      title: 'Xác nhận xóa',
+      message: 'Bạn chắc chắn muốn xóa bài viết này? Hành động không thể hoàn tác.',
+      type: 'warning',
+      actions: [
+        { label: 'Hủy', style: 'secondary' },
+        { 
+          label: 'Xóa', 
+          style: 'danger', 
+          onClick: () => {
+            deleteMutation.mutate(id, {
+              onSuccess: () => showModal({ title: "Thành công", message: "Đã xóa bài viết!", type: "success" })
+            });
+          }
+        }
+      ]
+    });
+  };
+
+  // Hàm này tui giữ lại dự phòng nếu sau này ArticleCard của bà có nút Ẩn/Hiện con mắt giống RecipeCard
+  const handleToggleVisibility = (article) => {
+    const newStatus = article.status === 'hidden' ? 'public' : 'hidden';
+    statusMutation.mutate({ articleId: article.id || article.article_id, status: newStatus });
+  };
+
+  const onEditorSaved = () => {
     setEditorOpen(false);
-    await fetchOwnerArticles();
+    // Không cần gọi fetchOwnerArticles thủ công nữa, Mutation trong Editor lưu xong sẽ tự động kích hoạt React Query tải lại danh sách!
   };
 
   return (
     <div>
-      <Modal isOpen={modalConfig.isOpen} onClose={closeModal} title={modalConfig.title} message={modalConfig.message} type={modalConfig.type} actions={modalConfig.actions} />
+      {/* Thay vì gắn thẻ <Modal /> tĩnh, giờ ta dùng hệ thống showModal toàn cục */}
       <ArticleEditorModal 
         isOpen={editorOpen} 
         onClose={() => setEditorOpen(false)} 
         initialData={editorInitial} 
         onSaved={onEditorSaved} 
       />
-      <div className="flex items-center justify-between mb-6">
+      
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div className="flex gap-2">
-          {['all','public', 'draft', 'banned'].map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-full ${filter === f ? 'bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          {!isPublicView && ['all','public', 'draft', 'banned'].map(f => (
+            <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-full text-sm transition-all ${filter === f ? 'bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
               {f === 'all' && 'Tất cả'}
               {f === 'public' && 'Công khai'}
               {f === 'draft' && 'Nháp'}
               {f === 'banned' && 'Bị ban'}
-              
             </button>
           ))}
         </div>
 
         {!isPublicView && (
-          <div className="flex items-center gap-3">
-            <motion.button onClick={openCreate} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white px-5 py-2 rounded-full flex items-center gap-2">
+          <div className="flex items-center gap-3 ml-auto">
+            <motion.button onClick={openCreate} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white px-5 py-2 rounded-full flex items-center gap-2 shadow-md font-semibold text-sm">
               <Plus className="w-4 h-4" /> Tạo bài viết
             </motion.button>
-            {/* <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white px-5 py-2 rounded-full flex items-center gap-2" onClick={() => navigate('/articles') }>
-              <FileText className="w-4 h-4" /> Quản lý bài viết
-            </motion.button> */}
           </div>
         )}
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-[#7d5a3f]">Đang tải...</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-[#7d5a3f]">Chưa có bài viết phù hợp.</div>
+      {isLoading ? (
+        <div className="text-center py-20 text-[#7d5a3f] animate-pulse">Đang tải bài viết của bạn...</div>
+      ) : displayArticles.length === 0 ? (
+        <div className="text-center py-20 text-[#7d5a3f]">Chưa có bài viết phù hợp.</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filtered.map(a => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayArticles.map(a => (
             <ArticleCard
               key={a.id}
               id={a.id}
@@ -129,15 +145,17 @@ export function MyArticlesTab({ isPublicView = false }) {
               readTime={a.readTime}
               title={a.title}
               excerpt={a.excerpt}
-              tags={a.rawTags || a.tags || []}
+              tags={a.tags || []}
               image={a.image}
-            //   category={a.category}
               commentCount={a.commentCount}
               status={a.status}
-              isOwnerView={true}
+              isOwnerView={!isPublicView}
+              isLiked={a.isLiked}
+              isSaved={a.isSaved}
+              likeCount={a.likeCount}
               onClick={() => goToArticle(a.id)}
               onEdit={(id) => openEdit(id)}
-              onDelete={(id) => confirmDelete(id)}
+              onDelete={(id) => handleConfirmDelete(id)}
             />
           ))}
         </div>

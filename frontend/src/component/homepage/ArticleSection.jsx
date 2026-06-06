@@ -32,6 +32,7 @@ export default function ArticleSection({ articles }) {
       <div className="grid grid-cols-1 gap-4">
         {articles.slice(0, 3).map((a) => (
           <ArticleCard
+            key={a.id}
             id={a.id}
             author = {a.author}
             authorAvatar={a.authorAvatar}
@@ -40,11 +41,11 @@ export default function ArticleSection({ articles }) {
             title={a.title}
             excerpt={a.excerpt}
             image={a.image}
-            tags={a.rawTags || a.tags || []}
-            is_liked={a.is_liked}
-            is_saved={a.is_saved}
+            tags={a.tags}
+            isLiked={a.isLiked}
+            isSaved={a.isSaved}
             likeCount={a.likeCount}
-            commentCount={a.totalComments}
+            commentCount={a.commentCount}
             onClick={() => goToArticle(a.id)}
             />
         ))}

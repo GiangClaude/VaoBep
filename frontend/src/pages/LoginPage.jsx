@@ -3,6 +3,7 @@ import React, { useState } from 'react'; // React 17+ không bắt buộc import
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useLogin } from '../hooks/useLogin'; // Import Hook vừa tạo
+import {useLoginForm} from '../hooks/ui/auth/useAuthForms'; // Import Hook vừa tạo
 import "../index.css";
 import Header from '../component/common/Header';
 import { Footer } from '../component/common/Footer';
@@ -15,7 +16,7 @@ const LoginPage = () => {
         errors, 
         loading, 
         handleLoginSubmit 
-    } = useLogin();
+    } = useLoginForm();
 
     // State UI thuần túy (hiện/ẩn mật khẩu) thì để lại ở đây là hợp lý
     const [showPassword, setShowPassword] = useState(false);

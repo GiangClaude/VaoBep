@@ -1,12 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
-import { useForgotPassword } from '../hooks/useForgotPassword';
+
+
 import Header from '../component/common/Header';
 import { Footer } from '../component/common/Footer';
 
+import { useForgotPasswordForm } from '../hooks/ui/auth/useAuthForms';
+
 const ForgotPasswordPage = () => {
-    const { email, setEmail, error, loading, handleSubmit, navigate } = useForgotPassword();
+    const { email, setEmail, error, loading, handleSubmit, navigate } = useForgotPasswordForm();
 
     return (
         <div className="min-h-screen flex flex-col bg-[#fff9f0]">
