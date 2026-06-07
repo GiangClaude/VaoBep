@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 // Import các công cụ dùng chung
 import { TAG_TYPE_LABELS, TAG_CATEGORY_ORDER, groupTagsByType } from "../../utils/tagUtils";
 import FilterAccordion from "./FilterAccordion";
-import useTags from "../../hooks/useTags";
+import {useTagQueries} from "../../hooks/queries/useTagQueries";
 
 export function ArticleFilter({ onFilterChange }) {
     const [filters, setFilters] = useState({
@@ -14,7 +14,7 @@ export function ArticleFilter({ onFilterChange }) {
         sort: "newest"
     });
 
-    const { tags: serverTags = [], loading: loadingTags } = useTags();
+    const { tags: serverTags = [], loading: loadingTags } = useTagQueries();
     const [openSections, setOpenSections] = useState({ cuisine: true, meal_time: true });
 
     // 1. Logic xử lý dữ liệu

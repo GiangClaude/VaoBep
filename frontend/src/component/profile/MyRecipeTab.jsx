@@ -1,127 +1,30 @@
-import { useState, useMemo } from "react";
-import { Edit, Trash2, Eye, EyeOff, Star, Plus, Heart, FileText, ArrowUp, ArrowDown, Clock } from "lucide-react";
+import { Edit, Trash2, Eye, EyeOff, Star, Plus, Heart, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; 
 
 import ImageWithFallback from "../figma/ImageWithFallBack"; 
 import { CreateRecipeModal } from "../recipe/CreateRecipeModal";
-import { useGlobalModal } from "../../context/ModalContext"; 
-import recipeApi from "../../api/recipeApi";
 
-// [MỚI] Hooks chuẩn
-import { useOwnerRecipesQuery } from "../../hooks/queries/useRecipesQueries";
-import { useDeleteRecipeMutation, useChangeRecipeStatusMutation, useCreateRecipeMutation, useUpdateRecipeMutation } from "../../hooks/mutations/useContentMutations";
+// CHỈ IMPORT DUY NHẤT UI HOOK NÀY VÀO
+import { useMyRecipesUI } from "../../hooks/ui/profile/useMyRecipesTabUI";
 
 export function MyRecipesTab({ isPublicView = false, publicRecipes = [] }) {
   const navigate = useNavigate();
-  const { showModal } = useGlobalModal();
 
-  const [filter, setFilter] = useState("all");
-  const [sortConfig, setSortConfig] = useState({ key: null, order: null });
+  // BÓC TÁCH TOÀN BỘ DATA VÀ ACTIONS TỪ HOOK (View không tự xử lý logic nào cả)
+  const {
+    filter, setFilter,
+    isCreateModalOpen, setIsCreateModalOpen,
+    editingRecipe,
+    isLoadingRecipes,
+    displayRecipes,
+    handleCreateNew,
+    handleEditRecipe,
+    handleConfirmDelete,
+    handleToggleVisibility
+  } = useMyRecipesUI({ isPublicView, publicRecipes });
 
-  // Lấy Data từ React Query
-  const { data: ownerRecipes = [], isLoading: isLoadingRecipes } = useOwnerRecipesQuery();
-  
-  // Khởi tạo Mutations
-  const deleteMutation = useDeleteRecipeMutation();
-  const statusMutation = useChangeRecipeStatusMutation();
-  const createMutation = useCreateRecipeMutation();
-  const updateMutation = useUpdateRecipeMutation();
-
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingRecipe, setEditingRecipe] = useState(null);
-
-  // // --- LOGIC SORT (Giống SavedTab) ---
-  // const handleSortChange = (key) => {
-  //   setSortConfig(prev => {
-  //       if (prev.key !== key) return { key, order: 'desc' };
-  //       if (prev.order === 'desc') return { key, order: 'asc' };
-  //       return { key: null, order: null };
-  //   });
-  // };
-
-  // const SortButton = ({ label, icon: Icon, sortKey }) => {
-  //   const isActive = sortConfig.key === sortKey;
-  //   return (
-  //     <button onClick={() => handleSortChange(sortKey)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${isActive ? "bg-[#ff6b35] text-white border-[#ff6b35]" : "bg-white text-gray-600 hover:bg-gray-50"}`}>
-  //       <Icon className="w-3.5 h-3.5" /> {label}
-  //       {isActive && (sortConfig.order === 'asc' ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />)}
-  //     </button>
-  //   );
-  // };
-
-  // --- LỌC & SẮP XẾP MƯỢT MÀ TẠI CLIENT ---
-  const displayRecipes = useMemo(() => {
-    let result = isPublicView ? publicRecipes : ownerRecipes;
-
-    // 1. Lọc theo trạng thái
-    if (isPublicView) {
-        result = result.filter(r => r.status === 'public');
-    } else if (filter !== "all") {
-        result = result.filter(r => r.status === filter);
-    }
-
-    // // 2. Sắp xếp bằng JS
-    // if (sortConfig.key) {
-    //     result = [...result].sort((a, b) => {
-    //         let valA, valB;
-    //         if (sortConfig.key === 'like') { valA = a.likes; valB = b.likes; }
-    //         else if (sortConfig.key === 'rating') { valA = a.rating; valB = b.rating; }
-    //         else { valA = new Date(a.createdAt).getTime(); valB = new Date(b.createdAt).getTime(); }
-
-    //         if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
-    //         if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
-    //         return 0;
-    //     });
-    // }
-
-    return result;
-  }, [isPublicView, publicRecipes, ownerRecipes, filter]);
-
-  // --- ACTIONS ---
-  const handleCreateNew = () => {
-    setEditingRecipe(null); 
-    setIsCreateModalOpen(true);
-  };
-
-  const handleEditRecipe = async (id) => {
-    try {
-        // Lấy chi tiết form từ API (vì form cần nhiều info hơn Card)
-        const response = await recipeApi.getRecipeById(id);
-        setEditingRecipe(response.data.data || response.data); 
-        setIsCreateModalOpen(true);
-    } catch (error) {
-        showModal({ title: "Lỗi", message: "Không thể tải dữ liệu công thức!", type: "error" });
-    }
-  };
-
-  const handleConfirmDelete = (recipeId) => {
-    showModal({
-        title: "Xác nhận xóa", message: "Bạn có chắc chắn muốn xóa công thức này?", type: "warning",
-        actions: [
-            { label: "Hủy bỏ", style: "secondary" },
-            { label: "Xóa", style: "danger", onClick: () => deleteMutation.mutate(recipeId) }
-        ]
-    });
-  };
-
-  const handleToggleVisibility = (recipe) => {
-      const newStatus = recipe.status === 'hidden' ? 'public' : 'hidden';
-      statusMutation.mutate({ recipeId: recipe.id, status: newStatus });
-  };
-
-  const handleSubmitRecipe = async (data) => {
-    try {
-      if (editingRecipe) await updateMutation.mutateAsync({ recipeId: editingRecipe.recipe_id, formData: data });
-      else await createMutation.mutateAsync(data);
-      
-      setIsCreateModalOpen(false);
-      showModal({ title: "Thành công", message: "Đã lưu công thức!", type: "success" });
-    } catch (error) {
-      showModal({ title: "Lỗi", message: error.response?.data?.message || "Lưu thất bại", type: "error" });
-    }
-  };
-
+  // UI Helper: Hàm này chỉ biến đổi chuỗi thành màu sắc, nên để ở View là hợp lý
   const getStatusBadge = (status) => {
     const badges = {
       public: { text: "Công khai", color: "bg-green-500" },
@@ -149,14 +52,7 @@ export function MyRecipesTab({ isPublicView = false, publicRecipes = [] }) {
           ))}
         </div>
 
-        {/* Nút Tạo & Bộ Sort */}
         <div className="flex items-center gap-4 ml-auto">
-           {/* <div className="flex gap-2 bg-gray-50 p-1.5 rounded-full">
-              <SortButton label="Mới nhất" icon={Clock} sortKey="time" />
-              <SortButton label="Yêu thích" icon={Heart} sortKey="like" />
-              <SortButton label="Đánh giá" icon={Star} sortKey="rating" />
-           </div> */}
-
           {!isPublicView && (
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleCreateNew} className="bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white px-5 py-2 rounded-full flex items-center gap-2 shadow-md font-semibold text-sm">
               <Plus className="w-4 h-4" /> Tạo món
@@ -210,11 +106,11 @@ export function MyRecipesTab({ isPublicView = false, publicRecipes = [] }) {
         </div>
       )}
 
+      {/* Gọi Modal Create/Edit */}
       {isCreateModalOpen && (
         <CreateRecipeModal 
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          onSubmit={handleSubmitRecipe}
           initialData={editingRecipe}
         />
       )}

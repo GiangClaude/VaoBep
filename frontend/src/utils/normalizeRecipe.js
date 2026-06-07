@@ -45,8 +45,8 @@ export function normalizeRecipe(r) {
     title: r.title || "",
     description: r.description || "",
     stepsCount: r.steps || parsedSteps.length || 0, 
-    cookTime: r.cook_time ? `${r.cook_time} phút` : "",
-    servings: r.servings ? `${r.servings} người` : "",
+    cookTime: r.cook_time,
+    servings: r.servings,
     calories: r.total_calo !== undefined && r.total_calo !== null ? Number(r.total_calo) : 0,
     image: getRecipeImageUrl(r.recipe_id, r.cover_image),
     createdAt: r.created_at ? new Date(r.created_at).toLocaleDateString('vi-VN') : "",
@@ -80,7 +80,12 @@ export function normalizeRecipe(r) {
     reportCount: r.report_count !== undefined ? Number(r.report_count) : 0,
     ratingCount: r.rating_count !== undefined ? Number(r.rating_count) : 0,
     ratingSumScore: r.rating_sum_score !== undefined ? Number(r.rating_sum_score) : 0,
-    updateAt: r.update_at || ""
+    updateAt: r.update_at || "",
+    tags: Array.isArray(r.tags) ? r.tags.map(t => ({
+      tag_id: t.tag_id,   
+      name: t.name,
+     }))
+      : []
   };
 }
 export function normalizeRecipeList(arr) {

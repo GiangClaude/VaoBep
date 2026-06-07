@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 // Import linh kiện dùng chung
 import { TAG_TYPE_LABELS, TAG_CATEGORY_ORDER, groupTagsByType } from "../../utils/tagUtils";
 import FilterAccordion from "./FilterAccordion";
-import useTags from "../../hooks/useTags";
+import {useTagQueries} from "../../hooks/queries/useTagQueries";
 
 export function RecipeFilter({ onFilterChange }) {
   // 1. STATE & DATA
@@ -23,7 +23,7 @@ export function RecipeFilter({ onFilterChange }) {
     rating: false
   });
 
-  const { tags: serverTags = [], loading: loadingTags } = useTags();
+  const { tags: serverTags = [], loading: loadingTags } = useTagQueries();
 
   const cookingTimes = [
     { id: "quick", label: "Nhanh (<30p)", value: "0-30" },

@@ -836,7 +836,7 @@ class Recipe{
             -- Join User lần 2 (đặt tên là Commenter) để lấy tên người bình luận
             LEFT JOIN Users Commenter ON C.user_id = Commenter.user_id
 
-            WHERE R.status = 'public' and R.user_id = ?
+            WHERE R.user_id = ?
             GROUP BY R.recipe_id
             ORDER BY R.created_at DESC 
             `

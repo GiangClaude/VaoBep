@@ -1,6 +1,5 @@
 // VỊ TRÍ: frontend/src/hooks/queries/useRecipesQueries.js
-
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient} from '@tanstack/react-query';
 import recipeApi from '../../api/recipeApi';
 import { QUERY_KEYS } from '../../config/queryKeys';
 import { normalizeRecipeList } from '../../utils/normalizeRecipe';
@@ -68,4 +67,36 @@ export const useFeaturedRecipesQuery = () => {
             return response.success ? normalizeRecipeList(response.data) : [];
         }
     });
+};
+
+export const useRecipeByIdQuery = (id) => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.RECIPE_DETAIL, id],
+        queryFn: async () => {
+            const response = await recipeApi.getRecipeById(id);
+            if (response.success) {
+                return normalizeRecipeList([response.data])[0]; // Trả về object thay vì array
+            }
+        }
+    });
+};
+
+export const useFetchRecipeDetailAsync = () => {
+    const queryClient = useQueryClient();
+
+    const fetchRecipeDetail = async (id) => {
+        return await queryClient.fetchQuery({
+            queryKey: [QUERY_KEYS.RECIPE_DETAIL, id],
+            queryFn: async () => {
+                const response = await recipeApi.getRecipeById(id);
+                if (response.success) {
+                    return response.data.data || response.data;
+                }
+                throw new Error("Lỗi tải chi tiết công thức");
+            },
+            staleTime: 1000 * 60 * 5, // Cache 5 phút
+        });
+    };
+
+    return fetchRecipeDetail;
 };
