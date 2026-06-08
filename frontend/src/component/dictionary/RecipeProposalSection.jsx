@@ -1,31 +1,38 @@
-import React, { useState } from 'react';
-
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ThumbsUp, Plus, Loader2 } from 'lucide-react';
-import {useDishProposalUI} from '../../hooks/ui/dictionary/useDishProposalUI';
+import { Search, ThumbsUp, Loader2 } from 'lucide-react';
+import { useDishProposalUI } from '../../hooks/ui/dictionary/useDishProposalUI';
 import { getRecipeImageUrl } from '../../utils/imageHelper';
 import Pagination from '../common/Pagination';
 import ImageWithFallBack from '../figma/ImageWithFallBack';
-import Modal from '../common/modal'; 
+import { useGlobalModal } from '../../context/ModalContext'; 
+
 export default function RecipeProposalSection({ dishId, initialRecipes, onRefresh }) {
     const navigate = useNavigate();
+    const { showModal } = useGlobalModal(); 
+
     const {
         searchTerm, searchResults, isSearching,
         paginatedRecipes, paginationInfo,
-        setCurrentPage, handleSearchRecipes, handleVote,
-        modalConfig, closeModal
+        setCurrentPage, handleSearchRecipes, handleVote
     } = useDishProposalUI(dishId, initialRecipes, onRefresh);
 
-    const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+    /**
+     * Hàm xử lý khi người dùng bấm bình chọn/đề xuất.
+     * Ngăn chặn hành vi click lan ra component cha và kích hoạt API vote.
+     */
+    const onVoteClick = async (e, rid) => {
+        e.stopPropagation(); 
+        await handleVote(rid);
+    };
 
-    const onVoteClick = async (rid) => {
-        const res = await handleVote(rid);
-        if (res.success) {
-            setStatusMsg({ type: 'success', text: res.message });
-        } else {
-            setStatusMsg({ type: 'error', text: res.message });
-        }
-        setTimeout(() => setStatusMsg({ type: '', text: '' }), 3000);
+    /**
+     * Hàm kiểm tra trạng thái vote của một công thức từ kết quả tìm kiếm.
+     * Đối chiếu kết quả search với danh sách initialRecipes đã có để lấy chính xác trạng thái is_voted.
+     */
+    const checkIsVoted = (recipe) => {
+        const existingInList = initialRecipes.find(ir => ir.recipe_id === recipe.recipe_id);
+        return existingInList ? existingInList.is_voted : recipe.is_voted;
     };
 
     return (
@@ -35,7 +42,7 @@ export default function RecipeProposalSection({ dishId, initialRecipes, onRefres
                 <span className="text-sm font-normal text-gray-400">{initialRecipes.length} liên kết</span>
             </h3>
 
-            {/* Thanh tìm kiếm đề xuất mới */}
+            {/* Thanh tìm kiếm */}
             <div className="relative mb-8">
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -52,39 +59,40 @@ export default function RecipeProposalSection({ dishId, initialRecipes, onRefres
                 {/* Kết quả tìm kiếm nhanh */}
                 {searchResults.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 max-h-80 overflow-y-auto p-2">
-                        {searchResults.map(r => (
-                            <div key={r.recipe_id} className="flex items-center justify-between p-2 hover:bg-orange-50 rounded-xl transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <img src={getRecipeImageUrl(r.recipe_id, r.cover_image)} className="w-12 h-12 rounded-lg object-cover" alt="" />
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-800">{r.title}</p>
-                                        <p className="text-xs text-gray-500">Tác giả: {r.author_name}</p>
+                        {searchResults.map(r => {
+                            const isVoted = checkIsVoted(r);
+                            return (
+                                <div key={r.recipe_id} className="flex items-center justify-between p-2 hover:bg-orange-50 rounded-xl transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <img src={getRecipeImageUrl(r.recipe_id, r.cover_image)} className="w-12 h-12 rounded-lg object-cover" alt="" />
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-800">{r.title}</p>
+                                            <p className="text-xs text-gray-500">Tác giả: {r.author_name}</p>
+                                        </div>
                                     </div>
+                                    <button 
+                                        onClick={(e) => onVoteClick(e, r.recipe_id)}
+                                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                                            isVoted 
+                                            ? 'bg-gray-200 text-gray-600 hover:bg-gray-300' 
+                                            : 'bg-orange-500 text-white hover:bg-orange-600'
+                                        }`}
+                                    >
+                                        {isVoted ? 'Bỏ đề xuất' : 'Đề xuất'}
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={() => handleVote(r.recipe_id)}
-                                    className="px-4 py-1.5 bg-orange-500 text-white text-xs font-bold rounded-lg hover:bg-orange-600"
-                                >
-                                    Đề xuất
-                                </button>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
-
-            {statusMsg.text && (
-                <div className={`mb-4 p-3 rounded-xl text-sm font-medium text-center ${statusMsg.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                    {statusMsg.text}
-                </div>
-            )}
 
             {/* Danh sách đã liên kết */}
             <div className="space-y-4">
                 {paginatedRecipes.map((r, index) => (
                     <div 
                         key={r.recipe_id} 
-                        className="flex items-center gap-4 p-3 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
+                        className="flex items-center gap-4 p-3 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100 cursor-pointer"
                         onClick={() => navigate(`/recipe/${r.recipe_id}`)}
                     >
                         <div className="relative">
@@ -107,16 +115,13 @@ export default function RecipeProposalSection({ dishId, initialRecipes, onRefres
                                 <p className="text-xs font-bold text-orange-600">{r.vote_count || 1} vote</p>
                             </div>
                             <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleVote(r.recipe_id)
-                                }}
+                                onClick={(e) => onVoteClick(e, r.recipe_id)}
                                 className={`p-2 rounded-lg shadow-sm transition-all ${
                                     r.is_voted 
-                                    ? "bg-orange-500 text-white" // Đã vote: màu cam nổi bật
-                                    : "bg-white text-gray-400 hover:text-orange-600 hover:bg-orange-50" // Chưa vote: màu xám
+                                    ? "bg-orange-500 text-white" 
+                                    : "bg-white text-gray-400 hover:text-orange-600 hover:bg-orange-50" 
                                 }`}
-                                title="Bình chọn cho công thức này"
+                                title={r.is_voted ? "Hủy bình chọn" : "Bình chọn cho công thức này"}
                             >
                                 <ThumbsUp className="w-4 h-4" />
                             </button>
@@ -125,19 +130,9 @@ export default function RecipeProposalSection({ dishId, initialRecipes, onRefres
                 ))}
             </div>
 
-            {/* Phân trang */}
             <Pagination 
                 pagination={paginationInfo} 
                 onPageChange={(p) => setCurrentPage(p)} 
-            />
-
-            <Modal 
-                isOpen={modalConfig.isOpen}
-                onClose={closeModal}
-                title={modalConfig.title}
-                message={modalConfig.message}
-                type={modalConfig.type}
-                actions={modalConfig.actions}
             />
         </div>
     );

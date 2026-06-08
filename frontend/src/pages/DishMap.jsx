@@ -1,8 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import useDishMap from '../hooks/useDishMap';
 import DishPopupCard from '../component/dictionary/DishPopupCard';
 import { getDishImageUrl } from '../utils/imageHelper';
 
@@ -13,11 +12,16 @@ mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 const DishMap = () => {
     const mapContainer = useRef(null);
     const map = useRef(null);
+    
+    // State quản lý trạng thái zoom để thêm/bớt class ở container cha
+    const [isZoomedIn, setIsZoomedIn] = useState(false);
+
     const { data: summaryData = [], isLoading: loadingSummary } = useDishMapSummaryQuery();
     const { data: allDishes = [], isLoading: loadingAll } = useDishMapAllQuery();
 
     const loading = loadingSummary || loadingAll;
     
+    // Khởi tạo bản đồ Mapbox và đăng ký sự kiện lắng nghe mức zoom duy nhất
     useEffect(() => {
         if (map.current || loading) return;
 
@@ -31,8 +35,24 @@ const DishMap = () => {
         });
 
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        // Hàm cập nhật trạng thái zoom dựa trên threshold cố định (4.5)
+        const handleMapZoom = () => {
+            const currentZoom = map.current.getZoom();
+            setIsZoomedIn(currentZoom >= 4.5);
+        };
+
+        map.current.on('zoom', handleMapZoom);
+
+        // Hủy bỏ lắng nghe sự kiện khi component bị unmount
+        return () => {
+            if (map.current) {
+                map.current.off('zoom', handleMapZoom);
+            }
+        };
     }, [loading]);
 
+    // Tạo và quản lý các Marker hiển thị món ăn trên bản đồ
     useEffect(() => {
         if (!map.current || loading) return;
 
@@ -43,7 +63,6 @@ const DishMap = () => {
         summaryData.forEach(country => {
             const el = document.createElement('div');
             el.className = 'country-marker group';
-            // Style trực tiếp bằng Tailwind-like classes (hoặc dùng style attribute)
             el.innerHTML = `
                 <div class="relative w-16 h-16 md:w-20 md:h-20 cursor-pointer transition-all duration-500 hover:scale-125">
                     <div class="absolute inset-0 rounded-full bg-[#7d5a3f] animate-ping opacity-20"></div>
@@ -55,22 +74,17 @@ const DishMap = () => {
                 </div>
             `;
 
-            const marker = new mapboxgl.Marker(el)
+            new mapboxgl.Marker(el)
                 .setLngLat([country.lng, country.lat])
                 .addTo(map.current);
 
-            // [MỚI] CLICK TO ZOOM
             el.addEventListener('click', () => {
                 map.current.flyTo({
                     center: [country.lng, country.lat],
                     zoom: 6,
                     essential: true,
-                    duration: 2000 // 2 giây
+                    duration: 2000
                 });
-            });
-
-            map.current.on('zoom', () => {
-                el.style.display = map.current.getZoom() < 4.5 ? 'block' : 'none';
             });
         });
 
@@ -78,7 +92,6 @@ const DishMap = () => {
         allDishes.forEach(dish => {
             const el = document.createElement('div');
             el.className = 'dish-marker hover:z-50';
-            // Tăng size icon khi zoom sâu
             el.innerHTML = `
                 <div class="w-10 h-10 md:w-12 md:h-12 cursor-pointer transition-transform hover:scale-150">
                     <img src="${getDishImageUrl(dish.dish_id, dish.image_url)}" 
@@ -91,7 +104,7 @@ const DishMap = () => {
                 className: 'dish-popup-container',
                 offset: 25, 
                 closeButton: false,
-                maxWidth: 'none' // Cho phép card tự quyết định width
+                maxWidth: 'none'
             }).setDOMContent(popupNode);
 
             new mapboxgl.Marker(el)
@@ -103,10 +116,6 @@ const DishMap = () => {
                 const root = createRoot(popupNode);
                 root.render(<DishPopupCard dish={dish} />);
             });
-
-            map.current.on('zoom', () => {
-                el.style.display = map.current.getZoom() >= 4.5 ? 'block' : 'none';
-            });
         });
 
     }, [summaryData, allDishes, loading]);
@@ -114,7 +123,17 @@ const DishMap = () => {
     if (loading) return <div className="flex justify-center p-10 text-[#7d5a3f] font-bold italic animate-pulse">Khám phá bản đồ ẩm thực...</div>;
 
     return (
-        <div className="w-full h-[650px] rounded-3xl shadow-inner border-[12px] border-white overflow-hidden relative group">
+        <div className={`w-full h-[650px] rounded-3xl shadow-inner border-[12px] border-white overflow-hidden relative group ${isZoomedIn ? 'is-zoomed-in' : ''}`}>
+            
+            {/* Inject CSS xử lý ẩn hiện marker theo class của container cha để tối ưu render */}
+            <style>{`
+                .country-marker { display: block; }
+                .dish-marker { display: none; }
+                
+                .is-zoomed-in .country-marker { display: none; }
+                .is-zoomed-in .dish-marker { display: block; }
+            `}</style>
+
             <div ref={mapContainer} className="w-full h-full" />
             
             {/* Overlay Trang trí */}

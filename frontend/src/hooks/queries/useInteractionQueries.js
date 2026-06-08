@@ -34,3 +34,18 @@ export const useCommentsQuery = (postId, postType = 'recipe', page = 1) => {
         enabled: !!postId,
     });
 };
+
+// Hook 3: Lấy danh sách phản hồi (Lazy load dựa vào isExpanded)
+export const useRepliesQuery = (parentId, isExpanded) => {
+    return useQuery({
+        queryKey: [QUERY_KEYS.RECIPE_COMMENTS, 'replies', parentId],
+        queryFn: async () => {
+            const response = await interactionApi.getReplies(parentId);
+            if (response.success) {
+                return response.data; // Mảng các replies
+            }
+            return [];
+        },
+        enabled: !!parentId && isExpanded, // Chỉ gọi API khi isExpanded = true
+    });
+};

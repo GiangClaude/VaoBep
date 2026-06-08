@@ -1,23 +1,17 @@
+// frontend/src/component/common/ArticleFilter.jsx
 import React, { useState, useMemo } from "react";
 import { Filter, Clock, Check, TrendingUp, Calendar, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Import các công cụ dùng chung
 import { TAG_TYPE_LABELS, TAG_CATEGORY_ORDER, groupTagsByType } from "../../utils/tagUtils";
 import FilterAccordion from "./FilterAccordion";
-import {useTagQueries} from "../../hooks/queries/useTagQueries";
+import { useTagQueries } from "../../hooks/queries/useTagQueries";
 
-export function ArticleFilter({ onFilterChange }) {
-    const [filters, setFilters] = useState({
-        searchTerm: "",
-        tags: [],
-        sort: "newest"
-    });
-
+export function ArticleFilter({ filters, onFilterChange }) {
+    // 1. STATE & DATA (Đã xóa state filters nội bộ)
     const { tags: serverTags = [], loading: loadingTags } = useTagQueries();
     const [openSections, setOpenSections] = useState({ cuisine: true, meal_time: true });
 
-    // 1. Logic xử lý dữ liệu
     const groupedTags = useMemo(() => groupTagsByType(serverTags), [serverTags]);
 
     const sortOptions = [
@@ -27,17 +21,19 @@ export function ArticleFilter({ onFilterChange }) {
         { id: "read_time_desc", label: "Chuyên sâu nhất", icon: Clock },
     ];
 
-    // 2. Handlers
+    // Lấy dữ liệu an toàn từ props
+    const activeTags = filters?.tags || [];
+    const currentSort = filters?.sort || "newest";
+
+    // 2. Handlers: Đẩy thẳng dữ liệu lên component cha
     const handleUpdate = (updates) => {
-        const newFilters = { ...filters, ...updates };
-        setFilters(newFilters);
-        onFilterChange?.(newFilters);
+        if (onFilterChange) onFilterChange({ ...filters, ...updates });
     };
 
     const toggleTag = (tagId) => {
-        const newTags = filters.tags.includes(tagId)
-            ? filters.tags.filter(id => id !== tagId)
-            : [...filters.tags, tagId];
+        const newTags = activeTags.includes(tagId)
+            ? activeTags.filter(id => id !== tagId)
+            : [...activeTags, tagId];
         handleUpdate({ tags: newTags });
     };
 
@@ -57,7 +53,7 @@ export function ArticleFilter({ onFilterChange }) {
                             key={opt.id}
                             onClick={() => handleUpdate({ sort: opt.id })}
                             className={`flex items-center justify-between w-full p-3 rounded-xl border text-sm transition-all ${
-                                filters.sort === opt.id 
+                                currentSort === opt.id 
                                 ? "border-[#ff6b35] bg-[#fff9f0] text-[#ff6b35] font-bold shadow-sm" 
                                 : "border-gray-50 text-gray-600 hover:bg-gray-50"
                             }`}
@@ -65,13 +61,13 @@ export function ArticleFilter({ onFilterChange }) {
                             <div className="flex items-center gap-2">
                                 <opt.icon className="w-4 h-4" /> {opt.label}
                             </div>
-                            {filters.sort === opt.id && <Check className="w-4 h-4" />}
+                            {currentSort === opt.id && <Check className="w-4 h-4" />}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* PHẦN DANH MỤC TAGS (DÙNG ACCORDION) */}
+            {/* PHẦN DANH MỤC TAGS */}
             <div className="space-y-1">
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Chủ đề bài viết</h4>
                 
@@ -80,9 +76,8 @@ export function ArticleFilter({ onFilterChange }) {
                     if (!groupData) return null;
 
                     const isOpen = openSections[type];
-                    const activeTagsInGroup = groupData.filter(t => filters.tags.includes(t.tag_id));
+                    const activeTagsInGroup = groupData.filter(t => activeTags.includes(t.tag_id));
                     
-                    // Logic yêu cầu: Nếu đóng chỉ hiện tag đã chọn, nếu mở hiện tất cả
                     const tagsToDisplay = isOpen ? groupData : activeTagsInGroup;
 
                     return (
@@ -94,10 +89,9 @@ export function ArticleFilter({ onFilterChange }) {
                             onToggle={() => setOpenSections(prev => ({ ...prev, [type]: !prev[type] }))}
                         >
                             {tagsToDisplay.map(tag => {
-                                const isActive = filters.tags.includes(tag.tag_id);
+                                const isActive = activeTags.includes(tag.tag_id);
                                 return (
                                     <motion.button
-                                        layout
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.8 }}

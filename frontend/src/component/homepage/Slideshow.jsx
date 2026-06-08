@@ -5,14 +5,14 @@ import { Clock, Users, Heart, Star, ChevronLeft, ChevronRight, Loader2 } from "l
 import { motion, AnimatePresence } from "motion/react";
 import ImageWithFallBack from "../figma/ImageWithFallBack";
 import { useFeaturedRecipesQuery } from "../../hooks/queries/useRecipesQueries"; 
-
+import { useNavigate } from "react-router-dom";
 /* Hàm giải thích: Component Slideshow hiển thị danh sách các món ăn nổi bật trên trang chủ.
    Sử dụng dữ liệu trả về từ React Query, quản lý trạng thái chuyển slide bằng Framer Motion.
 */
 export function Slideshow() {
   // 1. Sử dụng Hook chuẩn từ React Query (Bóc tách data lấy mảng slides thực tế)
   const { data: slides = [], isLoading } = useFeaturedRecipesQuery();
-  
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
@@ -39,6 +39,11 @@ export function Slideshow() {
     setDirection(1);
     setCurrentIndex((prev) => (prev + 1) % slides.length);
   };
+
+  const handleClick = () => {
+    if (slides.length === 0) return;
+    navigate(`/recipe/${slides[currentIndex].id}`);
+  }
 
   const variants = {
     enter: (direction) => ({
@@ -92,7 +97,7 @@ export function Slideshow() {
           }}
           className="absolute inset-0"
         >
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full" onClick={handleClick} >
             <ImageWithFallBack
               src={slides[currentIndex].image}
               alt={slides[currentIndex].title}

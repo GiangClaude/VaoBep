@@ -2,6 +2,7 @@ import apiClient from "./index";
 
 const articleApi = {
 	getPublicArticles: async (params = {}) => {
+		// console.log("ArticleAPi: ", params);
 		const response = await apiClient.get('/articles', { params });
 		return response;
 	},

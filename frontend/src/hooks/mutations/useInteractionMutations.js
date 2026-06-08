@@ -13,7 +13,8 @@ const smartUpdateCache = (oldData, targetId, updates) => {
     // Helper kiểm tra ID
     const isTarget = (item) => String(item.id) === String(targetId) || 
                                String(item.recipe_id) === String(targetId) || 
-                               String(item.article_id) === String(targetId);
+                               String(item.article_id) === String(targetId)||
+                               String(item.dish_id) === String(targetId);
 
     // TH 1: Cache là Mảng (Ví dụ: Danh sách Recent, Featured)
     if (Array.isArray(oldData)) {
@@ -43,6 +44,9 @@ const getRelevantKeys = (postType) => {
     if (postType === 'recipe') {
         return [QUERY_KEYS.RECIPES_LIST, QUERY_KEYS.RECENT_RECIPES, QUERY_KEYS.OWNER_RECIPES, QUERY_KEYS.SAVED_RECIPES, QUERY_KEYS.FEATURED_RECIPES, QUERY_KEYS.RECIPE_DETAIL];
     }
+    if (postType === 'dish') {
+        return [QUERY_KEYS.DISH_MAP_ALL, QUERY_KEYS.DISH_MAP_SUMMARY, QUERY_KEYS.DISH_DETAIL];
+    }
     return [QUERY_KEYS.PUBLIC_ARTICLES, QUERY_KEYS.OWNER_ARTICLES, QUERY_KEYS.SAVED_ARTICLES, QUERY_KEYS.FEATURED_ARTICLES, QUERY_KEYS.ARTICLE_DETAIL];
 };
 
@@ -55,10 +59,18 @@ export const useToggleLikeMutation = () => {
 
     return useMutation({
         mutationFn: ({ postId, postType }) => interactionApi.toggleLike(postId, postType),
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             // Thêm 2 dòng này để F5 lại dữ liệu chuẩn hóa
             queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INTERACTION_STATE] });
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.RECIPE_DETAIL] });
+            
+            // Dựa vào postType để F5 đúng Key chi tiết, tránh F5 nhầm hoặc thiếu
+            if (variables.postType === 'recipe') {
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.RECIPE_DETAIL] });
+            } else if (variables.postType === 'dish') {
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DISH_DETAIL] });
+            } else {
+                queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ARTICLE_DETAIL] });
+            }
         },
         onMutate: async ({ postId, postType, currentIsLiked, currentLikesCount }) => {
             const keysToUpdate = getRelevantKeys(postType);
@@ -123,7 +135,7 @@ export const usePostCommentMutation = () => {
     return useMutation({
         mutationFn: ({ postId, content, postType, parentId }) => interactionApi.postComment(postId, content, postType, parentId),
         onSuccess: (data, variables) => {
-            queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.RECIPE_COMMENTS, variables.postType, variables.postId] });
+           queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.RECIPE_COMMENTS] });
         }
     });
 };

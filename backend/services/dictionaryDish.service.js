@@ -68,7 +68,7 @@ class DictionaryDishService {
             await connection.beginTransaction();
 
             const result = await RecipeLinkModel.toggleVote(connection, userId, recipeId, dishId, 'dish');
-            
+            console.log("Dich Service: ", result);
             // Đồng bộ Vector DB
             addVectorSyncJob(dishId, 'dish', 'upsert');
 

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 
-export const useSearchUI = (keyword) => {
-    const [activeTab, setActiveTab] = useState("all");
+export const useSearchUI = (keyword, initialConfig = {}) => {
+    const [activeTab, setActiveTab] = useState(initialConfig?.initialTab || 'all');
     const [currentPage, setCurrentPage] = useState(1);
     const [userSort, setUserSort] = useState("newest");
-    const [recipeFilter, setRecipeFilter] = useState({});
+    const [recipeFilter, setRecipeFilter] = useState(
+        initialConfig?.initialTags ? { tags: [initialConfig.initialTags] } : {}
+    );
     const [articleFilter, setArticleFilter] = useState({ sort: "newest", tags: [] });
 
     // Luôn reset về trang 1 khi người dùng gõ từ khóa mới

@@ -19,6 +19,7 @@ export default function CommentSection({ postId, postType }) {
         return await handlePost(postId, postType, content);
     };
 
+
     return (
         <div className="mt-12 pt-8 border-t border-[#7d5a3f]/10">
             <h3 className="text-xl font-bold text-[#7d5a3f] mb-6 flex items-center gap-2">

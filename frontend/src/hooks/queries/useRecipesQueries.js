@@ -13,8 +13,8 @@ export const useRecipesListQuery = (params) => {
             const response = await recipeApi.getAllRecipes(params);
             if (response.success) {
                 return {
-                    data: normalizeRecipeList(response.data.data || response.data),
-                    pagination: response.data.pagination || response.meta
+                    data: normalizeRecipeList(response.data || []),
+                    pagination: response.meta
                 };
             }
             throw new Error('Lỗi tải danh sách công thức');

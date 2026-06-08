@@ -1,75 +1,40 @@
-import { Trophy, TrendingUp, Lightbulb, Clock, Users, Heart, Star, Flame } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Trophy, TrendingUp, Lightbulb, Clock, Users, Heart, Star, Flame, Droplets, ChefHat } from "lucide-react";
 import { motion } from "motion/react";
 import ImageWithFallback from "../figma/ImageWithFallBack";
 import { useNavigate } from "react-router-dom";
-import { useFeaturedRecipes } from "../../hooks/useFeaturedRecipe";
+import { useFeaturedRecipesQuery } from "../../hooks/queries/useRecipesQueries";
+
+// Import file JSON và hàm utils (Bà nhớ canh lại đường dẫn cho chuẩn nha)
+import tipsData from "../../data/tips.json";
+import { getRandomItems } from "../../utils/helpers"; 
+
+// Object map: Chuyển đổi tên icon dạng chuỗi từ JSON sang Component icon thực tế
+const iconMap = {
+  flame: Flame,
+  clock: Clock,
+  lightbulb: Lightbulb,
+  droplets: Droplets,
+  chefHat: ChefHat,
+};
 
 export default function Sidebar() {
   const navigate = useNavigate();
-  const { slides: trendingRecipes, loading } = useFeaturedRecipes();
+  const { data: trendingRecipes = [], isLoading: loading } = useFeaturedRecipesQuery();
+  
+  // State lưu 3 tips sẽ được hiển thị
+  const [quickTips, setQuickTips] = useState([]);
 
-  const quickTips = [
-    {
-      icon: Flame,
-      title: "Cách khử mùi hôi cá",
-      tip: "Dùng gừng + rượu trắng khi ướp"
-    },
-    {
-      icon: Clock,
-      title: "Tiết kiệm thời gian",
-      tip: "Chuẩn bị nguyên liệu trước 1 ngày"
-    },
-    {
-      icon: Lightbulb,
-      title: "Món ngon hơn",
-      tip: "Ướp gia vị ít nhất 30 phút"
-    }
-  ];
+  useEffect(() => {
+    // Chỉ gọi hàm lấy ngẫu nhiên 3 tips 1 lần duy nhất khi component vừa load (mount)
+    const randomTips = getRandomItems(tipsData, 3);
+    setQuickTips(randomTips);
+  }, []);
 
   return (
     <div className="top-24 space-y-6">
-      {/* Challenge Banner */}
-      {/* <motion.div
-        whileHover={{ scale: 1.02, y: -4 }}
-        className="relative bg-gradient-to-br from-[#ff6b35] via-[#f7931e] to-[#ffc857] rounded-[25px] overflow-hidden shadow-xl p-6 cursor-pointer group"
-      >
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-2xl animate-pulse" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
-
-        <div className="relative z-10">
-          <motion.div
-            animate={{ rotate: [0, -10, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            className="inline-flex bg-white/30 backdrop-blur-sm p-3 rounded-2xl mb-4"
-          >
-            <Trophy className="w-8 h-8 text-white" />
-          </motion.div>
-
-          <h3 className="text-white text-xl mb-2">
-            Thử Thách Tuần Này
-          </h3>
-          
-          <p className="text-white/90 text-sm mb-4">
-            Nấu món <span className="font-bold">"Cơm Chiên Dương Châu"</span> và nhận ngay 500 xu!
-          </p>
-
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-              <Users className="w-4 h-4 text-white" />
-              <span className="text-white text-sm">234 người tham gia</span>
-            </div>
-          </div>
-
-          <button className="w-full bg-white text-[#ff6b35] py-2.5 rounded-full hover:bg-yellow-100 transition-all shadow-lg font-semibold">
-            Tham gia ngay
-          </button>
-        </div>
-
-        <div className="absolute -top-8 -right-8 w-24 h-24 border-4 border-white/30 rounded-full"></div>
-        <div className="absolute -bottom-6 -left-6 w-20 h-20 border-4 border-white/30 rounded-full"></div>
-      </motion.div> */}
+      {/* Challenge Banner (đã được comment lại trong code gốc) */}
+      {/* ... */}
 
       <div className="bg-white rounded-[25px] shadow-lg p-6">
         <div className="flex items-center gap-2 mb-5">
@@ -77,7 +42,7 @@ export default function Sidebar() {
           <h3 className="text-xl">Đang Hot</h3>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 ">
           {loading ? (
               <p className="text-center text-gray-400 text-sm py-4">Đang tải món ngon...</p>
             ) : (
@@ -92,11 +57,11 @@ export default function Sidebar() {
                   {index + 1}
                 </div>
 
-                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 ">
                   <ImageWithFallback
                     src={recipe.image}
                     alt={recipe.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 cursor-pointer"
                   />
                 </div>
 
@@ -138,22 +103,27 @@ export default function Sidebar() {
         </div>
 
         <div className="space-y-4">
-          {quickTips.map((tip, index) => (
-            <div
-              key={index}
-              className="bg-white p-4 rounded-xl hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start gap-3">
-                <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#ffc857]/10 p-2 rounded-lg flex-shrink-0">
-                  <tip.icon className="w-5 h-5 text-[#ff6b35]" />
-                </div>
-                <div>
-                  <h4 className="text-sm mb-1">{tip.title}</h4>
-                  <p className="text-xs text-gray-600">{tip.tip}</p>
+          {quickTips.map((tip) => {
+            // Lấy Component Icon từ object map, nếu không tìm thấy thì dùng Lightbulb làm mặc định
+            const IconComponent = iconMap[tip.iconName] || Lightbulb;
+            
+            return (
+              <div
+                key={tip.id}
+                className="bg-white p-4 rounded-xl hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#ffc857]/10 p-2 rounded-lg flex-shrink-0">
+                    <IconComponent className="w-5 h-5 text-[#ff6b35]" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm mb-1">{tip.title}</h4>
+                    <p className="text-xs text-gray-600">{tip.tip}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -168,7 +138,6 @@ export default function Sidebar() {
         
         <div 
           className="relative z-10 text-center"
-          
         >
           <div className="inline-flex bg-white/30 backdrop-blur-sm p-2 rounded-xl mb-2">
             <Trophy className="w-6 h-6 text-white" />

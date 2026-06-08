@@ -1,12 +1,12 @@
 // frontend/src/pages/RecipeDetailPage.jsx
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Share2, ArrowLeft, Bookmark, TrendingUp, AlertCircle } from "lucide-react";
+import { Heart, Star, Clock, Users, ChefHat, Flame, Calendar, MessageCircle, Share2, ArrowLeft, Bookmark, TrendingUp, AlertCircle, Tag } from "lucide-react";
 import ImageWithFallBack from "../component/figma/ImageWithFallBack";
 import CommentSection from "../component/comment/CommentSection";
 import AiSummaryBanner from "../component/common/AiSummaryBanner";
 import { Footer } from "../component/common/Footer";
-
+import { handleTagClick } from "../utils/tagUtils";
 // [MỚI] Sử dụng các Hook độc lập
 import { useRecipeDetailQuery } from '../hooks/queries/useRecipeDetailQuery';
 import { useInteractionStateQuery } from '../hooks/queries/useInteractionQueries';
@@ -20,17 +20,21 @@ export default function RecipeDetailPage() {
 
   // 1. Fetch dữ liệu bài viết tĩnh (Nhanh, có thể cache lâu)
   const { data: recipe, isLoading, error } = useRecipeDetailQuery(id);
-  console.log("Fetched Recipe Detail:", recipe); // Debug log để kiểm tra dữ liệu trả về
+  console.log("Fetched Recipe Detail:", recipe);
 
   // Tách riêng detailedIngredients và detailedSteps để dễ sử dụng
   const detailedIngredients = recipe?.detailedIngredients || [];
   const detailedSteps = recipe?.detailedSteps || [];
+  
+  // [MỚI] Khai báo an toàn mảng các tag từ dữ liệu trả về của server
+  const tags = recipe?.tags || []; 
 
   // 2. Fetch trạng thái cá nhân (isLiked, isSaved) độc lập (Chỉ fetch khi có User)
   const { data: interactionState } = useInteractionStateQuery(id, 'recipe', !!currentUser);
   const isLiked = interactionState?.liked !== undefined ? interactionState.liked : (recipe?.isLiked || false);
   const isSaved = interactionState?.saved !== undefined ? interactionState.saved : (recipe?.isSaved || false);
   const likesCount = recipe?.likes || 0;
+  
   // 3. Khởi tạo Hook tương tác
   const { handleLike, handleSave, handleShare, handleReport } = usePostActions({
     id,
@@ -60,7 +64,6 @@ export default function RecipeDetailPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               
               <div className="absolute top-6 right-6 flex gap-3 items-center">
-                
                 <button onClick={handleLike} className={`p-3 rounded-full backdrop-blur-md shadow-lg ${isLiked ? "bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white" : "bg-white/90 text-[#7d5a3f]"}`}>
                   <Heart className="w-6 h-6" fill={isLiked ? "currentColor" : "none"} />
                 </button>
@@ -73,13 +76,29 @@ export default function RecipeDetailPage() {
               </div>
             </div>
 
-            {/* THÔNG TIN */}
-            <div className="p-8 lg:p-12">
+            {/* THÔNG TIN CHI TIẾT CÔNG THỨC */}
+            <div className="p-8 lg:p-12 flex flex-col justify-center">
               <h1 className="text-4xl mb-4 font-bold text-gray-800">{recipe.title}</h1>
-              <div className="flex items-center gap-3 mb-8">
-                <img src={recipe.userAvatar} alt="Author" className="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
+              <div className="flex items-center gap-3 mb-6"> {/* Giảm mb từ 8 xuống 6 cho thoáng mắt */}
+                <ImageWithFallBack src={recipe.userAvatar} alt="Author" className="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
                 <div><p className="text-[#7d5a3f] text-xs font-bold uppercase">Tác giả</p><p className="font-semibold text-lg">{recipe.userName}</p></div>
               </div>
+
+              {/* [THÊM MỚI] Hiển thị danh sách thẻ tags của món ăn dưới dạng chip */}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-6 items-center">
+                  <Tag className="w-4 h-4 text-[#ff6b35] mr-1" />
+                  {tags.map((tag) => (
+                    <span 
+                      key={tag.tag_id} 
+                      onClick={() => handleTagClick(navigate, tag.tag_id, 'recipes')}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#ff6b35]/10 text-[#ff6b35] text-xs font-bold border border-[#ff6b35]/20 shadow-sm transition-all hover:brightness-95 cursor-default"
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <div className="bg-[#fff9f0] p-6 rounded-2xl border border-[#ffc857]/20">
                 <p className="text-[#7d5a3f] whitespace-pre-line text-sm">{recipe.detailedDescription}</p>
@@ -91,8 +110,6 @@ export default function RecipeDetailPage() {
         {/* NỘI DUNG CHÍNH (NGUYÊN LIỆU & BƯỚC NẤU & BÌNH LUẬN) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* Nguyên Liệu... */}
-            {/* Hướng dẫn... */}
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-[25px] shadow-lg p-8">
               <h2 className="text-2xl mb-6 flex items-center gap-3 font-bold text-gray-800"><ChefHat className="w-8 h-8 text-[#ff6b35]" /> Nguyên Liệu</h2>
               {detailedIngredients && detailedIngredients.length > 0 ? (
@@ -126,7 +143,6 @@ export default function RecipeDetailPage() {
               </div>
             </motion.div>
             
-            {/* [MỚI] Bình luận được tách ra quản lý độc lập */}
             <CommentSection postId={id} postType="recipe" />
           </div>
 

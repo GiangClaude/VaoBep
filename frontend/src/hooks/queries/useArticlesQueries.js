@@ -9,6 +9,7 @@ export const useArticlesListQuery = (params) => {
     return useQuery({
         queryKey: [QUERY_KEYS.PUBLIC_ARTICLES, params],
         queryFn: async () => {
+            // console.log("ArticleQueries: ", params);
             const response = await articleApi.getPublicArticles(params);
             if (response.success) {
                 return {

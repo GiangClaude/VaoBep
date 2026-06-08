@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getRecipeImageUrl } from '../../utils/imageHelper';
-import useChatbot from '../../hooks/useChatbot';
+// import useChatbot from '../../hooks/useChatbot';
 import { useChatbotUI } from '../../hooks/ui/chatbot/useChatbotUI';
 function Chatbot() {
   const navigate = useNavigate();

@@ -5,7 +5,7 @@ import ImageWithFallback from '../figma/ImageWithFallBack';
 import { useAuth } from '../../AuthContext';
 import { usePostActions } from '../../hooks/ui/interaction/usePostActions';
 import CommentSection from '../comment/CommentSection'; // <-- THÊM LẠI IMPORT
-
+import { TagList } from './tag/TagList';
 export default function ArticleCard({ 
   id, author, authorAvatar, date, readTime, title, excerpt, image, 
   commentCount = 0, status, isOwnerView, onEdit, onDelete, onClick, tags = [],
@@ -87,6 +87,11 @@ export default function ArticleCard({
       <div className="mb-3 flex-1">
         <h3 className="text-lg font-bold text-gray-800 mb-1.5 leading-snug hover:text-[#ff6b35]">{title}</h3>
         <p className="text-sm text-gray-600 line-clamp-3">{excerpt}</p>
+          <TagList 
+            tags={tags} 
+            maxDisplay={3} 
+            containerClassName="flex flex-wrap gap-2 mt-3 mb-1" 
+        />
       </div>
 
       {image && (

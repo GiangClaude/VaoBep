@@ -65,8 +65,8 @@ export default function ArticlesListPage() {
              </div>
 
              <div className="sticky top-24">
+              <ArticleFilter filters={filters} onFilterChange={handleFilterChange} />
                  {/* Component ArticleFilter sẽ gọi handleFilterChange khi user bấm Sort hoặc đổi Tag */}
-                 <ArticleFilter onFilterChange={handleFilterChange} />
              </div>
           </div>
 

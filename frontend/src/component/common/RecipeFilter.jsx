@@ -1,21 +1,18 @@
+// frontend/src/component/common/RecipeFilter.jsx
 import React, { useState, useMemo } from "react";
 import { Search, Filter, Clock, Star, ChefHat, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Import linh kiện dùng chung
 import { TAG_TYPE_LABELS, TAG_CATEGORY_ORDER, groupTagsByType } from "../../utils/tagUtils";
 import FilterAccordion from "./FilterAccordion";
-import {useTagQueries} from "../../hooks/queries/useTagQueries";
+import { useTagQueries } from "../../hooks/queries/useTagQueries";
 
-export function RecipeFilter({ onFilterChange }) {
-  // 1. STATE & DATA
-  const [filters, setFilters] = useState({
-    searchTerm: "",
-    tags: [],
-    cookingTime: "",
-    minRating: 0
-  });
-
+/**
+ * Component hiển thị bộ lọc.
+ * Nhận state 'filters' từ cha để đồng bộ UI với URL thay vì tự quản lý state nội bộ.
+ */
+export function RecipeFilter({ filters, onFilterChange }) {
+  // 1. STATE & DATA (Đã xóa state filters nội bộ)
   const [openSections, setOpenSections] = useState({
     cuisine: true,
     ingredient: true,
@@ -36,13 +33,18 @@ export function RecipeFilter({ onFilterChange }) {
   // 2. LOGIC XỬ LÝ
   const groupedTags = useMemo(() => groupTagsByType(serverTags), [serverTags]);
 
+  /**
+   * Đẩy bộ lọc mới lên component cha (RecipesListPage) để xử lý thay vì tự lưu.
+   */
   const updateFilters = (newFilters) => {
-    setFilters(newFilters);
     if (onFilterChange) onFilterChange(newFilters);
   };
 
+  /**
+   * Xử lý bật/tắt tag dựa trên danh sách tag do cha truyền xuống.
+   */
   const handleTagToggle = (tagId) => {
-    const currentTags = filters.tags || [];
+    const currentTags = filters?.tags || [];
     const newTags = currentTags.includes(tagId)
       ? currentTags.filter(id => id !== tagId)
       : [...currentTags, tagId];
@@ -53,24 +55,15 @@ export function RecipeFilter({ onFilterChange }) {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Lấy danh sách tag an toàn đề phòng filters chưa load kịp
+  const activeTags = filters?.tags || [];
+
   return (
     <div className="bg-white rounded-[20px] shadow-sm border border-gray-100 p-5">
       {/* HEADER */}
       <div className="flex items-center gap-2 mb-6">
         <Filter className="w-5 h-5 text-[#ff6b35]" />
         <h3 className="text-lg font-bold text-gray-800">Lọc món ăn</h3>
-      </div>
-
-      {/* SEARCH TAGS */}
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Tìm nguyên liệu, cách nấu..."
-          value={filters.searchTerm}
-          onChange={(e) => updateFilters({...filters, searchTerm: e.target.value})}
-          className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#ff6b35] transition-all"
-        />
       </div>
 
       <div className="space-y-1">
@@ -80,9 +73,8 @@ export function RecipeFilter({ onFilterChange }) {
           if (!groupData || groupData.length === 0) return null;
 
           const isOpen = openSections[typeKey];
-          const activeTagsInGroup = groupData.filter(t => filters.tags.includes(t.tag_id));
+          const activeTagsInGroup = groupData.filter(t => activeTags.includes(t.tag_id));
           
-          // Logic: Nếu đóng chỉ hiện tag đã chọn, nếu mở hiện tất cả
           const tagsToDisplay = isOpen ? groupData : activeTagsInGroup;
 
           return (
@@ -94,10 +86,9 @@ export function RecipeFilter({ onFilterChange }) {
               onToggle={() => toggleSection(typeKey)}
             >
               {tagsToDisplay.map(tag => {
-                const isActive = filters.tags.includes(tag.tag_id);
+                const isActive = activeTags.includes(tag.tag_id);
                 return (
                   <motion.button
-                    layout
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
@@ -122,24 +113,22 @@ export function RecipeFilter({ onFilterChange }) {
         <FilterAccordion
           label="Thời gian nấu"
           isOpen={openSections.cookingTime}
-          activeCount={filters.cookingTime ? 1 : 0}
+          activeCount={filters?.cookingTime ? 1 : 0}
           onToggle={() => toggleSection('cookingTime')}
         >
-          {/* Logic: Nếu đóng chỉ hiện lựa chọn đang chọn dưới dạng chip */}
-          {(openSections.cookingTime ? cookingTimes : cookingTimes.filter(t => t.value === filters.cookingTime)).map((time) => (
+          {(openSections.cookingTime ? cookingTimes : cookingTimes.filter(t => t.value === filters?.cookingTime)).map((time) => (
             <motion.button
-              layout
               key={time.id}
-              onClick={() => updateFilters({ ...filters, cookingTime: filters.cookingTime === time.value ? "" : time.value })}
+              onClick={() => updateFilters({ ...filters, cookingTime: filters?.cookingTime === time.value ? "" : time.value })}
               className={`px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all border ${
-                filters.cookingTime === time.value 
+                filters?.cookingTime === time.value 
                 ? "bg-[#fff0e6] text-[#ff6b35] border-[#ff6b35]" 
                 : "bg-white text-gray-500 border-gray-100"
               }`}
             >
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3 h-3" /> {time.label}
-                {!openSections.cookingTime && filters.cookingTime === time.value && <span className="opacity-60">×</span>}
+                {!openSections.cookingTime && filters?.cookingTime === time.value && <span className="opacity-60">×</span>}
               </div>
             </motion.button>
           ))}
@@ -149,16 +138,15 @@ export function RecipeFilter({ onFilterChange }) {
         <FilterAccordion
           label="Đánh giá"
           isOpen={openSections.rating}
-          activeCount={filters.minRating > 0 ? 1 : 0}
+          activeCount={filters?.minRating > 0 ? 1 : 0}
           onToggle={() => toggleSection('rating')}
         >
-          {(openSections.rating ? ratingOptions : ratingOptions.filter(r => r === filters.minRating)).map((rating) => (
+          {(openSections.rating ? ratingOptions : ratingOptions.filter(r => r === filters?.minRating)).map((rating) => (
             <motion.button
-              layout
               key={rating}
-              onClick={() => updateFilters({ ...filters, minRating: filters.minRating === rating ? 0 : rating })}
+              onClick={() => updateFilters({ ...filters, minRating: filters?.minRating === rating ? 0 : rating })}
               className={`px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all border ${
-                filters.minRating === rating 
+                filters?.minRating === rating 
                 ? "bg-[#fff0e6] text-[#ff6b35] border-[#ff6b35]" 
                 : "bg-white text-gray-500 border-gray-100"
               }`}
@@ -167,7 +155,7 @@ export function RecipeFilter({ onFilterChange }) {
                 <div className="flex items-center">
                   {rating} <Star className="w-3 h-3 fill-current ml-0.5" />
                 </div>
-                {!openSections.rating && filters.minRating === rating && <span className="opacity-60">×</span>}
+                {!openSections.rating && filters?.minRating === rating && <span className="opacity-60">×</span>}
               </div>
             </motion.button>
           ))}

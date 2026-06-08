@@ -1,22 +1,23 @@
 import { useState } from "react";
-import { Clock, Users, Heart, Star, ArrowRight, ChefHat, Flame, MessageCircle, Share2, Bookmark, AlertCircle } from "lucide-react"; 
-import { motion } from "motion/react"; // Thư viện animation bạn đang dùng
+import { Clock, Users, Heart, Star, ArrowRight, ChefHat, Flame, MessageCircle, Share2, Bookmark, AlertCircle, Tag } from "lucide-react"; // [MỚI] Thêm icon Tag nếu cần
+import { motion } from "motion/react"; 
 import ImageWithFallBack from "../figma/ImageWithFallBack";
 import { getAvatarUrl, getRecipeImageUrl } from "../../utils/imageHelper";
-
-// [MỚI] Dùng Colocation UI Hook
+import { TagList } from "./tag/TagList";
+// Dùng Colocation UI Hook
 import { usePostActions } from "../../hooks/ui/interaction/usePostActions";
 
 export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) {
   const {
     id, image, title, userName, userAvatar, cookTime, servings, likes, rating,
     isLiked, isSaved, description, ingredientNames, stepsCount, detailedSteps,
-    calories, commentCount
+    calories, commentCount, 
+    tags // [MỚI] Trích xuất thêm mảng tags từ props recipe
   } = recipe;
 
   const [isHovered, setIsHovered] = useState(false);
 
-  // [MỚI] Khai báo Hook UI (Gọi phát lấy hàm dùng luôn, không cần state lằng nhằng)
+  // Khai báo Hook UI (Gọi phát lấy hàm dùng luôn, không cần state lằng nhằng)[cite: 1]
   const { handleLike, handleSave, handleShare, handleReport } = usePostActions({
     id,
     type: 'recipe',
@@ -26,7 +27,6 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
   });
 
   const displaySteps = stepsCount || (detailedSteps ? detailedSteps.length : 0);
-  
   return (
       <motion.div
         initial={false}
@@ -49,14 +49,13 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 
-                {/* NHÓM NÚT ACTION (GỌI TRỰC TIẾP HÀM TỪ HOOK) */}
+                {/* NHÓM NÚT ACTION */}
                 <div className="absolute top-3 right-3 flex gap-2">
                   <button onClick={handleShare} className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full hover:bg-white hover:scale-110 transition-all shadow-md" title="Chia sẻ">
                      <Share2 className="w-4 h-4 text-[#7d5a3f]" />
                   </button>
 
                   <button onClick={handleLike} className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full flex items-center gap-1 shadow-md hover:scale-105 transition-transform">
-                    {/* isLiked được React Query kiểm soát, bấm là đổi tức thì! */}
                     <Heart className={`w-4 h-4 transition-colors ${isLiked ? "text-[#ff6b35] fill-[#ff6b35]" : "text-[#ff6b35]"}`} />
                     <span className="text-sm font-medium text-[#7d5a3f]">{likes}</span>
                   </button>
@@ -84,6 +83,9 @@ export function RecipeCard({ recipe = {}, onClick, expandDirection = "right" }) 
                   <div className="flex items-center gap-1"><Users className="w-4 h-4 text-[#ff6b35]" /><span>{servings}</span></div>
                   <div className="flex items-center gap-1"><Star className="w-4 h-4 text-[#ff6b35]" /><span>{Math.round(rating*100)/100}</span></div>
                 </div>
+                
+                {/* [MỚI] Gọi hàm renderTags ở đây để hiển thị ngay dưới thông tin cơ bản */}
+                <TagList tags={tags} maxDisplay={2} />
               </div>
             </div>
 

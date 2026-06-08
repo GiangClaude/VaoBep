@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react'; // Thêm animation
 import { Users, Utensils, BookOpen, Activity, TrendingUp, Calendar, PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
-import useAdminDashboard from '../../hooks/admin/useAdminDashboard';
+// import useAdminDashboard from '../../hooks/admin/useAdminDashboard';
 import { 
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
     PieChart, Pie, Cell

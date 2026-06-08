@@ -21,6 +21,11 @@ import { useSearchUsersQuery, useSearchRecipesQuery, useSearchArticlesQuery } fr
 const Sidebar = ({ activeTab, onTabChange }) => {
     // ... (GIỮ NGUYÊN HTML CỦA SIDEBAR)
     const [isOpen, setIsOpen] = useState(true);
+    const [searchParams] = useSearchParams();
+
+
+
+
     const tabs = [
       { id: "all", label: "Tất cả", icon: LayoutGrid },
       { id: "user", label: "Mọi người", icon: Users },
@@ -62,7 +67,6 @@ export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const keyword = searchParams.get("keyword") || "";
-
   // 1. KẾT NỐI UI HOOK
   const {
       activeTab, currentPage, userSort, setUserSort, 
@@ -183,12 +187,12 @@ export default function SearchPage() {
                 <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
                 {(activeTab === 'recipe') && (
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-                        <RecipeFilter onFilterChange={(f) => handleFilterChange('recipe', f)} />
+                        <RecipeFilter filters={recipeFilter} onFilterChange={(f) => handleFilterChange('recipe', f)} />
                     </motion.div>
                 )}
 
                 {activeTab === 'article' && (
-                    <ArticleFilter onFilterChange={(f) => handleFilterChange('article', f)} />
+                    <ArticleFilter filters={articleFilter} onFilterChange={(f) => handleFilterChange('article', f)} />
                 )}
             </div>
           </div>

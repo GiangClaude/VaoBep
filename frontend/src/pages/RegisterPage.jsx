@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
-import { useRegister } from '../hooks/useRegister';
+// import { useRegister } from '../hooks/useRegister';
 import {useRegisterForm} from '../hooks/ui/auth/useAuthForms'; // Import Hook vừa tạo
 import Header from '../component/common/Header';
 import { Footer } from '../component/common/Footer';

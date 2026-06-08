@@ -31,6 +31,7 @@ export default function RecipesListPage() {
     cookingTime: debouncedFilters.cookingTime || undefined
   });
 
+  // console.log(data);
   const recipes = data?.data || [];
   const paginationMeta = data?.pagination || { page: 1, totalPages: 1, totalItems: 0 };
 
@@ -55,7 +56,7 @@ export default function RecipesListPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-3 xl:col-span-2">
-            <RecipeFilter onFilterChange={handleFilterChange} />
+            <RecipeFilter filters={filters} onFilterChange={handleFilterChange} />
           </div>
 
           {/* Grid View */}
@@ -84,7 +85,7 @@ export default function RecipesListPage() {
                 
                 {/* Dùng Pagination UI component của bạn */}
                 <div className="mt-8">
-                   <Pagination pagination={{ currentPage: paginationMeta.page, totalPages: paginationMeta.totalPages, totalItems: paginationMeta.totalItems }} onPageChange={setPage} />
+                   <Pagination pagination={{ currentPage: paginationMeta.currentPage, totalPages: paginationMeta.totalPages, totalItems: paginationMeta.totalItems }} onPageChange={setPage} />
                 </div>
               </>
             )}

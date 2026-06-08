@@ -19,7 +19,7 @@ export default function CommentInput({ onSubmit, placeholder = "Viết bình lu�
         <form onSubmit={handleSubmit} className="flex gap-3 items-start w-full">
             {/* Avatar người dùng hiện tại */}
             <img 
-                src={currentUser ? getAvatarUrl(currentUser.id, currentUser.avatar) || '/default-avatar.png' : '/default-avatar.png'} 
+                src={currentUser ? getAvatarUrl(currentUser.id, currentUser.avatar) : '/assets/avatar_default.png'} 
                 alt="My Avatar" 
                 className="w-8 h-8 rounded-full object-cover border border-[#7d5a3f]/20"
             />

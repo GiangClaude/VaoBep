@@ -2,48 +2,49 @@ import React, { useState } from 'react';
 import { MoreVertical, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns'; 
 import { vi } from 'date-fns/locale';
-import { useAuth } from '../../AuthContext';
+import { useNavigate } from 'react-router-dom';
 import CommentInput from './CommentInput';
-import { getAvatarUrl } from '../../utils/imageHelper';
 import Modal from '../common/modal';
 
 // [MỚI]
+import { useAuth } from '../../AuthContext';
+import { getAvatarUrl } from '../../utils/imageHelper';
+
 import { useCommentActions } from '../../hooks/ui/interaction/useCommentActions';
-import useCommentData from '../../hooks/useCommentData';
+import { useRepliesQuery } from '../../hooks/queries/useInteractionQueries';
+// import useCommentData from '../../hooks/useCommentData';
 
 export default function CommentItem({ comment, depth = 0, postId, postType }) {
     const { currentUser } = useAuth();
     
+    const navigate = useNavigate();
     // API actions mới
     const { handlePost, handleDelete, handleEdit } = useCommentActions();
-    const { getReplies } = useCommentData(); // Lazy load replies giữ nguyên tạm thời
 
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     
-    const [replies, setReplies] = useState([]);
+    // const [replies, setReplies] = useState([]);
     const [showReplies, setShowReplies] = useState(false);
-    const [loadingReplies, setLoadingReplies] = useState(false);
+    // const [loadingReplies, setLoadingReplies] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     
     const isOwner = currentUser?.id === comment.user_id;
 
+    const { data: replies = [], isLoading: loadingReplies } = useRepliesQuery(comment.comment_id, showReplies);
+
+
     const toggleReplies = async () => {
-        if (!showReplies && replies.length === 0 && comment.reply_count > 0) {
-            setLoadingReplies(true);
-            const data = await getReplies(comment.comment_id);
-            setReplies(data || []);
-            setLoadingReplies(false);
-        }
-        setShowReplies(!showReplies);
+       setShowReplies(!showReplies);
     };
 
     const onReplySubmit = async (content) => {
         const success = await handlePost(postId, postType, content, comment.comment_id);
         if (success) {
             setShowReplyInput(false);
+            setShowReplies(true);
             // Refresh lại list comment (Do Mutation Invalidate tự động lo)
             return true;
         }
@@ -60,10 +61,14 @@ export default function CommentItem({ comment, depth = 0, postId, postType }) {
         if (success) setIsEditing(false);
     };
 
+    const onAvatarClick = async(id) => {
+        navigate(`/user/${id}`);
+    }
+
     return (
         <div className={`flex flex-col gap-3 ${depth > 0 ? 'ml-11 mt-3' : 'mb-6'}`}>
             <div className="flex gap-3 group">
-                <img src={comment.avatar || '/default-avatar.png'} className="w-8 h-8 rounded-full object-cover shadow-sm" alt={comment.full_name} />
+                <img src={comment.avatar} className="w-8 h-8 rounded-full object-cover shadow-sm cursor-pointer" alt={comment.full_name} onClick={() => onAvatarClick(comment.user_id)} />
                 
                 <div className="flex-1 min-w-0">
                     <div className="bg-white border border-[#7d5a3f]/10 rounded-2xl px-4 py-2 inline-block max-w-full shadow-sm">

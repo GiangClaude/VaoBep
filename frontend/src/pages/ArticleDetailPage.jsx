@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, MessageCircle, Heart, Share2, MoreHorizontal, Bookmark, Flag, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Clock, MessageCircle, Heart, Share2, MoreHorizontal, Bookmark, Flag, ChevronRight, Tag } from 'lucide-react'; // Thêm Icon Tag ở đây
 import { motion } from 'framer-motion';
 
 import ImageWithFallBack from '../component/figma/ImageWithFallBack';
-import { Footer } from '../component/common/Footer';
 import CommentSection from '../component/comment/CommentSection';
 import AiSummaryBanner from "../component/common/AiSummaryBanner";
 
@@ -13,6 +12,7 @@ import { useArticleDetailQuery } from '../hooks/queries/useArticlesQueries';
 import { useInteractionStateQuery } from '../hooks/queries/useInteractionQueries';
 import { usePostActions } from '../hooks/ui/interaction/usePostActions';
 import { useAuth } from '../AuthContext';
+import { handleTagClick } from '../utils/tagUtils';
 
 export default function ArticleDetailPage() {
   const { articleId } = useParams();
@@ -42,6 +42,8 @@ export default function ArticleDetailPage() {
         <button onClick={() => navigate(-1)} className="px-6 py-2 bg-gradient-to-r from-[#ff6b35] to-[#f7931e] text-white rounded-full">Quay lại</button>
     </div>
   );
+
+  console.log("Article Detail: ", article);
 
   return (
     <div className="min-h-screen bg-[#fff9f0]">
@@ -124,13 +126,22 @@ export default function ArticleDetailPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap pt-6 border-t border-gray-100">
-                  {article.tags?.map((t) => (
-                    <span key={t.id} className="text-sm bg-gray-50 text-gray-600 px-4 py-1.5 rounded-full">
-                      #{t.name}
-                    </span>
-                  ))}
-                </div>
+                {/* [SỬA ĐỔI] Khu vực hiển thị danh sách Tags ở cuối bài viết */}
+                {article.tags && article.tags.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap pt-6 border-t border-gray-100">
+                    <Tag className="w-4 h-4 text-[#ff6b35] mr-1 flex-shrink-0" />
+                    {article.tags.map((t) => (
+                      <button 
+                        key={t.id} 
+                        // Kích hoạt tính năng nhảy thẳng sang trang search và active tag
+                        onClick={() => handleTagClick(navigate, t.id, "articles")}
+                        className="text-xs bg-[#ff6b35]/10 text-[#ff6b35] font-bold px-3.5 py-1.5 rounded-full border border-[#ff6b35]/20 shadow-sm transition-all hover:brightness-95 cursor-pointer"
+                      >
+                        #{t.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* COMPONENT COMMENT ĐỘC LẬP */}
                 <CommentSection postId={articleId} postType="article" />
@@ -172,7 +183,6 @@ export default function ArticleDetailPage() {
           </aside>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

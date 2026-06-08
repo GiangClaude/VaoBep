@@ -24,8 +24,7 @@ const DishDetailPage = () => {
     // 2. Fetch trạng thái tương tác
     const { data: interactionState } = useInteractionStateQuery(id, 'dish', !!currentUser);
  
-    console.log("Dish Detail:", dish, interactionState
-    ); // Debug log để kiểm tra dữ liệu trả vềs
+    // console.log("Dish Detail:", dish, interactionState); // Debug log để kiểm tra dữ liệu trả vềs
     // 3. UI Hooks Action
     const { handleLike, handleShare } = usePostActions({
         id: id,
@@ -96,7 +95,7 @@ const DishDetailPage = () => {
 
                 {/* CỘT PHẢI */}
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#7d5a3f]/10">
+                    {/* <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#7d5a3f]/10">
                         <h3 className="text-[#7d5a3f] font-bold text-xl mb-4 flex items-center"><span className="mr-2">📍</span> Ăn ở đâu?</h3>
                         <div className="space-y-4">
                             {dish.eateries?.length > 0 ? (
@@ -110,7 +109,7 @@ const DishDetailPage = () => {
                                 <p className="text-gray-400 italic text-sm">Thông tin địa điểm đang được cập nhật...</p>
                             )}
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="bg-[#7d5a3f] p-6 rounded-3xl shadow-lg text-[#fff9f0]">
                         <h3 className="font-bold text-xl mb-4 flex items-center"><span className="mr-2">🍳</span> Công thức nấu</h3>

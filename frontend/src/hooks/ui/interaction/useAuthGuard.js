@@ -12,8 +12,13 @@ export const useAuthGuard = () => {
      * Bọc một hàm callback. Nếu chưa đăng nhập -> Chặn lại và hiện Modal.
      */
     const requireAuth = (callback) => {
-        return (e, ...args) => {
-            if (e && e.stopPropagation) e.stopPropagation();
+        // [SỬA]: Thêm async để hỗ trợ các hàm API bất đồng bộ
+        return async (...args) => {
+            // [SỬA]: Lấy tham số đầu tiên và kiểm tra xem nó có thực sự là một Event hay không
+            const firstArg = args[0];
+            if (firstArg && typeof firstArg.stopPropagation === 'function') {
+                firstArg.stopPropagation();
+            }
             
             if (!currentUser) {
                 showModal({
@@ -25,9 +30,11 @@ export const useAuthGuard = () => {
                         { label: "Đăng nhập ngay", onClick: () => { hideModal(); navigate("/login"); }, style: "primary" }
                     ]
                 });
-                return;
+                return false; // [SỬA]: Xóa bớt dấu chấm phẩy thừa
             }
-            callback(e, ...args);
+            
+            // [SỬA QUAN TRỌNG]: Bắt buộc phải return và await để trả về kết quả true/false
+            return await callback(...args);
         };
     };
 
