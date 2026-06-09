@@ -1,15 +1,15 @@
+// VỊ TRÍ: component/homepage/Sidebar.jsx
+
 import { useState, useEffect } from "react";
-import { Trophy, TrendingUp, Lightbulb, Clock, Users, Heart, Star, Flame, Droplets, ChefHat } from "lucide-react";
+import { Trophy, TrendingUp, Lightbulb, Clock, Users, Heart, Star, Flame, Droplets, ChefHat, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import ImageWithFallback from "../figma/ImageWithFallBack";
 import { useNavigate } from "react-router-dom";
 import { useFeaturedRecipesQuery } from "../../hooks/queries/useRecipesQueries";
 
-// Import file JSON và hàm utils (Bà nhớ canh lại đường dẫn cho chuẩn nha)
 import tipsData from "../../data/tips.json";
 import { getRandomItems } from "../../utils/helpers"; 
 
-// Object map: Chuyển đổi tên icon dạng chuỗi từ JSON sang Component icon thực tế
 const iconMap = {
   flame: Flame,
   clock: Clock,
@@ -21,61 +21,66 @@ const iconMap = {
 export default function Sidebar() {
   const navigate = useNavigate();
   const { data: trendingRecipes = [], isLoading: loading } = useFeaturedRecipesQuery();
-  
-  // State lưu 3 tips sẽ được hiển thị
   const [quickTips, setQuickTips] = useState([]);
 
   useEffect(() => {
-    // Chỉ gọi hàm lấy ngẫu nhiên 3 tips 1 lần duy nhất khi component vừa load (mount)
     const randomTips = getRandomItems(tipsData, 3);
     setQuickTips(randomTips);
   }, []);
 
   return (
     <div className="top-24 space-y-6">
-      {/* Challenge Banner (đã được comment lại trong code gốc) */}
-      {/* ... */}
-
-      <div className="bg-white rounded-[25px] shadow-lg p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <TrendingUp className="w-6 h-6 text-[#ff6b35]" />
-          <h3 className="text-xl">Đang Hot</h3>
+      
+      {/* Widget 1: ĐANG HOT */}
+      <div className="bg-white rounded-[32px] shadow-[0_8px_24px_-10px_rgba(255,117,31,0.15)] border-2 border-orange-50 p-6 relative overflow-hidden">
+        {/* Decor Pattern góc phải */}
+        <div className="absolute -top-6 -right-6 w-20 h-20 bg-orange-100 rounded-full opacity-50 blur-xl"></div>
+        
+        <div className="flex items-center gap-2.5 mb-6 relative z-10">
+          <div className="p-2 bg-gradient-to-br from-[#ff751f] to-yellow-400 rounded-xl shadow-md rotate-3">
+            <TrendingUp className="w-5 h-5 text-white" />
+          </div>
+          <h3 className="text-[18px] font-extrabold text-gray-800">Nổi bật gần đây</h3>
         </div>
 
-        <div className="space-y-4 ">
+        <div className="space-y-5 relative z-10">
           {loading ? (
-              <p className="text-center text-gray-400 text-sm py-4">Đang tải món ngon...</p>
+              <p className="text-center text-[#ff751f] font-bold text-sm py-4 animate-pulse">Đang hóng hớt món mới...</p>
             ) : (
               trendingRecipes.slice(0, 3).map((recipe, index) => (
               <motion.div
                 key={recipe.id}
-                whileHover={{ x: 4 }}
+                whileHover={{ x: 6, scale: 1.02 }}
                 onClick={() => navigate(`/recipe/${recipe.id}`)}
-                className="flex gap-3 cursor-pointer group"
+                className="flex gap-4 cursor-pointer group bg-orange-50/30 p-2.5 rounded-2xl hover:bg-orange-50 transition-colors"
               >
-                <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-[#ff6b35] to-[#ffc857] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                {/* Số thứ tự (Huy hiệu nổi bật) */}
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-black text-white shadow-md
+                  ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-200 ring-2 ring-yellow-200' : 
+                    index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : 
+                                  'bg-gradient-to-br from-orange-300 to-orange-500'}`}>
                   {index + 1}
                 </div>
 
-                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 ">
+                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-white">
                   <ImageWithFallback
                     src={recipe.image}
                     alt={recipe.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 cursor-pointer"
+                    className="w-full h-full object-cover group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500"
                   />
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm line-clamp-2 mb-1 group-hover:text-[#ff6b35] transition-colors">
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <h4 className="text-sm font-extrabold text-gray-800 line-clamp-2 mb-1.5 group-hover:text-[#ff751f] transition-colors leading-tight">
                     {recipe.title}
                   </h4>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Heart className="w-3 h-3 text-[#ff6b35]" />
-                      <span>{recipe.likes}</span>
+                  <div className="flex items-center gap-3 text-[11px] font-bold text-gray-500">
+                    <div className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-full shadow-sm">
+                      <Heart className="w-3 h-3 text-[#ff751f] fill-[#ff751f]" />
+                      <span>{recipe.likes} thích </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-[#ffc857] fill-[#ffc857]" />
+                    <div className="flex items-center gap-1 bg-white px-2 py-0.5 rounded-full shadow-sm">
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                       <span>{recipe.rating}</span>
                     </div>
                   </div>
@@ -87,67 +92,70 @@ export default function Sidebar() {
 
         <button 
           onClick={() => navigate('/recipes')}
-          className="w-full mt-4 text-[#ff6b35] hover:text-[#f7931e] text-sm py-2 border-2 border-[#ffc857] hover:border-[#ff6b35] rounded-full transition-all"
+          className="w-full mt-5 text-[#ff751f] font-bold text-sm py-2.5 border-2 border-dashed border-[#ff751f] hover:bg-[#ff751f] hover:text-white rounded-full transition-all duration-300 shadow-sm active:scale-95"
         >
-          Xem thêm
+          Xem tất cả
         </button>
       </div>
 
-      {/* Quick Tips */}
-      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-[25px] shadow-lg p-6 border-2 border-[#ffc857]/30">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="bg-gradient-to-br from-[#ff6b35] to-[#ffc857] p-2 rounded-xl">
-            <Lightbulb className="w-5 h-5 text-white" />
+      {/* Widget 2: MẸO NẤU ĂN */}
+      <div className="bg-gradient-to-br from-orange-50 via-white to-yellow-50 rounded-[32px] shadow-[0_8px_24px_-10px_rgba(255,117,31,0.15)] border-2 border-yellow-100 p-6">
+        <div className="flex items-center gap-2.5 mb-6">
+          <div className="bg-gradient-to-br from-[#ff751f] to-yellow-400 p-2.5 rounded-[14px] shadow-md -rotate-3">
+            <Lightbulb className="w-5 h-5 text-white animate-pulse" />
           </div>
-          <h3 className="text-xl">Mẹo Nấu Ăn</h3>
+          <h3 className="text-[18px] font-extrabold text-gray-800 flex items-center gap-1">
+            Bí Kíp Bỏ Túi <Sparkles className="w-4 h-4 text-yellow-500" />
+          </h3>
         </div>
 
         <div className="space-y-4">
           {quickTips.map((tip) => {
-            // Lấy Component Icon từ object map, nếu không tìm thấy thì dùng Lightbulb làm mặc định
             const IconComponent = iconMap[tip.iconName] || Lightbulb;
             
             return (
-              <div
+              <motion.div
+                whileHover={{ y: -3 }}
                 key={tip.id}
-                className="bg-white p-4 rounded-xl hover:shadow-md transition-shadow"
+                className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md border border-orange-50 transition-all cursor-pointer group"
               >
-                <div className="flex items-start gap-3">
-                  <div className="bg-gradient-to-br from-[#ff6b35]/10 to-[#ffc857]/10 p-2 rounded-lg flex-shrink-0">
-                    <IconComponent className="w-5 h-5 text-[#ff6b35]" />
+                <div className="flex items-start gap-3.5">
+                  <div className="bg-orange-50 group-hover:bg-[#ff751f] p-2.5 rounded-xl flex-shrink-0 transition-colors duration-300">
+                    <IconComponent className="w-5 h-5 text-[#ff751f] group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h4 className="text-sm mb-1">{tip.title}</h4>
-                    <p className="text-xs text-gray-600">{tip.tip}</p>
+                    <h4 className="text-[13px] font-bold text-gray-800 mb-1 leading-snug group-hover:text-[#ff751f] transition-colors">{tip.title}</h4>
+                    <p className="text-xs font-medium text-gray-500 leading-relaxed">{tip.tip}</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
       </div>
 
-      {/* Weekly Challenge Small Banner */}
+      {/* Widget 3: CHALLENGE BANNER */}
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        className="relative bg-gradient-to-r from-purple-600 to-pink-600 rounded-[20px] p-5 cursor-pointer overflow-hidden"
+        whileHover={{ scale: 1.03, rotate: 1 }}
+        whileTap={{ scale: 0.98 }}
+        className="relative bg-gradient-to-br from-[#ff751f] via-orange-500 to-yellow-400 rounded-[32px] p-6 cursor-pointer overflow-hidden shadow-xl shadow-orange-500/20"
       >
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white rounded-full blur-xl animate-pulse" />
+        {/* Lớp phủ sáng (flare) */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-white rounded-full blur-2xl animate-pulse" />
         </div>
         
-        <div 
-          className="relative z-10 text-center"
-        >
-          <div className="inline-flex bg-white/30 backdrop-blur-sm p-2 rounded-xl mb-2">
-            <Trophy className="w-6 h-6 text-white" />
+        <div className="relative z-10 text-center flex flex-col items-center">
+          <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl mb-3 shadow-inner border border-white/30">
+            <Trophy className="w-8 h-8 text-white drop-shadow-md" />
           </div>
-          <h4 className="text-white mb-1">Bảng Xếp Hạng</h4>
-          <p className="text-white/80 text-xs mb-3">Xem top đầu bếp tuần này</p>
+          <h4 className="text-white text-[18px] font-black tracking-wide mb-1 drop-shadow-md uppercase">Vua Đầu Bếp</h4>
+          <p className="text-orange-50 text-xs font-bold mb-4">Tranh tài xếp hạng tuần này!</p>
           <button 
-          onClick={() => navigate('/leaderboard')}
-          className="bg-white text-purple-600 px-4 py-1.5 rounded-full text-sm hover:bg-yellow-300 transition-all">
-            Xem ngay
+            onClick={() => navigate('/leaderboard')}
+            className="bg-white text-[#ff751f] font-black px-6 py-2 rounded-full text-sm hover:bg-yellow-100 hover:shadow-lg transition-all duration-300 w-full"
+          >
+            Go Go Go 🚀
           </button>
         </div>
       </motion.div>

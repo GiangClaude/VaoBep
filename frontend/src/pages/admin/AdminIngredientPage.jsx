@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Carrot, Check, X, Edit, Trash2, Plus, Search } from 'lucide-react';
+
+import { toast } from 'react-toastify';
 import debounce from 'lodash.debounce'; // Import thêm thư viện debounce
 import AdminTable from '../../component/admin/AdminTable';
 import StatusBadge from '../../component/admin/StatusBadge';
@@ -58,7 +60,7 @@ const AdminIngredientPage = () => {
         const calo = caloInputs[id];
         
         if (action === 'approve' && !calo) {
-            alert("Vui lòng nhập số Calo/100g trước khi duyệt!");
+            toast.warning("Vui lòng nhập số Calo/100g trước khi duyệt!");
             return;
         }
 
@@ -68,7 +70,7 @@ const AdminIngredientPage = () => {
                 data: { action, calo_per_100g: calo } 
             });
         } catch (error) {
-            alert(error.message || "Có lỗi xảy ra");
+            toast.error(error.message || "Có lỗi xảy ra");
         }
     };
 
@@ -99,7 +101,7 @@ const AdminIngredientPage = () => {
             }
             setIsFormOpen(false);
         } catch (error) {
-            alert(error.message || "Lỗi khi lưu nguyên liệu");
+            toast.error(error.message || "Lỗi khi lưu nguyên liệu");
         }
     };
 
@@ -111,7 +113,7 @@ const AdminIngredientPage = () => {
                     setPage(prev => prev - 1);
                 }
             } catch (error) {
-                alert(error.message || "Lỗi khi xóa nguyên liệu");
+                toast.error(error.message || "Lỗi khi xóa nguyên liệu");
             }
         }
     };

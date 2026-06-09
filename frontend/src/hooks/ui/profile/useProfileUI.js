@@ -94,7 +94,7 @@ export const useProfileUI = () => {
             setReceivedItems(result.data); // Axios bóc tách data, Mutation trả về data.data
             await refreshProfile();
         } catch (err) {
-            alert(err.response?.data?.message || err.message || "Lỗi khi mở quà"); 
+            showModal({ type: 'error', title: 'Lỗi khi mở quà', message: err.message || "Có lỗi xảy ra" });
             setIsRewardModalOpen(false);
         } finally {
             setIsOpening(false);

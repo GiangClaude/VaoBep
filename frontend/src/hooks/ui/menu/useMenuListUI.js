@@ -2,9 +2,10 @@
 
 import { useNavigate } from 'react-router-dom';
 import { useCreateMenuMutation } from '../../mutations/useMenuMutations';
-
+import { useGlobalModal } from '../../../context/ModalContext';
 export const useMenuListUI = () => {
     const navigate = useNavigate();
+    const {showModal} = useGlobalModal();
     const createMenuMutation = useCreateMenuMutation();
 
     // Hàm xử lý tạo nhanh 1 thực đơn trống
@@ -18,10 +19,10 @@ export const useMenuListUI = () => {
             if (result.success && result.data.menu_id) {
                 navigate(`/menus/planner/${result.data.menu_id}`);
             } else {
-                alert("Lỗi tạo thực đơn: " + (result.message || "Không xác định"));
+                showModal({ type: 'error', title: 'Lỗi sinh thực đơn', message: result.message || "Có lỗi xảy ra" });
             }
         } catch (error) {
-            alert("Lỗi tạo thực đơn: " + (error.message || "Có lỗi xảy ra"));
+            showModal({ type: 'error', title: 'Lỗi tạo thực đơn', message: error.message || "Có lỗi xảy ra" });
         }
     };
 

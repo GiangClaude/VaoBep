@@ -57,7 +57,7 @@ const AdminArticlePage = () => {
         if (result.success && isPreviewOpen) {
             setIsPreviewOpen(false); // Đóng modal nếu đang duyệt trong modal
         } else if (!result.success) {
-            alert(result.message);
+            toast.error(result.message)
         }
     };
 

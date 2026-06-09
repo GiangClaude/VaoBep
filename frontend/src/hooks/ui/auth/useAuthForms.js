@@ -161,6 +161,7 @@ export const useResetPasswordForm = () => {
 
 // 3. Hook Xác Thực OTP (Dùng chung cho cả Register và Forgot Password)
 export const useVerifyOTPForm = () => {
+    const { showModal } = useGlobalModal();
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -188,7 +189,7 @@ export const useVerifyOTPForm = () => {
         if (email && shouldResend && !hasSentRef.current){
             hasSentRef.current = true;
             resendMutation.mutateAsync(email)
-                .then(() => alert(`Mã OTP mới đã được gửi đến ${email}`))
+                .then(() => showModal({ type: 'info', title: 'Đã gửi mã', message: `Mã OTP mới đã được gửi đến ${email}` }))
                 .catch(err => setError(err.message));
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,7 +244,7 @@ export const useVerifyOTPForm = () => {
             } else {
                 const res = await activateMutation.mutateAsync({ email, otp: otpValue });
                 setSuccess(true);
-                alert(res.message || "Kích hoạt tài khoản thành công!");
+                showModal({ type: 'success', title: 'Thành công', message: res.message || "Kích hoạt tài khoản thành công!" });
                 navigate('/login'); 
             }
         } catch (err) {
@@ -257,7 +258,7 @@ export const useVerifyOTPForm = () => {
         inputRefs.current[0]?.focus();
         try {
             const res = await resendMutation.mutateAsync(email);
-            alert(res.message);
+            showModal({ type: 'success', title: 'Thành công', message: res.message });
         } catch (err) {
             setError(err.message || 'Không thể gửi lại mã.');
         }

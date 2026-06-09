@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { BookOpen, Plus, Search, Edit, Trash2, X, Upload, MapPin } from 'lucide-react';
 import debounce from 'lodash.debounce';
+import { toast } from 'react-toastify';
 
 import AdminTable from '../../component/admin/AdminTable';
 import { getDishImageUrl } from '../../utils/imageHelper';
@@ -138,7 +139,7 @@ const AdminDictionaryPage = () => {
             }
             setIsFormOpen(false);
         } catch (error) {
-             alert(error.message || "Lỗi khi lưu thông tin");
+             toast.error(error.message || "Lỗi khi lưu thông tin");
         }
     };
 
@@ -152,7 +153,7 @@ const AdminDictionaryPage = () => {
                      setPage(prev => prev - 1);
                  }
             } catch (error) {
-                 alert(error.message || "Lỗi khi xóa món ăn");
+                toast.error(error.message || "Lỗi khi xóa món ăn");
             }
         }
     };

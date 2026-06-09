@@ -47,8 +47,15 @@ export const useMenuPlannerUI = (menuId, menuState, dispatch, currentUser, isOwn
     // Hàm nhân bản thực đơn của người khác về làm của mình
     const handleClone = async () => {
         if (!currentUser) {
-            alert("Bạn cần đăng nhập để lưu thực đơn này!");
-            navigate('/login');
+            showModal({
+                type: 'warning',
+                title: 'Yêu cầu đăng nhập',
+                message: 'Bạn cần đăng nhập để nhân bản và lưu thực đơn này!',
+                actions: [
+                    { label: 'Hủy', style: 'secondary' },
+                    { label: 'Đăng nhập', style: 'primary', onClick: () => navigate('/login') }
+                ]
+            });
             return;
         }
         try {
@@ -61,10 +68,10 @@ export const useMenuPlannerUI = (menuId, menuState, dispatch, currentUser, isOwn
                     actions: [{ label: 'Tới thực đơn của tôi', style: 'primary', onClick: () => navigate(`/menus/planner/${result.data.menu_id}`) }]
                 });
             } else {
-                 alert("Lỗi: " + result.message);
+                 showModal({ type: 'error', title: 'Lỗi', message: result.message });
             }
         } catch (error) {
-            alert("Lỗi: " + (error.message || "Có lỗi xảy ra"));
+            showModal({ type: 'error', title: 'Lỗi hệ thống', message: error.message || "Có lỗi xảy ra" });
         }
     };
 

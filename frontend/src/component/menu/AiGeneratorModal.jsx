@@ -6,11 +6,12 @@ import { X, Wand2 } from 'lucide-react';
 import { useMenuState, MENU_ACTIONS } from '../../context/MenuContext';
 // [MỚI] Dùng Mutation mới tạo
 import { useAutoGenerateMenuMutation } from '../../hooks/mutations/useMenuMutations';
-
+import { useGlobalModal } from '../../context/ModalContext';
+import { v4 as uuidv4 } from 'uuid';
 export default function AiGeneratorModal({ isOpen, onClose }) {
     const { dispatch } = useMenuState();
     const [prompt, setPrompt] = useState('');
-    
+    const { showModal } = useGlobalModal();
     // 1. KẾT NỐI MUTATION
     const generateMutation = useAutoGenerateMenuMutation();
     const isThinking = generateMutation.isPending; // Tự động có state loading từ React Query
@@ -21,17 +22,45 @@ export default function AiGeneratorModal({ isOpen, onClose }) {
         try {
             // Gọi Mutation
             const result = await generateMutation.mutateAsync(prompt);
+
             
+
             if (result.success && result.data) {
+
+                let aiDays = Array.isArray(result.data) ? result.data : result.data.days;
+                if (!aiDays) throw new Error("Dữ liệu AI không đúng định dạng mảng ngày");
+                console.log("AiGen: ", aiDays);
+                console.log("AiGen Result: ", result);
+                const normalizedDays = aiDays.map((day, dIdx) => ({
+                    ...day,
+                    day_id: uuidv4(), // Bắt buộc gắn ID ngày
+                    title: day.title || `Ngày ${dIdx + 1}`,
+                    meals: (day.meals || []).map(meal => ({
+                        ...meal,
+                        meal_id: uuidv4(), // Bắt buộc gắn ID bữa ăn
+                        title: meal.title || (meal.meal_type === 'breakfast' ? 'Sáng' : meal.meal_type === 'lunch' ? 'Trưa' : meal.meal_type === 'dinner' ? 'Tối' : 'Bữa phụ'),
+                        recipes: (meal.recipes || meal.dishes || []).map(recipe => ({
+                            ...recipe,
+                            recipe_id: recipe.recipe_id || recipe.id || uuidv4(), // Bắt buộc có ID món ăn
+                            servings_multiplier: recipe.servings_multiplier || 1,
+                            total_calo: recipe.total_calo || recipe.calories || 0,
+                            cover_image: recipe.cover_image || recipe.image || ''
+                        }))
+                    }))
+                }));
                 // Đẩy vào Context Kanban
                 dispatch({ type: MENU_ACTIONS.OVERRIDE_DAYS, payload: result.data });
-                alert("✨ AI đã lên xong thực đơn! Hãy kiểm tra bảng Kanban và bấm 'Lưu Thực Đơn' để lưu vào database nhé.");
+                showModal({
+                    type: 'success',
+                    title: 'Tạo thực đơn thành công',
+                    message: "✨ AI đã lên xong thực đơn! Hãy kiểm tra bảng Kanban và bấm 'Lưu Thực Đơn' để lưu vào hệ thống nhé."
+                });
                 onClose();
             } else {
-                alert("Lỗi sinh thực đơn: " + (result.message || "Có lỗi xảy ra"));
+                showModal({ type: 'error', title: 'Lỗi sinh thực đơn', message: result.message || "Có lỗi xảy ra" });
             }
         } catch (error) {
-            alert("Lỗi kết nối AI: " + error.message);
+            showModal({ type: 'error', title: 'Lỗi kết nối AI', message: error.message });
         }
     };
 

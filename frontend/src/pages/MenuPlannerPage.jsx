@@ -1,6 +1,6 @@
 // VỊ TRÍ: frontend/src/pages/MenuPlannerPage.jsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MenuProvider, useMenuState, MENU_ACTIONS } from '../context/MenuContext';
 import { Trash2, GripVertical, Copy, User, ShoppingCart, Sparkles, Wand2 } from 'lucide-react';
@@ -24,15 +24,16 @@ const MenuPlannerBoard = () => {
 
     // 1. Fetch dữ liệu thực đơn tự động bằng Query
     const { data: fetchedMenu, isLoading } = useMenuDetailQuery(menuId);
-
+    const hasInitialized = useRef(false);
     // 2. Cập nhật Context khi tải xong dữ liệu từ API
     useEffect(() => {
-        if (fetchedMenu) {
+        if (fetchedMenu && !hasInitialized.current) {
             dispatch({ type: MENU_ACTIONS.INIT_MENU, payload: fetchedMenu });
+            hasInitialized.current = true;
         }
     }, [fetchedMenu, dispatch]);
 
-    console.log("Menu: ", fetchedMenu);
+    console.log("Menu: ", menuState);
     // Kiểm tra quyền chủ sở hữu
     const isOwner = currentUser?.id === menuState?.user_id;
 
@@ -186,7 +187,7 @@ const MenuPlannerBoard = () => {
                                         </div>
                                         
                                         <div className="p-2 flex flex-col space-y-2 min-h-[60px]">
-                                            {meal.recipes?.length === 0 ? (
+                                            {(!meal.recipes || meal.recipes.length === 0) ? (
                                                 <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl py-4">
                                                     <span className="text-xs font-medium text-gray-400">{isOwner ? 'Kéo thả món ăn vào đây' : 'Menu chưa có món ăn'}</span>
                                                 </div>

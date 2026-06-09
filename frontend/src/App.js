@@ -22,7 +22,13 @@ import HomePage from './pages/HomepagePage';
 import ProfilePage from './pages/ProfilePage';
 import RecipeDetailPage from './pages/RecipeDetailPage';
 import RecipesListPage from './pages/RecipesListPage';
-import SearchPage from './pages/SearchPage';
+// import SearchPage from './pages/SearchPage';
+import SearchLayout from './pages/search/SearchLayout';
+import SearchAllTab from './pages/search/SearchAllTab';
+import SearchUserTab from './pages/search/SearchUserTab';
+import SearchRecipeTab from './pages/search/SearchRecipeTab';
+import SearchArticleTab from './pages/search/SearchArticleTab';
+
 import UserProfilePage from './pages/UserProfilePage';
 
 import ArticleDetailPage from './pages/ArticleDetailPage';
@@ -98,7 +104,12 @@ function App() {
               <Route path="/recipes" element={<RecipesListPage />} />
               <Route path="/recipe/:id" element={<RecipeDetailPage />} />
               <Route path="/articles" element={<ArticlesListPage />} />
-              <Route path="/search" element={<SearchPage />} />
+              <Route path="/search" element={<SearchLayout />}>
+                  <Route index element={<SearchAllTab />} />
+                  <Route path="users" element={<SearchUserTab />} />
+                  <Route path="recipes" element={<SearchRecipeTab />} />
+                  <Route path="articles" element={<SearchArticleTab />} />
+              </Route>
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/user/:id" element={<UserProfilePage />} />
 
