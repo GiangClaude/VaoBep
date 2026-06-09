@@ -32,6 +32,17 @@ root.render(
     <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
   </QueryClientProvider>
 );
+// Đoạn code chặn cảnh báo ResizeObserver làm phiền giao diện khi dev
+if (process.env.NODE_ENV === 'development') {
+  const resizeObserverErrString = 'ResizeObserver loop completed with undelivered notifications.';
+  
+  window.addEventListener('error', (e) => {
+    if (e.message === resizeObserverErrString || e.message === 'ResizeObserver loop limit exceeded') {
+      // Chặn không cho lỗi bung lên màn hình làm gián đoạn code
+      e.stopImmediatePropagation();
+    }
+  });
+}
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

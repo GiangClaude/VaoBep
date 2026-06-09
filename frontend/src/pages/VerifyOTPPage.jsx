@@ -1,27 +1,15 @@
 // File: src/pages/VerifyOTPPage.jsx
 import React from 'react';
 import { Shield, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
-import { useVerifyOTP } from '../hooks/useVerifyOTP';
+import { useVerifyOTPForm } from '../hooks/ui/auth/useAuthForms';
 import Header from '../component/common/Header';
 import { Footer } from '../component/common/Footer';
 
 const VerifyOTPPage = () => {
   const {
-    email,
-    otp,
-    inputRefs,
-    error,
-    success,
-    loading,
-    timer,
-    canResend,
-    handleChange,
-    handleKeyDown,
-    handlePaste,
-    handleVerify,
-    handleResend,
-    navigate
-  } = useVerifyOTP();
+    email, otp, inputRefs, error, success, loading, timer, canResend,
+    handleChange, handleKeyDown, handlePaste, handleVerify, handleResend, navigate
+  } = useVerifyOTPForm();
 
   // Nếu không có email (đang redirect), không render gì cả
   if (!email) return null;

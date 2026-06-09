@@ -33,7 +33,7 @@ const DishPopupCard = ({ dish }) => {
                 <div className="flex items-center justify-between border-t border-[#d4b99a]/30 pt-3">
                     <div className="flex items-center text-[#e67e22]">
                         <Heart size={14} fill="currentColor" className="mr-1" />
-                        <span className="text-sm font-bold">{dish.point || 0}</span>
+                        <span className="text-sm font-bold">{dish.like_count || 0}</span>
                     </div>
                     
                     <button 

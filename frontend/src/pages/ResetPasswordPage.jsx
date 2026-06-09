@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
-import { useResetPassword } from '../hooks/useResetPassword';
+import { useNavigate } from 'react-router-dom';
+
 import Header from '../component/common/Header';
 import { Footer } from '../component/common/Footer';
 import Modal from '../component/common/modal';
-import { useNavigate } from 'react-router-dom';
+
+import { useResetPasswordForm } from '../hooks/ui/auth/useAuthForms';
 
 const ResetPasswordPage = () => {
-    const { passwords, setPasswords, errors, loading, handleSubmit, email, successMessage, clearSuccess } = useResetPassword();
-    const navigate = useNavigate();
+    const { passwords, setPasswords, errors, loading, handleSubmit, email, successMessage, clearSuccess, navigate } = useResetPasswordForm();
     
     // State quản lý việc show/hide password (UI Only)
     const [showPassword, setShowPassword] = useState(false);

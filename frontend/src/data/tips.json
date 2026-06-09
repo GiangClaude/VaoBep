@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1,
+    "iconName": "flame",
+    "title": "Cách khử mùi hôi cá",
+    "tip": "Dùng gừng + rượu trắng khi ướp"
+  },
+  {
+    "id": 2,
+    "iconName": "clock",
+    "title": "Tiết kiệm thời gian",
+    "tip": "Chuẩn bị nguyên liệu trước 1 ngày"
+  },
+  {
+    "id": 3,
+    "iconName": "lightbulb",
+    "title": "Món ngon hơn",
+    "tip": "Ướp gia vị ít nhất 30 phút"
+  },
+  {
+    "id": 4,
+    "iconName": "droplets",
+    "title": "Chiên không bắn dầu",
+    "tip": "Rắc tí muối vào chảo dầu trước khi chiên"
+  },
+  {
+    "id": 5,
+    "iconName": "chefHat",
+    "title": "Giữ rau xanh mướt",
+    "tip": "Thêm xíu muối và dầu ăn khi luộc"
+  },
+  {
+    "id": 6,
+    "iconName": "flame",
+    "title": "Nướng thịt mềm",
+    "tip": "Thêm chút nước cốt chanh hoặc dứa khi ướp"
+  },
+  {
+    "id": 7,
+    "iconName": "droplets",
+    "title": "Rửa rau sạch",
+    "tip": "Ngâm rau trong nước muối loãng 10-15 phút"
+  },
+  {
+    "id": 8,
+    "iconName": "clock",
+    "title": "Ninh xương nhanh nhừ",
+    "tip": "Thêm một muỗng nhỏ giấm vào nồi nước dùng"
+  },
+  {
+    "id": 9,
+    "iconName": "lightbulb",
+    "title": "Chữa cơm nhão",
+    "tip": "Đặt vài lát bánh mì gối lên trên mặt cơm"
+  },
+  {
+    "id": 10,
+    "iconName": "chefHat",
+    "title": "Giữ bơ không đen",
+    "tip": "Thoa xíu nước cốt chanh lên mặt bơ bị cắt dở"
+  },
+  {
+    "id": 11,
+    "iconName": "flame",
+    "title": "Chiên trứng xốp",
+    "tip": "Đánh trứng với vài giọt nước lọc trước khi chiên"
+  },
+  {
+    "id": 12,
+    "iconName": "droplets",
+    "title": "Khử mùi hôi tủ lạnh",
+    "tip": "Để một ly bã cà phê hoặc vỏ bưởi vào góc tủ"
+  },
+  {
+    "id": 13,
+    "iconName": "clock",
+    "title": "Hầm đậu đen nhanh mềm",
+    "tip": "Rang qua hạt đậu trước khi cho nước vào hầm"
+  },
+  {
+    "id": 14,
+    "iconName": "lightbulb",
+    "title": "Thái ớt không rát tay",
+    "tip": "Xoa một ít dầu ăn lên tay trước khi cắt"
+  },
+  {
+    "id": 15,
+    "iconName": "chefHat",
+    "title": "Tẩy vết nghệ trên tay",
+    "tip": "Dùng sữa tươi hoặc chanh chà lên vết nghệ"
+  },
+  {
+    "id": 16,
+    "iconName": "flame",
+    "title": "Xào thịt bò không dai",
+    "tip": "Đảo nhanh tay lửa lớn, xào vừa chín tới"
+  },
+  {
+    "id": 17,
+    "iconName": "droplets",
+    "title": "Giữ chanh tươi lâu",
+    "tip": "Gói chanh trong giấy báo và để ngăn mát"
+  },
+  {
+    "id": 18,
+    "iconName": "clock",
+    "title": "Bóc vỏ cà chua dễ",
+    "tip": "Khía chữ thập ở đáy và chần qua nước sôi 30 giây"
+  },
+  {
+    "id": 19,
+    "iconName": "lightbulb",
+    "title": "Khử mùi tanh thớt",
+    "tip": "Rửa thớt bằng chanh tươi và muối hột"
+  },
+  {
+    "id": 20,
+    "iconName": "chefHat",
+    "title": "Nêm mắm đúng lúc",
+    "tip": "Chỉ cho mắm vào lúc món ăn gần chín để giữ mùi thơm"
+  },
+  {
+    "id": 21,
+    "iconName": "flame",
+    "title": "Khử mùi hành tỏi ở tay",
+    "tip": "Chà tay vào đồ dùng inox dưới vòi nước chảy"
+  },
+  {
+    "id": 22,
+    "iconName": "droplets",
+    "title": "Tái sinh rau héo",
+    "tip": "Ngâm rau vào nước đá lạnh pha chút xíu đường"
+  },
+  {
+    "id": 23,
+    "iconName": "clock",
+    "title": "Luộc gà vàng ươm",
+    "tip": "Xát mỡ gà pha nghệ lên da sau khi luộc chín"
+  },
+  {
+    "id": 24,
+    "iconName": "lightbulb",
+    "title": "Chữa canh chua gắt",
+    "tip": "Thêm một chút xíu đường hoặc muối để trung hòa"
+  },
+  {
+    "id": 25,
+    "iconName": "chefHat",
+    "title": "Pha nước chấm ngon",
+    "tip": "Pha theo tỷ lệ chuẩn 1 chua : 1 ngọt : 1 mặn : 4 nước"
+  },
+  {
+    "id": 26,
+    "iconName": "flame",
+    "title": "Rang đậu phộng giòn",
+    "tip": "Cho xíu dầu ăn trộn đều trước khi rang trên chảo"
+  },
+  {
+    "id": 27,
+    "iconName": "droplets",
+    "title": "Vắt nhiều nước chanh",
+    "tip": "Lăn mạnh quả chanh trên thớt trước khi vắt"
+  },
+  {
+    "id": 28,
+    "iconName": "clock",
+    "title": "Làm sạch ngao sò",
+    "tip": "Ngâm với nước vo gạo và vài lát ớt cắt mỏng"
+  },
+  {
+    "id": 29,
+    "iconName": "lightbulb",
+    "title": "Luộc măng không đắng",
+    "tip": "Luộc nhiều lần với nước và luôn mở vung"
+  },
+  {
+    "id": 30,
+    "iconName": "chefHat",
+    "title": "Thái thịt mỏng đẹp",
+    "tip": "Để thịt vào ngăn đá cho hơi cứng lại rồi mới thái"
+  },
+  {
+    "id": 31,
+    "iconName": "flame",
+    "title": "Chiên khoai tây giòn",
+    "tip": "Luộc qua khoai và để thật nguội trước khi chiên"
+  },
+  {
+    "id": 32,
+    "iconName": "droplets",
+    "title": "Tẩy cặn ấm đun nước",
+    "tip": "Đun sôi nước với một ít giấm trắng"
+  },
+  {
+    "id": 33,
+    "iconName": "clock",
+    "title": "Hãm chè xanh không đỏ",
+    "tip": "Tráng chè bằng nước sôi và không đậy nắp bình"
+  },
+  {
+    "id": 34,
+    "iconName": "lightbulb",
+    "title": "Phân biệt trứng mới",
+    "tip": "Trứng chìm ngang dưới đáy bát nước là trứng tươi"
+  },
+  {
+    "id": 35,
+    "iconName": "chefHat",
+    "title": "Bảo quản hành lá",
+    "tip": "Cắt nhỏ và để trong hộp kín trên ngăn đông"
+  },
+  {
+    "id": 36,
+    "iconName": "flame",
+    "title": "Xào rau không ra nước",
+    "tip": "Để chảo thật nóng, lửa to và không nêm muối sớm"
+  },
+  {
+    "id": 37,
+    "iconName": "droplets",
+    "title": "Làm sạch ruột heo",
+    "tip": "Dùng chanh, muối và bột mì để tuốt sạch nhớt"
+  },
+  {
+    "id": 38,
+    "iconName": "clock",
+    "title": "Ủ bột nở nhanh",
+    "tip": "Đặt tô bột cạnh một cốc nước sôi trong không gian kín"
+  },
+  {
+    "id": 39,
+    "iconName": "lightbulb",
+    "title": "Cắt trứng luộc không nát",
+    "tip": "Dùng chỉ nha khoa hoặc nhúng dao vào nước trước khi cắt"
+  },
+  {
+    "id": 40,
+    "iconName": "chefHat",
+    "title": "Bảo quản gừng tươi",
+    "tip": "Vùi củ gừng vào cát hoặc chậu đất"
+  },
+  {
+    "id": 41,
+    "iconName": "flame",
+    "title": "Khử mùi khét của cơm",
+    "tip": "Đặt một củ hành tây dập hoặc khoanh bánh mì vào nồi"
+  },
+  {
+    "id": 42,
+    "iconName": "droplets",
+    "title": "Bảo quản tỏi không mầm",
+    "tip": "Để tỏi ở nơi khô thoáng, tối và tránh ánh sáng trực tiếp"
+  },
+  {
+    "id": 43,
+    "iconName": "clock",
+    "title": "Gọt dứa (thơm) nhanh",
+    "tip": "Cắt theo rãnh chéo tự nhiên của các mắt dứa"
+  },
+  {
+    "id": 44,
+    "iconName": "lightbulb",
+    "title": "Khử mặn cá khô",
+    "tip": "Ngâm cá trong nước vo gạo khoảng 30 phút trước khi nấu"
+  },
+  {
+    "id": 45,
+    "iconName": "chefHat",
+    "title": "Rửa nấm sạch",
+    "tip": "Dùng bột năng hoặc bột mì xoa đều lên nấm rồi rửa lại"
+  },
+  {
+    "id": 46,
+    "iconName": "flame",
+    "title": "Canh xương trong veo",
+    "tip": "Thường xuyên hớt bọt và đun lửa nhỏ liti không sôi sùng sục"
+  },
+  {
+    "id": 47,
+    "iconName": "droplets",
+    "title": "Giữ màu đỏ thịt ướp",
+    "tip": "Thêm một chút dầu màu điều khi ướp thịt nướng"
+  },
+  {
+    "id": 48,
+    "iconName": "clock",
+    "title": "Ướp thịt thấm cực nhanh",
+    "tip": "Dùng nĩa xăm nhiều lỗ nhỏ lên mặt miếng thịt"
+  },
+  {
+    "id": 49,
+    "iconName": "lightbulb",
+    "title": "Rửa sạch nhựa chuối",
+    "tip": "Xoa tay với một chút giấm trước khi rửa bằng xà phòng"
+  },
+  {
+    "id": 50,
+    "iconName": "chefHat",
+    "title": "Tạo bọt sữa không máy",
+    "tip": "Lắc mạnh sữa tươi trong lọ đậy kín rồi quay vi sóng 30s"
+  }
+]

@@ -1,9 +1,11 @@
+// VỊ TRÍ: frontend/src/component/menu/ShoppingListModal.jsx
+
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ShoppingCart, Check } from 'lucide-react';
-import { useMenu } from '../../hooks/useMenu';
+// [MỚI] Import Query thay vì useMenu cũ
+import { useShoppingListQuery } from '../../hooks/queries/useMenuQueries';
 
-// Map tên category sang tiếng Việt
 const CATEGORY_MAP = {
     meat: 'Thịt & Hải sản',
     vegetable: 'Rau củ & Trái cây',
@@ -13,22 +15,17 @@ const CATEGORY_MAP = {
 };
 
 export default function ShoppingListModal({ isOpen, onClose, menuId }) {
-    const { fetchShoppingList, isLoading } = useMenu();
-    const [listData, setListData] = useState(null);
+    // 1. CHUẨN SOLID: Tách API logic sang Query
+    // Query sẽ tự động gọi API khi menuId có giá trị và quản lý isLoading
+    const { data: listData, isLoading } = useShoppingListQuery(menuId);
     
-    // Lưu ID các item đã tick (Dùng chuỗi 'category-index' làm ID tạm)
+    // 2. UI State: Chỉ giữ lại state quản lý việc người dùng tick chọn
     const [checkedItems, setCheckedItems] = useState(new Set());
 
+    // Reset tick mỗi khi mở lại modal hoặc đổi menu
     useEffect(() => {
-        const loadList = async () => {
-            if (isOpen && menuId) {
-                const data = await fetchShoppingList(menuId);
-                setListData(data);
-                setCheckedItems(new Set()); // Reset tick khi mở lại
-            }
-        };
-        loadList();
-    }, [isOpen, menuId, fetchShoppingList]);
+        if (isOpen) setCheckedItems(new Set());
+    }, [isOpen, menuId]);
 
     const toggleCheck = (itemId) => {
         const newChecked = new Set(checkedItems);
@@ -107,13 +104,6 @@ export default function ShoppingListModal({ isOpen, onClose, menuId }) {
                             ))}
                         </div>
                     )}
-                </div>
-                
-                {/* Footer */}
-                <div className="p-4 border-t border-gray-100 bg-white">
-                    <p className="text-center text-xs text-gray-400 font-medium">
-                        Tick vào nguyên liệu bạn đã mua để dễ theo dõi nhé!
-                    </p>
                 </div>
             </div>
         </div>,

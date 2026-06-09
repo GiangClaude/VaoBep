@@ -1,5 +1,5 @@
 import React from 'react';
-import useLeaderboard from '../hooks/useLeaderboard';
+import {useLeaderboardUI} from '../hooks/ui/leaderboard/useLeaderboardUI';
 import RecipeRankCard from '../component/leaderboard/RecipeRankCard';
 import UserRankCard from '../component/leaderboard/UserRankCard';
 import { ChefHat, Utensils, AlertCircle } from 'lucide-react';
@@ -14,7 +14,7 @@ const LeaderboardPage = () => {
         error, 
         handleTabChange, 
         handlePeriodChange 
-    } = useLeaderboard();
+    } = useLeaderboardUI();
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">

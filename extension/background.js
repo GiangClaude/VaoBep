@@ -74,12 +74,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 })
                 .then(res => res.json())
                 .then(data => {
+                    console.log("EXT Backgr: ",data);
                     // Báo kết quả về lại trang web
                     if (data.success) {
+                        const dishName = data.data.dishName || data.dishName || "Món ăn";
+                        const recipeList = data.data.recipes
+
                         chrome.tabs.sendMessage(tabId, { 
                             action: "show_search_results", 
-                            query: `AI nhận diện ${data.dishName}`,
-                            results: data.data 
+                            query: `AI nhận diện ${dishName}`,
+                            results: recipeList // Truyền đúng mảng (Array) vào đây để content_script có thể chạy .map()
                         });
                     } else {
                         chrome.tabs.sendMessage(tabId, { action: "show_search_error", error: data.message });

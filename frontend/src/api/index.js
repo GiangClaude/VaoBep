@@ -33,7 +33,8 @@ apiClient.interceptors.response.use(
         }
         return Promise.reject({
             success: false,
-            message: error.message || 'Không thể kết nối đến máy chủ.'
+            message: error.response.data.message || 'Không thể kết nối đến máy chủ.',
+            status: error.response.status
         });
     }
 );

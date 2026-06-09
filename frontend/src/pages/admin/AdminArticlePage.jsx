@@ -1,53 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FileText, Search, Eye, CheckCircle, Ban, Trash2, X, Clock } from 'lucide-react';
-import { useAdminArticles } from '../../hooks/admin/useAdminArticles';
 import AdminTable from '../../component/admin/AdminTable';
 import StatusBadge from '../../component/admin/StatusBadge';
 import { getArticleImageUrl } from '../../utils/imageHelper';
+import { toast } from 'react-toastify';
+
+import { useAdminArticlesQuery, useAdminFetchDetails } from '../../hooks/queries/useAdminQueries';
+// Giả định bạn đã tạo mutation cho Article trong useAdminMutations.js
+import { useAdminArticleMutations } from '../../hooks/mutations/useAdminMutations';
 
 const AdminArticlePage = () => {
     // 1. Hook
-    const { 
-        articles, pagination, isLoading, 
-        fetchArticles, fetchArticleDetail, 
-        handleUpdateStatus, handleDeleteArticle 
-    } = useAdminArticles();
-
-    // 2. Local State
+    // const { 
+    //     articles, pagination, isLoading, 
+    //     fetchArticles, fetchArticleDetail, 
+    //     handleUpdateStatus, handleDeleteArticle 
+    // } = useAdminArticles();
+   const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentSort, setCurrentSort] = useState({ key: 'created_at', order: 'DESC' });
+
+    const { data, isLoading } = useAdminArticlesQuery({
+        page, 
+        limit: 10, 
+        search: searchQuery, 
+        status: statusFilter, 
+        sortKey: currentSort.key, 
+        sortOrder: currentSort.order
+    });
+    const articles = data?.data || [];
+    const pagination = data?.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 };
+
+    const { updateStatus, deleteArticle } = useAdminArticleMutations();
+    const { fetchArticleDetail } = useAdminFetchDetails();
 
     // State cho Modal Preview
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
-    // 3. Khởi tạo & Fetch data khi đổi filter
-    useEffect(() => {
-        fetchArticles(1, 10, searchQuery, statusFilter, currentSort.key, currentSort.order);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [statusFilter]); // Tự động load lại khi chọn filter khác
+    // // 3. Khởi tạo & Fetch data khi đổi filter
+    // useEffect(() => {
+    //     fetchArticles(1, 10, searchQuery, statusFilter, currentSort.key, currentSort.order);
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [statusFilter]); // Tự động load lại khi chọn filter khác
 
     // 4. Các hàm xử lý giao diện
     const handleSearch = (e) => {
         e.preventDefault();
-        fetchArticles(1, pagination.limit, searchQuery, statusFilter, currentSort.key, currentSort.order);
+        setPage(1);
     };
 
     const changeStatus = async (id, newStatus) => {
-        const result = await handleUpdateStatus(id, newStatus);
+        const result = await updateStatus.mutateAsync({ articleId: id, status: newStatus });
         if (result.success && isPreviewOpen) {
             setIsPreviewOpen(false); // Đóng modal nếu đang duyệt trong modal
         } else if (!result.success) {
-            alert(result.message);
+            toast.error(result.message)
         }
     };
 
     const confirmDelete = async (item) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa bài viết "${item.title}"? Dữ liệu không thể khôi phục.`)) {
-            const result = await handleDeleteArticle(item.article_id);
-            if (!result.success) alert(result.message);
+           try {
+                await deleteArticle.mutateAsync(item.article_id);
+                // Xử lý tự lùi trang nếu trang hiện tại bị trống đã được ReactQuery lo (nhờ invalidateQueries)
+                toast.success("Xóa bài viết thành công!");
+            } catch (error) {
+                toast.error(error.response?.data?.message || "Lỗi khi xóa bài viết");
+            }
         }
     };
 
@@ -55,14 +77,15 @@ const AdminArticlePage = () => {
     const openPreview = async (id) => {
         setIsPreviewLoading(true);
         setIsPreviewOpen(true);
-        const result = await fetchArticleDetail(id);
-        if (result.success) {
-            setPreviewData(result.data);
-        } else {
-            alert(result.message);
+       try {
+            const data = await fetchArticleDetail(id);
+            setPreviewData(data);
+        } catch (error) {
+            toast.error(error.message);
             setIsPreviewOpen(false);
+        } finally {
+            setIsPreviewLoading(false);
         }
-        setIsPreviewLoading(false);
     };
 
     // 5. Cấu hình cột
@@ -121,10 +144,10 @@ const AdminArticlePage = () => {
                 loading={isLoading}
                 onSort={(key, order) => {
                     setCurrentSort({ key, order });
-                    fetchArticles(1, pagination.limit, searchQuery, statusFilter, key, order);
+                    setPage(1); // Quay về trang 1 khi đổi sắp xếp
                 }}
                 currentSort={currentSort}
-                onPageChange={(newPage) => fetchArticles(newPage, pagination.limit, searchQuery, statusFilter, currentSort.key, currentSort.order)}
+                onPageChange={setPage}
             >
                 {articles.length === 0 && !isLoading ? (
                     <tr><td colSpan="5" className="text-center p-8 text-gray-500">Không có bài viết nào phù hợp.</td></tr>
@@ -190,9 +213,9 @@ const AdminArticlePage = () => {
             {/* PAGINATION */}
             {pagination.totalPages > 1 && (
                 <div className="flex justify-end items-center gap-4 mt-4">
-                    <button disabled={pagination.page === 1} onClick={() => fetchArticles(pagination.page - 1, pagination.limit, searchQuery, statusFilter, currentSort.key, currentSort.order)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang trước</button>
+                    <button disabled={pagination.page === 1} onClick={() => setPage(pagination.page - 1)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang trước</button>
                     <span className="text-sm">Trang {pagination.page} / {pagination.totalPages}</span>
-                    <button disabled={pagination.page >= pagination.totalPages} onClick={() => fetchArticles(pagination.page + 1, pagination.limit, searchQuery, statusFilter, currentSort.key, currentSort.order)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang sau</button>
+                    <button disabled={pagination.page >= pagination.totalPages} onClick={() => setPage(pagination.page + 1)} className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50">Trang sau</button>
                 </div>
             )}
 

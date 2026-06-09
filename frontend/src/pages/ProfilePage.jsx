@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ProfileHeader } from "../component/profile/ProfileHeader";
 import { ProfileTabs } from "../component/profile/ProfileTabs";
 import { MyRecipesTab } from "../component/profile/MyRecipeTab";
@@ -12,79 +12,35 @@ import { SavedRecipeTab } from "../component/profile/SavedRecipeTab";
 import { ClaimRewardModal } from "../component/profile/rewards/ClaimRewardModal"; 
 
 import { useAuth } from "../AuthContext";
-import { useGlobalModal } from "../context/ModalContext";
-import { useUpdateProfile } from "../hooks/useProfile";
-import { usePoints } from "../hooks/usePoints";
-import { useChangePassword } from "../hooks/useChangePassword"; 
-import { useRewards } from "../hooks/useRewards"; 
+
+// QUERIES TỰ ĐỘNG CACHE & FETCH DATA
+import { usePointsHistoryQuery } from "../hooks/queries/useUserQueries";
+import { useMyRewardsQuery } from "../hooks/queries/useMiscQueries";
+
+// UI HOOK (Chứa toàn bộ Business Logic & State Form)
+import { useProfileUI } from "../hooks/ui/profile/useProfileUI"; 
 
 const mockSidebarStats = { totalLikes: 15420, totalViews: 48900, totalComments: 1234, totalFollowers: 2340 };
 const mockBadges = [{ id: "1", name: "Đầu bếp xuất sắc", icon: "🏆", color: "#FFD700" }];
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("my-recipes");
-  const { currentUser, refreshProfile } = useAuth();
-  const { showModal } = useGlobalModal();
-  const { updateProfile, loading: isUpdatingProfile } = useUpdateProfile();
+  const { currentUser } = useAuth();
 
-  const { rewards, openBox } = useRewards();
-  const [selectedBox, setSelectedBox] = useState(null);
-  const [receivedItems, setReceivedItems] = useState([]);
-  const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
-  const [isOpening, setIsOpening] = useState(false);
+  // 1. Data Fetching (React Query)
+  const { data: pointsData, isLoading: pointsLoading } = usePointsHistoryQuery(1, 'all');
+  const pointsHistory = pointsData?.history || [];
+  
+  const { data: rewards = [] } = useMyRewardsQuery();
 
-  const { history: pointsHistory, fetchHistory, checkIn: checkInPoint, loading: pointsLoading } = usePoints();
-  const { passwords, setPasswords, errors, loading: isChangingPass, handleChangePassword, resetFields } = useChangePassword();
-
-  const [isChangePassModalOpen, setIsChangePassModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (activeTab === "points") fetchHistory();
-  }, [activeTab, fetchHistory]);
-
-  const handleSaveProfile = async (data) => {
-      const formData = new FormData();
-      if (data.fullName) formData.append('fullName', data.fullName);
-      if (data.bio) formData.append('bio', data.bio);
-      if (data.avatarFile) formData.append('avatar', data.avatarFile);
-
-      const result = await updateProfile(formData);
-      showModal({
-          type: result.success ? 'success' : 'error',
-          title: result.success ? 'Thành công!' : 'Thất bại',
-          message: result.message,
-          actions: [{ label: 'Đóng', style: result.success ? 'primary' : 'danger' }]
-      });
-  };
-
-  const handleCheckIn = async () => {
-    const result = await checkInPoint();
-    showModal({
-      type: result.success ? 'success' : 'warning',
-      title: result.success ? 'Thành công!' : 'Thông báo',
-      message: result.message,
-      actions: [{ label: 'Đóng', style: 'primary' }]
-    });
-    if (result.success) await refreshProfile(); 
-  };
-
-  const handleSubmitChangePass = async () => {
-      const result = await handleChangePassword();
-      if (result.success) {
-          setIsChangePassModalOpen(false);
-          showModal({ type: 'success', title: 'Thành công!', message: 'Mật khẩu đã được cập nhật.', actions: [{ label: 'OK', style: 'primary' }]});
-      }
-  };
-
-  const handleOpenReward = async (reward) => {
-    setSelectedBox(reward); setIsRewardModalOpen(true); setIsOpening(true);
-    const result = await openBox(reward.user_reward_id);
-    if (result.success) {
-      setReceivedItems(result.items); setIsOpening(false); await refreshProfile();
-    } else {
-      alert(result.message); setIsRewardModalOpen(false);
-    }
-  };
+  // 2. Business Logic & UI States
+  const { 
+    handleSaveProfile, isUpdatingProfile,
+    passwords, setPasswords, errors, resetFields, isChangingPass, handleChangePassword, 
+    isChangePassModalOpen, setIsChangePassModalOpen,
+    handleCheckIn,
+    selectedBox, receivedItems, isRewardModalOpen, setIsRewardModalOpen, isOpening, handleOpenReward
+  } = useProfileUI();
 
   if (!currentUser) return <div className="text-center p-10">Đang tải thông tin...</div>;
 
@@ -101,23 +57,51 @@ export default function ProfilePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8">
-            {/* COMPONENT ĐÃ ĐƯỢC LÀM GỌN, KHÔNG TRUYỀN PROP THỪA */}
             {activeTab === "my-recipes" && <MyRecipesTab isPublicView={false} />}
             {activeTab === "my-articles" && <MyArticlesTab />}
             {activeTab === "saved" && <SavedRecipeTab />}
-            {activeTab === "info" && <ProfileInfoTab user={currentUser} onSave={handleSaveProfile} onViewPointsHistory={() => setActiveTab("points")} />}
-            {activeTab === "points" && <PointsTab currentPoints={currentUser.points} role={currentUser.role} history={pointsHistory} loading={pointsLoading} isCheckedIn={currentUser.isCheckedIn} onCheckIn={handleCheckIn} />}
-            {activeTab === "settings" && <SettingsTab role={currentUser.role} onChangePassword={() => { resetFields(); setIsChangePassModalOpen(true); }} />}
+            
+            {activeTab === "info" && (
+                <ProfileInfoTab 
+                    user={currentUser} 
+                    onSave={handleSaveProfile} 
+                    onViewPointsHistory={() => setActiveTab("points")} 
+                    onCheckIn={handleCheckIn}
+                />
+            )}
+            
+            {activeTab === "points" && (
+                <PointsTab 
+                    currentPoints={currentUser.points} 
+                    role={currentUser.role} 
+                    history={pointsHistory} 
+                    loading={pointsLoading} 
+                    isCheckedIn={currentUser.isCheckedIn} 
+                    onCheckIn={handleCheckIn} 
+                />
+            )}
+            
+            {activeTab === "settings" && (
+                <SettingsTab 
+                    role={currentUser.role} 
+                    onChangePassword={() => { resetFields(); setIsChangePassModalOpen(true); }} 
+                />
+            )}
           </div>
 
           <div className="lg:col-span-4">
-            <ProfileSidebar stats={mockSidebarStats} badges={mockBadges} pendingRewards={rewards} onOpenReward={handleOpenReward} />
+            <ProfileSidebar 
+                stats={mockSidebarStats} 
+                badges={mockBadges} 
+                pendingRewards={rewards} 
+                onOpenReward={handleOpenReward} 
+            />
           </div>
         </div>
       </main>
 
       <ClaimRewardModal isOpen={isRewardModalOpen} isOpening={isOpening} boxName={selectedBox?.box_name} items={receivedItems} onClose={() => setIsRewardModalOpen(false)} />
-      <ChangePasswordModal isOpen={isChangePassModalOpen} onClose={() => setIsChangePassModalOpen(false)} onSubmit={handleSubmitChangePass} loading={isChangingPass} formData={passwords} setFormData={setPasswords} errors={errors} />
+      <ChangePasswordModal isOpen={isChangePassModalOpen} onClose={() => setIsChangePassModalOpen(false)} onSubmit={handleChangePassword} loading={isChangingPass} formData={passwords} setFormData={setPasswords} errors={errors} />
     </div>
   );
 }

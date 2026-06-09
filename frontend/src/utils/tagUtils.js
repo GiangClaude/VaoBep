@@ -41,3 +41,27 @@ export const groupTagsByType = (tags) => {
         return acc;
     }, {});
 };
+
+/**
+ * Hàm cắt mảng tags theo số lượng giới hạn và tính toán số lượng tag bị ẩn
+ */
+export const getDisplayTags = (tags = [], maxDisplay = 2) => {
+  if (!Array.isArray(tags) || tags.length === 0) {
+    return { displayedTags: [], hiddenCount: 0 };
+  }
+  
+  const displayedTags = tags.slice(0, maxDisplay);
+  const hiddenCount = tags.length > maxDisplay ? tags.length - maxDisplay : 0;
+  
+  return { displayedTags, hiddenCount };
+};
+
+/**
+ * Hàm điều hướng người dùng sang trang tìm kiếm khi click vào một thẻ tag toàn cục.
+ * Đã sửa lỗi: Nhận trực tiếp thực thể `Maps` từ component truyền vào để tuân thủ Rules of Hooks.
+ */
+export const handleTagClick = (navigate, tagId, type = 'recipes') => {
+
+    // Chuyển hướng kèm query params và dùng trực tiếp navigate được truyền sang
+    navigate(`/${type}?tab=${type}&tags=${tagId}`);
+};

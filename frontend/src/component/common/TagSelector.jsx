@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { X, Plus, Tag as TagIcon } from "lucide-react";
-import useTags from "../../hooks/useTags";
+import {useTagQueries} from "../../hooks/queries/useTagQueries";
 
 // 1. THÊM PROPS VÀO ĐÂY (selectedTags, onChange)
 export default function TagSelector({ selectedTags = [], onChange }) {
   // Gán giá trị mặc định [] cho availableTags để tránh lỗi khi data chưa tải xong
-  const { tags: availableTags = [] } = useTags();
+  const { tags: availableTags = [] } = useTagQueries();
   const [inputValue, setInputValue] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 

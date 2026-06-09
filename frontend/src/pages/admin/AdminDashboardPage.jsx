@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react'; // Thêm animation
 import { Users, Utensils, BookOpen, Activity, TrendingUp, Calendar, PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
-import useAdminDashboard from '../../hooks/admin/useAdminDashboard';
+// import useAdminDashboard from '../../hooks/admin/useAdminDashboard';
 import { 
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
     PieChart, Pie, Cell
 } from 'recharts';
+import { useAdminStatsQuery } from '../../hooks/queries/useAdminQueries';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -13,7 +14,6 @@ const CustomAxisTick = ({ x, y, payload }) => {
     const dateParts = payload.value.split('-'); 
     const day = dateParts[2];   
     const month = dateParts[1]; 
-
     return (
         // y + 10: Đẩy toàn bộ cụm text xuống dưới 10px so với trục hoành
         <g transform={`translate(${x},${y + 10})`}>
@@ -33,11 +33,13 @@ const CustomAxisTick = ({ x, y, payload }) => {
 };
 
 const AdminDashboardPage = () => {
-    const { stats, loading } = useAdminDashboard();
+    const { data: stats, isLoading: loading } = useAdminStatsQuery();
     
     const [userTimeRange, setUserTimeRange] = useState(7);
     const [recipeTimeRange, setRecipeTimeRange] = useState(7);
 
+
+    
     // Hàm xử lý dữ liệu (Giữ nguyên)
     const processChartData = (apiData, days) => {
         const result = [];
@@ -65,8 +67,8 @@ const AdminDashboardPage = () => {
 
     if (loading) return <div className="p-10 text-center text-gray-500">Đang tải dữ liệu dashboard...</div>;
 
-    const summary = stats.summary || {};
-    const charts = stats.charts || {};
+    const summary = stats?.summary || {};
+    const charts = stats?.charts || {};
 
     // Xử lý dữ liệu
     const rawUserGrowth = charts.userGrowth || [];

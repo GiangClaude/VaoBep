@@ -15,15 +15,57 @@ function removeModal() {
     if (existingModal) existingModal.remove();
 }
 
+// Xóa modal cũ nếu có
+function removeModal() {
+    const existingModal = document.getElementById('vaobep-ext-modal');
+    if (existingModal) existingModal.remove();
+}
+
 // Hàm vẽ Modal lên màn hình
-function renderModal(titleText, contentHTML) {
+// function renderModal(titleText, contentHTML) {
+//     removeModal();
+    
+//     // Tạo thẻ div bọc ngoài cùng
+//     const modal = document.createElement('div');
+//     modal.id = 'vaobep-ext-modal';
+    
+//     // CSS trực tiếp (Inline CSS) để không bị ảnh hưởng bởi CSS của web hiện tại
+//     modal.style.cssText = `
+//         position: fixed; top: 20px; right: 20px; width: 320px;
+//         background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+//         border-radius: 12px; z-index: 9999999; font-family: Arial, sans-serif;
+//         overflow: hidden; border: 1px solid #ddd;
+//     `;
+
+//     modal.innerHTML = `
+//         <div style="background: #ff6b6b; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+//             <h3 style="margin: 0; font-size: 15px;">${titleText}</h3>
+//             <button id="vaobep-close-btn" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px;">✖</button>
+//         </div>
+//         <div style="padding: 10px; max-height: 400px; overflow-y: auto; color: #333;">
+//             ${contentHTML}
+//         </div>
+//     `;
+
+//     document.body.appendChild(modal);
+
+//     // Sự kiện đóng Modal
+//     document.getElementById('vaobep-close-btn').addEventListener('click', removeModal);
+
+//     // Gắn sự kiện click cho các item (mở tab mới)
+//     const items = modal.querySelectorAll('.vaobep-recipe-item');
+//     items.forEach(item => {
+//         item.addEventListener('click', () => {
+//             window.open(`${FRONTEND_URL}/recipe/${item.dataset.id}`, '_blank');
+//         });
+//     });
+// }
+// Hàm vẽ Modal (Hỗ trợ truyền chuỗi HTML an toàn tĩnh hoặc DOM Node động)
+function renderModal(titleText, contentData) {
     removeModal();
     
-    // Tạo thẻ div bọc ngoài cùng
     const modal = document.createElement('div');
     modal.id = 'vaobep-ext-modal';
-    
-    // CSS trực tiếp (Inline CSS) để không bị ảnh hưởng bởi CSS của web hiện tại
     modal.style.cssText = `
         position: fixed; top: 20px; right: 20px; width: 320px;
         background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
@@ -31,29 +73,32 @@ function renderModal(titleText, contentHTML) {
         overflow: hidden; border: 1px solid #ddd;
     `;
 
+    // Phần Header tĩnh (An toàn để dùng innerHTML)
     modal.innerHTML = `
         <div style="background: #ff6b6b; color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 15px;">${titleText}</h3>
+            <h3 id="vaobep-modal-title" style="margin: 0; font-size: 15px;"></h3>
             <button id="vaobep-close-btn" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px;">✖</button>
         </div>
-        <div style="padding: 10px; max-height: 400px; overflow-y: auto; color: #333;">
-            ${contentHTML}
-        </div>
+        <div id="vaobep-modal-body" style="padding: 10px; max-height: 400px; overflow-y: auto; color: #333;"></div>
     `;
 
     document.body.appendChild(modal);
 
-    // Sự kiện đóng Modal
-    document.getElementById('vaobep-close-btn').addEventListener('click', removeModal);
+    // Gán Text an toàn (Chống XSS từ title)
+    document.getElementById('vaobep-modal-title').textContent = titleText;
 
-    // Gắn sự kiện click cho các item (mở tab mới)
-    const items = modal.querySelectorAll('.vaobep-recipe-item');
-    items.forEach(item => {
-        item.addEventListener('click', () => {
-            window.open(`${FRONTEND_URL}/recipe/${item.dataset.id}`, '_blank');
-        });
-    });
+    // Gán Content an toàn
+    const bodyEl = document.getElementById('vaobep-modal-body');
+    if (typeof contentData === 'string') {
+        bodyEl.innerHTML = contentData; // Dùng cho các thẻ <div> tĩnh báo lỗi/loading
+    } else {
+        bodyEl.appendChild(contentData); // Dùng cho DOM Node (Chống XSS)
+    }
+
+    // Sự kiện đóng
+    document.getElementById('vaobep-close-btn').addEventListener('click', removeModal);
 }
+
 
 // Lắng nghe Message từ background.js
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -69,18 +114,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return;
         }
 
-        // Tạo HTML danh sách món ăn
-        let listHTML = recipes.map(r => `
-            <div class="vaobep-recipe-item" data-id="${r.recipe_id}" style="display: flex; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;">
-                <img src="${getImageUrl(r.recipe_id, r.cover_image)}" style="width: 50px; height: 50px; border-radius: 6px; object-fit: cover; margin-right: 10px;">
-                <div>
-                    <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold; color: #111;">${r.title}</h4>
-                    <span style="font-size: 12px; color: #666;">⏱ ${r.cook_time} phút | 🔥 ${r.total_calo || '?'} calo</span>
-                </div>
-            </div>
-        `).join('');
+        // TẠO DOM NODES THỦ CÔNG ĐỂ CHỐNG XSS
+        const listContainer = document.createElement('div');
 
-        renderModal(`Kết quả: ${request.query}`, listHTML);
+        recipes.forEach(r => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = "vaobep-recipe-item";
+            itemDiv.style.cssText = "display: flex; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;";
+            
+            // Xử lý sự kiện click an toàn
+            itemDiv.addEventListener('click', () => {
+                window.open(`${FRONTEND_URL}/recipe/${r.recipe_id}`, '_blank');
+            });
+
+            const img = document.createElement('img');
+            img.src = getImageUrl(r.recipe_id, r.cover_image);
+            img.style.cssText = "width: 50px; height: 50px; border-radius: 6px; object-fit: cover; margin-right: 10px;";
+
+            const textDiv = document.createElement('div');
+
+            const titleH4 = document.createElement('h4');
+            titleH4.style.cssText = "margin: 0 0 5px 0; font-size: 14px; font-weight: bold; color: #111;";
+            titleH4.textContent = r.title; // CHỐNG XSS: Render text thô, không biên dịch HTML
+
+            const infoSpan = document.createElement('span');
+            infoSpan.style.cssText = "font-size: 12px; color: #666;";
+            infoSpan.textContent = `⏱ ${r.cook_time} phút | 🔥 ${r.total_calo || '?'} calo`; // CHỐNG XSS
+
+            textDiv.appendChild(titleH4);
+            textDiv.appendChild(infoSpan);
+            itemDiv.appendChild(img);
+            itemDiv.appendChild(textDiv);
+            
+            listContainer.appendChild(itemDiv);
+        });
+
+         renderModal(`Kết quả: ${request.query}`, listContainer);
     }
 
     if (request.action === "show_search_error") {
@@ -118,6 +187,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true;
 });
+
+
 
 // ====== PHẦN CHỨC NĂNG CẮT ẢNH ======
 
